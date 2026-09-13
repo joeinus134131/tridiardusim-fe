@@ -1,11 +1,52 @@
-'use client';
-import { useMemo } from 'react';
-import * as THREE from 'three';
-import { useSimulatorStore } from '@/store/useSimulatorStore';
-import { ComponentRegistry } from '@/lib/components/ComponentRegistry';
-import { PinHighlight } from '@/components/canvas/PinHighlight';
-export function JumperWire({id}:{id:string}){
- const c=useSimulatorStore(s=>s.components.find(c=>c.id===id));
- const curve=useMemo(()=>new THREE.CatmullRomCurve3([new THREE.Vector3(-2,.23,-2.1),new THREE.Vector3(-3.3,.3,-4),new THREE.Vector3(-3,.3,-7),new THREE.Vector3(0,.3,-8),new THREE.Vector3(3,.3,-7),new THREE.Vector3(3.3,.3,-4),new THREE.Vector3(2,.23,-2.1)]),[]);
- return <group><mesh castShadow><tubeGeometry args={[curve,40,.11,8,false]}/><meshStandardMaterial color={String(c?.state.color||'red')} roughness={.7}/></mesh>{[-2,2].map(x=><group key={x}><mesh position={[x,.23,-1.4]}><boxGeometry args={[.5,.46,1.4]}/><meshStandardMaterial color="#171b21"/></mesh><mesh position={[x,.23,-.35]}><boxGeometry args={[.128,.128,.7]}/><meshStandardMaterial color="#bfc6cb" metalness={.8} roughness={.3}/></mesh></group>)}{ComponentRegistry.get(c?.typeId||'jumper_red')!.pins.map(p=><PinHighlight key={p.id} componentId={id} pin={p}/>)}</group>;
+"use client";
+import { useMemo } from "react";
+import * as THREE from "three";
+import { useSimulatorStore } from "@/store/useSimulatorStore";
+import { ComponentRegistry } from "@/lib/components/ComponentRegistry";
+import { PinHighlight } from "@/components/canvas/PinHighlight";
+export function JumperWire({ id }: { id: string }) {
+  const c = useSimulatorStore((s) => s.components.find((c) => c.id === id));
+  const curve = useMemo(
+    () =>
+      new THREE.CatmullRomCurve3([
+        new THREE.Vector3(-2, 0.23, -2.1),
+        new THREE.Vector3(-3.3, 0.3, -4),
+        new THREE.Vector3(-3, 0.3, -7),
+        new THREE.Vector3(0, 0.3, -8),
+        new THREE.Vector3(3, 0.3, -7),
+        new THREE.Vector3(3.3, 0.3, -4),
+        new THREE.Vector3(2, 0.23, -2.1),
+      ]),
+    [],
+  );
+  return (
+    <group>
+      <mesh castShadow>
+        <tubeGeometry args={[curve, 40, 0.11, 8, false]} />
+        <meshStandardMaterial
+          color={String(c?.state.color || "red")}
+          roughness={0.7}
+        />
+      </mesh>
+      {[-2, 2].map((x) => (
+        <group key={x}>
+          <mesh position={[x, 0.23, -1.4]}>
+            <boxGeometry args={[0.5, 0.46, 1.4]} />
+            <meshStandardMaterial color="#171b21" />
+          </mesh>
+          <mesh position={[x, 0.23, -0.35]}>
+            <boxGeometry args={[0.128, 0.128, 0.7]} />
+            <meshStandardMaterial
+              color="#bfc6cb"
+              metalness={0.8}
+              roughness={0.3}
+            />
+          </mesh>
+        </group>
+      ))}
+      {ComponentRegistry.get(c?.typeId || "jumper_red")!.pins.map((p) => (
+        <PinHighlight key={p.id} componentId={id} pin={p} />
+      ))}
+    </group>
+  );
 }

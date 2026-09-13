@@ -1,12 +1,119 @@
-'use client';
-import { useState,useRef,useEffect } from 'react';
-import { useSimulatorStore } from '@/store/useSimulatorStore';
-import { arduinoEngine } from '@/lib/simulation/ArduinoInterpreter';
-import { download } from '@/lib/project/project';
-export function SerialMonitor(){
- const output=useSimulatorStore(s=>s.serialOutput);const status=useSimulatorStore(s=>s.simulationState);const baud=useSimulatorStore(s=>s.baudRate);const sketchBaud=useSimulatorStore(s=>s.sketchBaudRate);
- const [input,setInput]=useState('');const [ending,setEnding]=useState('\n');const [follow,setFollow]=useState(true);const ref=useRef<HTMLDivElement>(null);
- useEffect(()=>{if(follow&&ref.current)ref.current.scrollTop=ref.current.scrollHeight;},[output,follow]);
- const mismatch=sketchBaud>0&&baud!==sketchBaud;
- return <section className="serial-panel"><div className="panel-heading"><strong>Serial Monitor</strong><div className="flex gap-2"><button className="small-button" onClick={()=>setFollow(!follow)}>{follow?'Jeda gulir':'Ikuti'}</button><button className="small-button" onClick={()=>useSimulatorStore.getState().clearSerial()}>Bersihkan</button><button className="small-button" onClick={()=>download('serial.txt',output.map(m=>m.message).join(''))}>Log</button></div></div><div ref={ref} className="serial-output" aria-label="Keluaran serial">{output.length?output.map(m=><span key={m.id} className={m.type==='error'?'text-red-400':m.type==='warning'?'text-amber-400':''}>{m.message}</span>):<span className="opacity-50">Jalankan sketch dengan Serial.begin(9600).</span>}</div><div className="flex gap-2 px-3 py-1"><select aria-label="Baud serial" value={baud} onChange={e=>useSimulatorStore.getState().setBaudRate(Number(e.target.value))}>{[9600,19200,38400,57600,115200].map(v=><option key={v}>{v}</option>)}</select><select aria-label="Akhiran serial" value={ending} onChange={e=>setEnding(e.target.value)}><option value="">Tanpa akhiran</option><option value={'\n'}>Newline</option><option value={'\r\n'}>CRLF</option></select></div>{mismatch&&<p className="panel-note text-amber-400">Sketch memakai {sketchBaud} baud. Samakan baud untuk mengirim. Kecepatan UART fisik tidak dimodelkan.</p>}<form className="serial-form" onSubmit={e=>{e.preventDefault();if(status==='running'&&!mismatch&&sketchBaud){arduinoEngine.send(input+ending);setInput('');}}}><input aria-label="Input serial" placeholder="Kirim ke Serial.read()" value={input} maxLength={1024} onChange={e=>setInput(e.target.value)}/><button className="small-button" disabled={status!=='running'||mismatch||!sketchBaud}>Kirim</button></form></section>;
+"use client";
+import { useState, useRef, useEffect } from "react";
+import { useSimulatorStore } from "@/store/useSimulatorStore";
+import { arduinoEngine } from "@/lib/simulation/ArduinoInterpreter";
+import { download } from "@/lib/project/project";
+export function SerialMonitor() {
+  const output = useSimulatorStore((s) => s.serialOutput);
+  const status = useSimulatorStore((s) => s.simulationState);
+  const baud = useSimulatorStore((s) => s.baudRate);
+  const sketchBaud = useSimulatorStore((s) => s.sketchBaudRate);
+  const [input, setInput] = useState("");
+  const [ending, setEnding] = useState("\n");
+  const [follow, setFollow] = useState(true);
+  const ref = useRef<HTMLDivElement>(null);
+  useEffect(() => {
+    if (follow && ref.current) ref.current.scrollTop = ref.current.scrollHeight;
+  }, [output, follow]);
+  const mismatch = sketchBaud > 0 && baud !== sketchBaud;
+  return (
+    <section className="serial-panel">
+      <div className="panel-heading">
+        <strong>Serial Monitor</strong>
+        <div className="flex gap-2">
+          <button className="small-button" onClick={() => setFollow(!follow)}>
+            {follow ? "Jeda gulir" : "Ikuti"}
+          </button>
+          <button
+            className="small-button"
+            onClick={() => useSimulatorStore.getState().clearSerial()}
+          >
+            Bersihkan
+          </button>
+          <button
+            className="small-button"
+            onClick={() =>
+              download("serial.txt", output.map((m) => m.message).join(""))
+            }
+          >
+            Log
+          </button>
+        </div>
+      </div>
+      <div ref={ref} className="serial-output" aria-label="Keluaran serial">
+        {output.length ? (
+          output.map((m) => (
+            <span
+              key={m.id}
+              className={
+                m.type === "error"
+                  ? "text-red-400"
+                  : m.type === "warning"
+                    ? "text-amber-400"
+                    : ""
+              }
+            >
+              {m.message}
+            </span>
+          ))
+        ) : (
+          <span className="opacity-50">
+            Jalankan sketch dengan Serial.begin(9600).
+          </span>
+        )}
+      </div>
+      <div className="flex gap-2 px-3 py-1">
+        <select
+          aria-label="Baud serial"
+          value={baud}
+          onChange={(e) =>
+            useSimulatorStore.getState().setBaudRate(Number(e.target.value))
+          }
+        >
+          {[9600, 19200, 38400, 57600, 115200].map((v) => (
+            <option key={v}>{v}</option>
+          ))}
+        </select>
+        <select
+          aria-label="Akhiran serial"
+          value={ending}
+          onChange={(e) => setEnding(e.target.value)}
+        >
+          <option value="">Tanpa akhiran</option>
+          <option value={"\n"}>Newline</option>
+          <option value={"\r\n"}>CRLF</option>
+        </select>
+      </div>
+      {mismatch && (
+        <p className="panel-note text-amber-400">
+          Sketch memakai {sketchBaud} baud. Samakan baud untuk mengirim.
+          Kecepatan UART fisik tidak dimodelkan.
+        </p>
+      )}
+      <form
+        className="serial-form"
+        onSubmit={(e) => {
+          e.preventDefault();
+          if (status === "running" && !mismatch && sketchBaud) {
+            arduinoEngine.send(input + ending);
+            setInput("");
+          }
+        }}
+      >
+        <input
+          aria-label="Input serial"
+          placeholder="Kirim ke Serial.read()"
+          value={input}
+          maxLength={1024}
+          onChange={(e) => setInput(e.target.value)}
+        />
+        <button
+          className="small-button"
+          disabled={status !== "running" || mismatch || !sketchBaud}
+        >
+          Kirim
+        </button>
+      </form>
+    </section>
+  );
 }

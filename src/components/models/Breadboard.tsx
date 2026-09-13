@@ -1,12 +1,12 @@
-'use client';
-import { useLayoutEffect, useRef, memo } from 'react';
-import * as THREE from 'three';
-import { ComponentRegistry } from '@/lib/components/ComponentRegistry';
-import { PinHighlight } from '@/components/canvas/PinHighlight';
-import { Label } from './Label';
+"use client";
+import { useLayoutEffect, useRef, memo } from "react";
+import * as THREE from "three";
+import { ComponentRegistry } from "@/lib/components/ComponentRegistry";
+import { PinHighlight } from "@/components/canvas/PinHighlight";
+import { Label } from "./Label";
 
 export const Breadboard = memo(function Breadboard({ id }: { id?: string }) {
-  const pins = ComponentRegistry.get('breadboard')!.pins;
+  const pins = ComponentRegistry.get("breadboard")!.pins;
   const holes = useRef<THREE.InstancedMesh>(null);
 
   useLayoutEffect(() => {
@@ -25,7 +25,7 @@ export const Breadboard = memo(function Breadboard({ id }: { id?: string }) {
         <meshStandardMaterial color="#f1f0e9" roughness={0.9} />
       </mesh>
       <mesh position={[0, 1.71, 0]}>
-        <boxGeometry args={[15.8, 0.02, 0.65]} />
+        <boxGeometry args={[15.8, 0.02, 0.4]} />
         <meshStandardMaterial color="#9c9d9a" />
       </mesh>
       <instancedMesh ref={holes} args={[undefined, undefined, pins.length]}>
@@ -34,26 +34,39 @@ export const Breadboard = memo(function Breadboard({ id }: { id?: string }) {
       </instancedMesh>
       {[-1, 1].flatMap((side) =>
         [0, 1].map((row) => (
-          <mesh key={side + ':' + row} position={[0, 1.714, side * (5.12 - row * 0.5)]}>
+          <mesh
+            key={side + ":" + row}
+            position={[0, 1.714, side * (5.12 - row * 0.5)]}
+          >
             <boxGeometry args={[15.8, 0.015, 0.03]} />
-            <meshBasicMaterial color={row ? '#1976d2' : '#db3e3e'} />
+            <meshBasicMaterial color={row ? "#282e33" : "#db3e3e"} />
           </mesh>
-        ))
+        )),
       )}
       {Array.from({ length: 30 }, (_, i) => (
-        <Label key={i} text={String(i + 1)} position={[-7.366 + i * 0.508, 1.73, -0.75]} color="#494e52" size={0.16} />
-      ))}
-      {['a', 'b', 'c', 'd', 'e', 'f', 'g', 'h', 'i', 'j'].map((r, i) => (
         <Label
-          key={r}
-          text={r}
-          position={[-7.95, 1.73, i < 5 ? -1.5 - i * 0.508 : 1.5 + (i - 5) * 0.508]}
+          key={i}
+          text={String(i + 1)}
+          position={[-7.366 + i * 0.508, 1.73, -0.3]}
           color="#494e52"
           size={0.16}
         />
       ))}
-      {id && pins.map((p) => <PinHighlight key={p.id} componentId={id} pin={p} />)}
+      {["E", "D", "C", "B", "A", "F", "G", "H", "I", "J"].map((r, i) => (
+        <Label
+          key={r}
+          text={r}
+          position={[
+            -7.95,
+            1.73,
+            i < 5 ? -0.762 - i * 0.508 : 0.762 + (i - 5) * 0.508,
+          ]}
+          color="#494e52"
+          size={0.16}
+        />
+      ))}
+      {id &&
+        pins.map((p) => <PinHighlight key={p.id} componentId={id} pin={p} />)}
     </group>
   );
 });
-

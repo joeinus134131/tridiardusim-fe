@@ -169,14 +169,19 @@
   background: var(--bg-hover);
 }
 
-html, body {
+html,
+body {
   margin: 0;
   padding: 0;
   height: 100%;
   overflow: hidden;
   background: var(--bg-primary);
   color: var(--text-primary);
-  font-family: var(--font-geist-sans), system-ui, -apple-system, sans-serif;
+  font-family:
+    var(--font-geist-sans),
+    system-ui,
+    -apple-system,
+    sans-serif;
 }
 
 /* ── Glass Panel ── */
@@ -199,52 +204,110 @@ html, body {
 
 /* ── Animations ── */
 @keyframes fadeIn {
-  from { opacity: 0; transform: translateY(4px); }
-  to { opacity: 1; transform: translateY(0); }
+  from {
+    opacity: 0;
+    transform: translateY(4px);
+  }
+  to {
+    opacity: 1;
+    transform: translateY(0);
+  }
 }
 
 @keyframes slideInLeft {
-  from { opacity: 0; transform: translateX(-16px); }
-  to { opacity: 1; transform: translateX(0); }
+  from {
+    opacity: 0;
+    transform: translateX(-16px);
+  }
+  to {
+    opacity: 1;
+    transform: translateX(0);
+  }
 }
 
 @keyframes slideInRight {
-  from { opacity: 0; transform: translateX(16px); }
-  to { opacity: 1; transform: translateX(0); }
+  from {
+    opacity: 0;
+    transform: translateX(16px);
+  }
+  to {
+    opacity: 1;
+    transform: translateX(0);
+  }
 }
 
 @keyframes slideInUp {
-  from { opacity: 0; transform: translateY(16px); }
-  to { opacity: 1; transform: translateY(0); }
+  from {
+    opacity: 0;
+    transform: translateY(16px);
+  }
+  to {
+    opacity: 1;
+    transform: translateY(0);
+  }
 }
 
 @keyframes pulse-glow {
-  0%, 100% { box-shadow: 0 0 8px var(--accent-glow); }
-  50% { box-shadow: 0 0 20px var(--accent-glow), 0 0 40px rgba(59, 130, 246, 0.15); }
+  0%,
+  100% {
+    box-shadow: 0 0 8px var(--accent-glow);
+  }
+  50% {
+    box-shadow:
+      0 0 20px var(--accent-glow),
+      0 0 40px rgba(59, 130, 246, 0.15);
+  }
 }
 
 @keyframes spin-slow {
-  from { transform: rotate(0deg); }
-  to { transform: rotate(360deg); }
+  from {
+    transform: rotate(0deg);
+  }
+  to {
+    transform: rotate(360deg);
+  }
 }
 
 @keyframes blink {
-  0%, 100% { opacity: 1; }
-  50% { opacity: 0.3; }
+  0%,
+  100% {
+    opacity: 1;
+  }
+  50% {
+    opacity: 0.3;
+  }
 }
 
 @keyframes electron-flow {
-  0% { stroke-dashoffset: 20; }
-  100% { stroke-dashoffset: 0; }
+  0% {
+    stroke-dashoffset: 20;
+  }
+  100% {
+    stroke-dashoffset: 0;
+  }
 }
 
-.animate-fade-in { animation: fadeIn var(--transition-normal) ease forwards; }
-.animate-slide-left { animation: slideInLeft var(--transition-normal) ease forwards; }
-.animate-slide-right { animation: slideInRight var(--transition-normal) ease forwards; }
-.animate-slide-up { animation: slideInUp var(--transition-normal) ease forwards; }
-.animate-pulse-glow { animation: pulse-glow 2s ease-in-out infinite; }
-.animate-spin-slow { animation: spin-slow 3s linear infinite; }
-.animate-blink { animation: blink 1s ease-in-out infinite; }
+.animate-fade-in {
+  animation: fadeIn var(--transition-normal) ease forwards;
+}
+.animate-slide-left {
+  animation: slideInLeft var(--transition-normal) ease forwards;
+}
+.animate-slide-right {
+  animation: slideInRight var(--transition-normal) ease forwards;
+}
+.animate-slide-up {
+  animation: slideInUp var(--transition-normal) ease forwards;
+}
+.animate-pulse-glow {
+  animation: pulse-glow 2s ease-in-out infinite;
+}
+.animate-spin-slow {
+  animation: spin-slow 3s linear infinite;
+}
+.animate-blink {
+  animation: blink 1s ease-in-out infinite;
+}
 
 /* ── Utility Classes ── */
 .panel-header {
@@ -357,23 +420,423 @@ html, body {
 }
 
 /* Workbench layout keeps the circuit, sketch and serial visible without overlays. */
-.workspace {height:100dvh;display:flex;flex-direction:column;background:var(--bg-primary);color:var(--text-primary);font-size:12px}
-.workspace-toolbar{min-height:54px;display:flex;align-items:center;gap:14px;padding:8px 16px;border-bottom:1px solid var(--border);background:var(--bg-surface);flex-wrap:wrap}
-.brand{font-size:20px;font-weight:700;letter-spacing:-.5px;white-space:nowrap}.brand span{color:var(--accent)}.brand small{font-size:9px;letter-spacing:2px;margin-left:12px;opacity:.5}
-.workspace input,.workspace select{background:var(--bg-elevated);border:1px solid var(--border);border-radius:5px;padding:5px 7px;min-width:0;color:var(--text-primary)}
-.workspace button:disabled{opacity:.4;cursor:not-allowed}.workspace button{cursor:pointer}.workspace button:focus-visible,.workspace input:focus-visible,.workspace select:focus-visible,.workspace textarea:focus-visible{outline:2px solid var(--accent);outline-offset:2px}
-.small-button{font-size:11px;padding:5px 8px;border:1px solid var(--border);border-radius:5px;background:var(--bg-elevated);white-space:nowrap;cursor:pointer}.small-button:hover{border-color:var(--accent)}
-.runtime-status{margin-right:auto;font-family:monospace;color:var(--accent)}.project-bar{padding:6px 12px;display:flex;gap:6px;overflow:auto;flex-shrink:0;border-bottom:1px solid var(--border)}
-.workspace-main{display:flex;flex:1;min-height:0}.library-panel{width:215px;flex-shrink:0;border-right:1px solid var(--border);display:flex;flex-direction:column;min-height:0;background:var(--bg-surface)}
-.panel-heading{display:flex;align-items:center;justify-content:space-between;gap:8px;padding:10px 12px;border-bottom:1px solid var(--border);flex-shrink:0}.panel-heading .active{color:var(--accent)}
-.library-search{margin:10px}.library-list{padding:0 9px;overflow:auto;flex:1}.component-card{display:block;text-align:left;width:100%;padding:10px;margin-bottom:6px;background:var(--bg-elevated);border:1px solid var(--border);border-radius:7px}.component-card:hover{border-color:var(--accent)}.component-card strong{font-size:12px;display:block}.component-card small{display:block;color:var(--accent);font-size:10px;margin:4px 0}.component-card p{font-size:10px;line-height:1.4;opacity:.6}
-.examples{display:grid;gap:5px;padding:10px;border-top:1px solid var(--border)}.examples strong{font-size:10px;text-transform:uppercase;letter-spacing:1px;margin-bottom:4px}
-.scene-panel{flex:1;min-width:220px;position:relative}.scene-instruction{position:absolute;bottom:12px;left:12px;right:12px;pointer-events:none;display:flex;gap:10px;justify-content:center;color:#bacbdc;font-size:10px}.scene-instruction button{pointer-events:auto;background:#192637;padding:3px 8px;border-radius:4px}
-.program-panel{width:360px;flex-shrink:0;display:flex;flex-direction:column;border-left:1px solid var(--border);background:var(--bg-surface)}.code-panel{height:57%;min-height:160px;display:flex;flex-direction:column}.sketch-editor{resize:none;flex:1;min-height:70px;padding:15px;background:var(--bg-primary);border:0;font:12px/1.65 ui-monospace,monospace;tab-size:2;color:var(--text-primary);white-space:pre;overflow:auto}.panel-note{font-size:10px;line-height:1.5;opacity:.65;padding:6px 12px;border-top:1px solid var(--border)}
-.serial-panel{flex:1;min-height:150px;display:flex;flex-direction:column;border-top:1px solid var(--border)}.serial-output{overflow:auto;flex:1;padding:12px;white-space:pre-wrap;overflow-wrap:anywhere;font:11px/1.5 ui-monospace,monospace}.serial-form{display:flex;gap:6px;padding:8px}.serial-form input{flex:1;min-width:0}.serial-panel select{font-size:10px}
-.workspace-footer{padding:5px 12px;display:flex;justify-content:space-between;color:var(--text-muted);font-size:10px;border-top:1px solid var(--border)}.notice{padding:7px 15px;background:var(--bg-elevated);display:flex;justify-content:space-between}.help-box{padding:12px 20px;line-height:1.6;border-bottom:1px solid var(--border);max-height:190px;overflow:auto}.help-box p{margin-top:6px;opacity:.8}
-.properties{position:absolute;right:10px;top:10px;width:210px;max-height:60%;overflow:auto;background:var(--bg-surface);border:1px solid var(--border);border-radius:8px;box-shadow:0 8px 30px #0005}.property-body{padding:9px}.property-body>p{font-size:10px;opacity:.6;margin-bottom:6px}.property-body>button{margin:3px 3px 5px 0}.property-body label{display:flex;align-items:center;justify-content:space-between;gap:5px;margin:4px 0}.property-body input{width:130px}.pin-row{display:flex;justify-content:space-between;width:100%;padding:4px;border-bottom:1px solid var(--border);font-size:10px}.pin-row:hover{color:var(--accent)}.diagnostics{position:absolute;left:10px;top:10px;max-width:65%;padding:10px;background:#422b16e8;color:#fcd8a2;border-radius:6px;font-size:11px;pointer-events:none}
-.wiring-panel{overflow:auto;padding:10px}.wiring-panel label{display:block;margin:10px 0}.wiring-panel select{width:100%;font-size:10px;margin-top:4px}.wire-row{display:flex;justify-content:space-between;border-bottom:1px solid var(--border);padding:8px 0;font-size:10px}.wire-row button{text-align:left}.wiring-panel h3{margin-top:15px}
-@media(max-width:1100px){.program-panel{width:300px}.library-panel{width:180px}.workspace-toolbar{gap:8px}.workspace-toolbar>input{width:120px}.runtime-status{display:none}}
-@media(max-width:800px){.workspace-main{flex-wrap:wrap;overflow:auto}.library-panel{width:155px;height:55vh}.scene-panel{height:55vh;min-width:calc(100% - 155px)}.program-panel{width:100%;height:430px;flex-direction:row;border-top:1px solid var(--border)}.code-panel{width:55%;height:100%}.serial-panel{width:45%;height:100%;border-left:1px solid var(--border)}.workspace-footer span{display:none}.properties{width:180px}.workspace-toolbar .brand small{display:none}}
-.camera-tools{position:absolute;top:10px;left:10px;display:flex;gap:4px}.diagnostics{top:46px}.property-body details{font-size:10px;line-height:1.5;margin:8px 0}
+.workspace {
+  height: 100dvh;
+  display: flex;
+  flex-direction: column;
+  background: var(--bg-primary);
+  color: var(--text-primary);
+  font-size: 12px;
+}
+.workspace-toolbar {
+  min-height: 54px;
+  display: flex;
+  align-items: center;
+  gap: 14px;
+  padding: 8px 16px;
+  border-bottom: 1px solid var(--border);
+  background: var(--bg-surface);
+  flex-wrap: wrap;
+}
+.brand {
+  font-size: 20px;
+  font-weight: 700;
+  letter-spacing: -0.5px;
+  white-space: nowrap;
+}
+.brand span {
+  color: var(--accent);
+}
+.brand small {
+  font-size: 9px;
+  letter-spacing: 2px;
+  margin-left: 12px;
+  opacity: 0.5;
+}
+.workspace input,
+.workspace select {
+  background: var(--bg-elevated);
+  border: 1px solid var(--border);
+  border-radius: 5px;
+  padding: 5px 7px;
+  min-width: 0;
+  color: var(--text-primary);
+}
+.workspace button:disabled {
+  opacity: 0.4;
+  cursor: not-allowed;
+}
+.workspace button {
+  cursor: pointer;
+}
+.workspace button:focus-visible,
+.workspace input:focus-visible,
+.workspace select:focus-visible,
+.workspace textarea:focus-visible {
+  outline: 2px solid var(--accent);
+  outline-offset: 2px;
+}
+.small-button {
+  font-size: 11px;
+  padding: 5px 8px;
+  border: 1px solid var(--border);
+  border-radius: 5px;
+  background: var(--bg-elevated);
+  white-space: nowrap;
+  cursor: pointer;
+}
+.small-button:hover {
+  border-color: var(--accent);
+}
+.runtime-status {
+  margin-right: auto;
+  font-family: monospace;
+  color: var(--accent);
+}
+.project-bar {
+  padding: 6px 12px;
+  display: flex;
+  gap: 6px;
+  overflow: auto;
+  flex-shrink: 0;
+  border-bottom: 1px solid var(--border);
+}
+.workspace-main {
+  display: flex;
+  flex: 1;
+  min-height: 0;
+}
+.library-panel {
+  width: 215px;
+  flex-shrink: 0;
+  border-right: 1px solid var(--border);
+  display: flex;
+  flex-direction: column;
+  min-height: 0;
+  background: var(--bg-surface);
+}
+.panel-heading {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  gap: 8px;
+  padding: 10px 12px;
+  border-bottom: 1px solid var(--border);
+  flex-shrink: 0;
+}
+.panel-heading .active {
+  color: var(--accent);
+}
+.library-search {
+  margin: 10px;
+}
+.library-list {
+  padding: 0 9px;
+  overflow: auto;
+  flex: 1;
+}
+.component-card {
+  display: block;
+  text-align: left;
+  width: 100%;
+  padding: 10px;
+  margin-bottom: 6px;
+  background: var(--bg-elevated);
+  border: 1px solid var(--border);
+  border-radius: 7px;
+}
+.component-card:hover {
+  border-color: var(--accent);
+}
+.component-card strong {
+  font-size: 12px;
+  display: block;
+}
+.component-card small {
+  display: block;
+  color: var(--accent);
+  font-size: 10px;
+  margin: 4px 0;
+}
+.component-card p {
+  font-size: 10px;
+  line-height: 1.4;
+  opacity: 0.6;
+}
+.examples {
+  display: grid;
+  gap: 5px;
+  padding: 10px;
+  border-top: 1px solid var(--border);
+}
+.examples strong {
+  font-size: 10px;
+  text-transform: uppercase;
+  letter-spacing: 1px;
+  margin-bottom: 4px;
+}
+.scene-panel {
+  flex: 1;
+  min-width: 220px;
+  position: relative;
+}
+.scene-instruction {
+  position: absolute;
+  bottom: 12px;
+  left: 12px;
+  right: 12px;
+  pointer-events: none;
+  display: flex;
+  gap: 10px;
+  justify-content: center;
+  color: #bacbdc;
+  font-size: 10px;
+}
+.scene-instruction button {
+  pointer-events: auto;
+  background: #192637;
+  padding: 3px 8px;
+  border-radius: 4px;
+}
+.program-panel {
+  width: 360px;
+  flex-shrink: 0;
+  display: flex;
+  flex-direction: column;
+  border-left: 1px solid var(--border);
+  background: var(--bg-surface);
+}
+.code-panel {
+  height: 57%;
+  min-height: 160px;
+  display: flex;
+  flex-direction: column;
+}
+.sketch-editor {
+  resize: none;
+  flex: 1;
+  min-height: 70px;
+  padding: 15px;
+  background: var(--bg-primary);
+  border: 0;
+  font:
+    12px/1.65 ui-monospace,
+    monospace;
+  tab-size: 2;
+  color: var(--text-primary);
+  white-space: pre;
+  overflow: auto;
+}
+.panel-note {
+  font-size: 10px;
+  line-height: 1.5;
+  opacity: 0.65;
+  padding: 6px 12px;
+  border-top: 1px solid var(--border);
+}
+.serial-panel {
+  flex: 1;
+  min-height: 150px;
+  display: flex;
+  flex-direction: column;
+  border-top: 1px solid var(--border);
+}
+.serial-output {
+  overflow: auto;
+  flex: 1;
+  padding: 12px;
+  white-space: pre-wrap;
+  overflow-wrap: anywhere;
+  font:
+    11px/1.5 ui-monospace,
+    monospace;
+}
+.serial-form {
+  display: flex;
+  gap: 6px;
+  padding: 8px;
+}
+.serial-form input {
+  flex: 1;
+  min-width: 0;
+}
+.serial-panel select {
+  font-size: 10px;
+}
+.workspace-footer {
+  padding: 5px 12px;
+  display: flex;
+  justify-content: space-between;
+  color: var(--text-muted);
+  font-size: 10px;
+  border-top: 1px solid var(--border);
+}
+.notice {
+  padding: 7px 15px;
+  background: var(--bg-elevated);
+  display: flex;
+  justify-content: space-between;
+}
+.help-box {
+  padding: 12px 20px;
+  line-height: 1.6;
+  border-bottom: 1px solid var(--border);
+  max-height: 190px;
+  overflow: auto;
+}
+.help-box p {
+  margin-top: 6px;
+  opacity: 0.8;
+}
+.properties {
+  position: absolute;
+  right: 10px;
+  top: 10px;
+  width: 210px;
+  max-height: 60%;
+  overflow: auto;
+  background: var(--bg-surface);
+  border: 1px solid var(--border);
+  border-radius: 8px;
+  box-shadow: 0 8px 30px #0005;
+}
+.property-body {
+  padding: 9px;
+}
+.property-body > p {
+  font-size: 10px;
+  opacity: 0.6;
+  margin-bottom: 6px;
+}
+.property-body > button {
+  margin: 3px 3px 5px 0;
+}
+.property-body label {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  gap: 5px;
+  margin: 4px 0;
+}
+.property-body input {
+  width: 130px;
+}
+.pin-row {
+  display: flex;
+  justify-content: space-between;
+  width: 100%;
+  padding: 4px;
+  border-bottom: 1px solid var(--border);
+  font-size: 10px;
+}
+.pin-row:hover {
+  color: var(--accent);
+}
+.diagnostics {
+  position: absolute;
+  left: 10px;
+  top: 10px;
+  max-width: 65%;
+  padding: 10px;
+  background: #422b16e8;
+  color: #fcd8a2;
+  border-radius: 6px;
+  font-size: 11px;
+  pointer-events: none;
+}
+.wiring-panel {
+  overflow: auto;
+  padding: 10px;
+}
+.wiring-panel label {
+  display: block;
+  margin: 10px 0;
+}
+.wiring-panel select {
+  width: 100%;
+  font-size: 10px;
+  margin-top: 4px;
+}
+.wire-row {
+  display: flex;
+  justify-content: space-between;
+  border-bottom: 1px solid var(--border);
+  padding: 8px 0;
+  font-size: 10px;
+}
+.wire-row button {
+  text-align: left;
+}
+.wiring-panel h3 {
+  margin-top: 15px;
+}
+@media (max-width: 1100px) {
+  .program-panel {
+    width: 300px;
+  }
+  .library-panel {
+    width: 180px;
+  }
+  .workspace-toolbar {
+    gap: 8px;
+  }
+  .workspace-toolbar > input {
+    width: 120px;
+  }
+  .runtime-status {
+    display: none;
+  }
+}
+@media (max-width: 800px) {
+  .workspace-main {
+    flex-wrap: wrap;
+    overflow: auto;
+  }
+  .library-panel {
+    width: 155px;
+    height: 55vh;
+  }
+  .scene-panel {
+    height: 55vh;
+    min-width: calc(100% - 155px);
+  }
+  .program-panel {
+    width: 100%;
+    height: 430px;
+    flex-direction: row;
+    border-top: 1px solid var(--border);
+  }
+  .code-panel {
+    width: 55%;
+    height: 100%;
+  }
+  .serial-panel {
+    width: 45%;
+    height: 100%;
+    border-left: 1px solid var(--border);
+  }
+  .workspace-footer span {
+    display: none;
+  }
+  .properties {
+    width: 180px;
+  }
+  .workspace-toolbar .brand small {
+    display: none;
+  }
+}
+.camera-tools {
+  position: absolute;
+  top: 10px;
+  left: 10px;
+  display: flex;
+  gap: 4px;
+}
+.diagnostics {
+  top: 46px;
+}
+.property-body details {
+  font-size: 10px;
+  line-height: 1.5;
+  margin: 8px 0;
+}

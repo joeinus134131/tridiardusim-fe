@@ -1,43 +1,49 @@
-'use client';
+"use client";
 
-import { Canvas } from '@react-three/fiber';
-import { Suspense, memo } from 'react';
-import * as THREE from 'three';
+import { Canvas } from "@react-three/fiber";
+import { Suspense, memo } from "react";
+import * as THREE from "three";
 
-import { CameraController } from './CameraController';
-import { GridFloor } from './GridFloor';
-import { useSimulatorStore } from '@/store/useSimulatorStore';
-import { DraggableComponent } from './DraggableComponent';
-import { ArduinoUnoR3 } from '@/components/models/ArduinoUno';
-import { LED } from '@/components/models/LED';
-import { PushButton } from '@/components/models/PushButton';
-import { Potentiometer } from '@/components/models/Potentiometer';
-import { Breadboard } from '@/components/models/Breadboard';
-import { JumperWire } from '@/components/models/JumperWire';
-import { Resistor } from '@/components/models/Resistor';
-import { WireRenderer } from '@/components/canvas/WireRenderer';
-import { ActiveWireRenderer } from '@/components/canvas/ActiveWireRenderer';
+import { CameraController } from "./CameraController";
+import { GridFloor } from "./GridFloor";
+import { useSimulatorStore } from "@/store/useSimulatorStore";
+import { DraggableComponent } from "./DraggableComponent";
+import { ArduinoUnoR3 } from "@/components/models/ArduinoUno";
+import { LED } from "@/components/models/LED";
+import { PushButton } from "@/components/models/PushButton";
+import { Potentiometer } from "@/components/models/Potentiometer";
+import { Breadboard } from "@/components/models/Breadboard";
+import { JumperWire } from "@/components/models/JumperWire";
+import { Resistor } from "@/components/models/Resistor";
+import { WireRenderer } from "@/components/canvas/WireRenderer";
+import { ActiveWireRenderer } from "@/components/canvas/ActiveWireRenderer";
 
 // Component factory (memoized to prevent unneeded recreation)
-const ComponentRenderer = memo(function ComponentRenderer({ id, typeId }: { id: string; typeId: string }) {
+const ComponentRenderer = memo(function ComponentRenderer({
+  id,
+  typeId,
+}: {
+  id: string;
+  typeId: string;
+}) {
   switch (typeId) {
-    case 'arduino_uno':
+    case "arduino_uno":
       return <ArduinoUnoR3 id={id} />;
-    case 'led_red':
+    case "led_red":
       return <LED id={id} />;
-    case 'push_button':
+    case "push_button":
       return <PushButton id={id} />;
-    case 'potentiometer':
+    case "potentiometer":
       return <Potentiometer id={id} />;
-    case 'breadboard':
+    case "breadboard":
       return <Breadboard id={id} />;
-    case 'resistor_220':
+    case "resistor_220":
       return <Resistor id={id} />;
-    case 'jumper_red':
-      case 'jumper_black':
-    case 'jumper_blue':
-    case 'jumper_green':
-    case 'jumper_yellow':
+    case "jumper_red":
+    case "jumper_black":
+    case "jumper_blue":
+    case "jumper_green":
+    case "jumper_yellow":
       return <JumperWire id={id} />;
     default:
       return (
@@ -62,12 +68,12 @@ export const SimulatorCanvas = memo(function SimulatorCanvas() {
         gl={{
           antialias: true,
           alpha: false,
-          powerPreference: 'high-performance',
+          powerPreference: "high-performance",
           stencil: false,
         }}
       >
         <CameraController />
-        
+
         {/* Lighting — three-point setup */}
         <ambientLight intensity={0.9} color="#c8d0e0" />
         <directionalLight
@@ -83,7 +89,11 @@ export const SimulatorCanvas = memo(function SimulatorCanvas() {
           shadow-camera-far={100}
           shadow-bias={-0.001}
         />
-        <directionalLight position={[-10, 15, -10]} intensity={0.4} color="#a0b0ff" />
+        <directionalLight
+          position={[-10, 15, -10]}
+          intensity={0.4}
+          color="#a0b0ff"
+        />
         <pointLight position={[0, 20, 0]} intensity={0.3} color="#ffffff" />
 
         {/* Work surface */}
@@ -92,8 +102,8 @@ export const SimulatorCanvas = memo(function SimulatorCanvas() {
         {/* Components */}
         <Suspense fallback={null}>
           {components.map((c) => (
-            <DraggableComponent 
-              key={c.id} 
+            <DraggableComponent
+              key={c.id}
               id={c.id}
               position={c.position}
               rotation={c.rotation}
@@ -110,4 +120,3 @@ export const SimulatorCanvas = memo(function SimulatorCanvas() {
     </div>
   );
 });
-

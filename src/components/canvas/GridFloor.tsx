@@ -1,21 +1,27 @@
-'use client';
+"use client";
 
-import type { ThreeEvent } from '@react-three/fiber';
-import { Grid } from '@react-three/drei';
-import * as THREE from 'three';
-import { useMemo } from 'react';
-import { useSimulatorStore } from '@/store/useSimulatorStore';
+import type { ThreeEvent } from "@react-three/fiber";
+import { Grid } from "@react-three/drei";
+import * as THREE from "three";
+import { useMemo } from "react";
+import { useSimulatorStore } from "@/store/useSimulatorStore";
 
 export function GridFloor() {
   const isWiringActive = useSimulatorStore((state) => state.wiringState.active);
-  const updateWiringTarget = useSimulatorStore((state) => state.updateWiringTarget);
+  const updateWiringTarget = useSimulatorStore(
+    (state) => state.updateWiringTarget,
+  );
   const cancelWiring = useSimulatorStore((state) => state.cancelWiring);
 
-  const surfaceMaterial = useMemo(() => new THREE.MeshStandardMaterial({
-    color: '#1a2035',
-    roughness: 0.95,
-    metalness: 0.05,
-  }), []);
+  const surfaceMaterial = useMemo(
+    () =>
+      new THREE.MeshStandardMaterial({
+        color: "#1a2035",
+        roughness: 0.95,
+        metalness: 0.05,
+      }),
+    [],
+  );
 
   const handlePointerMove = (e: ThreeEvent<PointerEvent>) => {
     if (isWiringActive) {
@@ -34,9 +40,9 @@ export function GridFloor() {
   return (
     <group>
       {/* Invisible plane for dragging raycasts. We use a larger plane to catch all pointer movements */}
-      <mesh 
-        rotation={[-Math.PI / 2, 0, 0]} 
-        position={[0, 0, 0]} 
+      <mesh
+        rotation={[-Math.PI / 2, 0, 0]}
+        position={[0, 0, 0]}
         onPointerMove={handlePointerMove}
         onPointerDown={handlePointerUp}
       >
@@ -45,7 +51,12 @@ export function GridFloor() {
       </mesh>
 
       {/* Work surface (dark desk) */}
-      <mesh rotation={[-Math.PI / 2, 0, 0]} position={[0, -0.02, 0]} receiveShadow material={surfaceMaterial}>
+      <mesh
+        rotation={[-Math.PI / 2, 0, 0]}
+        position={[0, -0.02, 0]}
+        receiveShadow
+        material={surfaceMaterial}
+      >
         <planeGeometry args={[200, 200]} />
       </mesh>
 

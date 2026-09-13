@@ -27,5 +27,5 @@ export const COLORS = {
     pcb: "#004d40",
     silkscreen: "#f8fafc",
     header: "#1a1a2e",
-  }
+  },
 };

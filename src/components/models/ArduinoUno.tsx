@@ -1,15 +1,15 @@
-'use client';
-import { useMemo, memo } from 'react';
-import * as THREE from 'three';
-import { unoPins, PITCH } from '@/lib/components/physical';
-import { useSimulatorStore } from '@/store/useSimulatorStore';
-import { PinHighlight } from '@/components/canvas/PinHighlight';
-import { Label } from './Label';
+"use client";
+import { useMemo, memo } from "react";
+import * as THREE from "three";
+import { unoPins, PITCH } from "@/lib/components/physical";
+import { useSimulatorStore } from "@/store/useSimulatorStore";
+import { PinHighlight } from "@/components/canvas/PinHighlight";
+import { Label } from "./Label";
 
 function Box({
   p,
   s,
-  color = '#151719',
+  color = "#151719",
   shadow = false,
 }: {
   p: [number, number, number];
@@ -20,31 +20,44 @@ function Box({
   return (
     <mesh position={p} castShadow={shadow}>
       <boxGeometry args={s} />
-      <meshStandardMaterial color={color} roughness={0.55} metalness={color === '#c2c7cb' ? 0.75 : 0} />
+      <meshStandardMaterial
+        color={color}
+        roughness={0.55}
+        metalness={color === "#c2c7cb" ? 0.75 : 0}
+      />
     </mesh>
   );
 }
 
-export const ArduinoUnoR3 = memo(function ArduinoUnoR3({ id }: { id?: string }) {
-  const on = useSimulatorStore((s) => (id ? s.components.find((c) => c.id === id)?.state.isOn : false) || false);
-  const led = useSimulatorStore((s) => (id ? s.components.find((c) => c.id === id)?.state.builtinLED : false) || false);
+export const ArduinoUnoR3 = memo(function ArduinoUnoR3({
+  id,
+}: {
+  id?: string;
+}) {
+  const on = useSimulatorStore(
+    (s) =>
+      (id ? s.components.find((c) => c.id === id)?.state.isOn : false) || false,
+  );
+  const led = useSimulatorStore(
+    (s) =>
+      (id ? s.components.find((c) => c.id === id)?.state.builtinLED : false) ||
+      false,
+  );
 
   const shape = useMemo(() => {
     const s = new THREE.Shape();
-    s.moveTo(-6.86, -5.34);
-    s.lineTo(6.1, -5.34);
-    s.lineTo(6.86, -4.58);
-    s.lineTo(6.86, 3.56);
-    s.lineTo(6.1, 4.32);
-    s.lineTo(6.1, 5.34);
-    s.lineTo(-6.86, 5.34);
+    // A000066 mechanical drawing, mm converted at 0.2 units/mm.
+    s.moveTo(-6.858, -5.334);
+    s.lineTo(6.35, -5.334);
+    s.lineTo(6.35, -4.826);
+    s.lineTo(6.858, -4.318);
+    s.lineTo(6.858, 2.286);
+    s.lineTo(6.35, 2.794);
+    s.lineTo(6.35, 5.08);
+    s.lineTo(6.096, 5.334);
+    s.lineTo(-6.858, 5.334);
     s.closePath();
-    for (const [x, z] of [
-      [-6.352, 2.794],
-      [-3.048, -4.318],
-      [5.84, -4.318],
-      [5.84, 3.81],
-    ]) {
+    for (const [x, z] of [[-3.81,4.826],[-4.064,-4.826],[6.35,1.778],[6.35,-3.81]]) {
       const h = new THREE.Path();
       h.absarc(x, z, 0.32, 0, Math.PI * 2, true);
       s.holes.push(h);
@@ -55,8 +68,18 @@ export const ArduinoUnoR3 = memo(function ArduinoUnoR3({ id }: { id?: string }) 
   return (
     <group>
       {/* PCB board */}
-      <mesh rotation={[Math.PI / 2, 0, 0]} position={[0, 0.32, 0]} castShadow receiveShadow>
-        <extrudeGeometry args={[shape, { depth: 0.32, bevelEnabled: false, curveSegments: 16 }]} />
+      <mesh
+        rotation={[Math.PI / 2, 0, 0]}
+        position={[0, 0.32, 0]}
+        castShadow
+        receiveShadow
+      >
+        <extrudeGeometry
+          args={[
+            shape,
+            { depth: 0.32, bevelEnabled: false, curveSegments: 16 },
+          ]}
+        />
         <meshStandardMaterial color="#087b83" roughness={0.7} />
       </mesh>
       {/* USB type B metal shell and recessed socket, on left edge. */}
@@ -80,15 +103,20 @@ export const ArduinoUnoR3 = memo(function ArduinoUnoR3({ id }: { id?: string }) 
       {[-1, 1].flatMap((side) =>
         Array.from({ length: 14 }, (_, i) => (
           <Box
-            key={side + ':' + i}
+            key={side + ":" + i}
             p={[2.15 - 6.5 * PITCH + i * PITCH, 0.69, -1.25 + side * 0.87]}
             s={[0.11, 0.42, 0.15]}
             color="#c2c7cb"
           />
-        ))
+        )),
       )}
       {/* R3 four header groups, from the same coordinates used by wiring. */}
-      {[[0, 7], [8, 17], [18, 25], [26, 31]].map(([a, b]) => {
+      {[
+        [0, 7],
+        [8, 17],
+        [18, 25],
+        [26, 31],
+      ].map(([a, b]) => {
         const first = unoPins[a].position;
         const last = unoPins[b].position;
         return (
@@ -100,13 +128,24 @@ export const ArduinoUnoR3 = memo(function ArduinoUnoR3({ id }: { id?: string }) 
         );
       })}
       {unoPins
-        .filter((p) => !p.id.includes('ICSP'))
+        .filter((p) => !p.id.includes("ICSP"))
         .map((p) => (
           <group key={p.id}>
-            <Box p={[p.position[0], 2.023, p.position[2]]} s={[0.2, 0.012, 0.2]} color="#030405" />
+            <Box
+              p={[p.position[0], 2.023, p.position[2]]}
+              s={[0.2, 0.012, 0.2]}
+              color="#030405"
+            />
             <Label
-              text={p.id.replace('GND1', 'GND').replace('GND2', 'GND').replace('GND3', 'GND')}
-              position={[p.position[0], 0.333, p.position[2] + (p.position[2] > 0 ? -0.54 : 0.54)]}
+              text={p.id
+                .replace("GND1", "GND")
+                .replace("GND2", "GND")
+                .replace("GND3", "GND")}
+              position={[
+                p.position[0],
+                0.333,
+                p.position[2] + (p.position[2] > 0 ? -0.54 : 0.54),
+              ]}
               size={0.16}
               rotation={Math.PI / 2}
             />
@@ -115,15 +154,28 @@ export const ArduinoUnoR3 = memo(function ArduinoUnoR3({ id }: { id?: string }) 
       {/* Main ICSP pins; USB ICSP is visual (USB MCU not emulated). */}
       {[0, 1].map((i) => (
         <group key={i}>
-          {i === 0 ? <Box p={[6.154, 0.65, 0]} s={[1.016, 0.65, 1.524]} /> : <Box p={[-4.25, 0.65, 3.75]} s={[1.016, 0.65, 1.524]} />}
+          {i === 0 ? (
+            <Box p={[6.154, 0.65, 0]} s={[1.016, 0.65, 1.524]} />
+          ) : (
+            <Box p={[-4.25, 0.65, 3.75]} s={[1.016, 0.65, 1.524]} />
+          )}
           {(i === 0
-            ? unoPins.filter((p) => p.id.startsWith('ICSP'))
+            ? unoPins.filter((p) => p.id.startsWith("ICSP"))
             : Array.from({ length: 6 }, (_, j) => ({
                 id: String(j),
-                position: [-4.504 + (j % 2) * PITCH, 1.9, 3.75 + (Math.floor(j / 2) - 1) * PITCH] as [number, number, number],
+                position: [
+                  -4.504 + (j % 2) * PITCH,
+                  1.9,
+                  3.75 + (Math.floor(j / 2) - 1) * PITCH,
+                ] as [number, number, number],
               }))
           ).map((p) => (
-            <Box key={p.id} p={[p.position[0], 1.4, p.position[2]]} s={[0.128, 1, 0.128]} color="#c2c7cb" />
+            <Box
+              key={p.id}
+              p={[p.position[0], 1.4, p.position[2]]}
+              s={[0.128, 1, 0.128]}
+              color="#c2c7cb"
+            />
           ))}
         </group>
       ))}
@@ -148,7 +200,7 @@ export const ArduinoUnoR3 = memo(function ArduinoUnoR3({ id }: { id?: string }) 
         onClick={(e) => {
           e.stopPropagation();
           const s = useSimulatorStore.getState();
-          if (s.simulationState !== 'stopped') {
+          if (s.simulationState !== "stopped") {
             s.stopSimulation();
             s.startSimulation();
           }
@@ -163,21 +215,32 @@ export const ArduinoUnoR3 = memo(function ArduinoUnoR3({ id }: { id?: string }) 
       <Label text="DIGITAL (PWM ~)" position={[2, 0.34, 3.5]} size={0.22} />
       <Label text="POWER" position={[0.5, 0.34, -3.75]} size={0.25} />
       <Label text="ANALOG IN" position={[4.7, 0.34, -3.75]} size={0.25} />
-      {[[0, 2.2, 'L', led], [-0.8, 2.2, 'TX', false], [-1.6, 2.2, 'RX', false], [4, 1, 'ON', on]].map(([x, z, name, lit]) => (
+      {[
+        [0, 2.2, "L", led],
+        [-0.8, 2.2, "TX", false],
+        [-1.6, 2.2, "RX", false],
+        [4, 1, "ON", on],
+      ].map(([x, z, name, lit]) => (
         <group key={String(name)}>
           <mesh position={[Number(x), 0.45, Number(z)]}>
             <boxGeometry args={[0.3, 0.2, 0.15]} />
             <meshStandardMaterial
-              color={lit ? '#bfff5a' : '#857b35'}
-              emissive={lit ? '#b2ff36' : '#000000'}
+              color={lit ? "#bfff5a" : "#857b35"}
+              emissive={lit ? "#b2ff36" : "#000000"}
               emissiveIntensity={lit ? 2 : 0}
             />
           </mesh>
-          <Label text={String(name)} position={[Number(x), 0.34, Number(z) + 0.3]} size={0.14} />
+          <Label
+            text={String(name)}
+            position={[Number(x), 0.34, Number(z) + 0.3]}
+            size={0.14}
+          />
         </group>
       ))}
-      {id && unoPins.map((p) => <PinHighlight key={p.id} componentId={id} pin={p} />)}
+      {id &&
+        unoPins.map((p) => (
+          <PinHighlight key={p.id} componentId={id} pin={p} />
+        ))}
     </group>
   );
 });
-

@@ -6,17 +6,20 @@
     "dev": "next dev --webpack",
     "build": "next build",
     "start": "next start",
-    "lint": "eslint"
+    "lint": "eslint",
+    "test": "node tests/run.cjs"
   },
   "dependencies": {
     "@mediapipe/tasks-vision": "^0.10.35",
     "@monaco-editor/react": "^4.7.0",
+    "@next/swc-darwin-arm64": "^16.2.6",
     "@react-three/drei": "^10.7.7",
     "@react-three/fiber": "^9.6.1",
     "@use-gesture/react": "^10.3.1",
     "clsx": "^2.1.1",
     "lucide-react": "^1.16.0",
     "next": "16.2.6",
+    "next-themes": "^0.4.6",
     "react": "19.2.4",
     "react-dom": "19.2.4",
     "tailwind-merge": "^3.6.0",

@@ -2,6 +2,8 @@
 
 import { useMemo } from 'react';
 import * as THREE from 'three';
+import { ComponentRegistry } from '@/lib/components/ComponentRegistry';
+import { PinHighlight } from '@/components/canvas/PinHighlight';
 
 interface ResistorProps {
   id: string;
@@ -30,11 +32,12 @@ export function Resistor({ id }: ResistorProps) {
 
   // Resistor is about 6mm long body, 2mm diameter
   const bodyLen = 1.2;
-  const bodyR = 0.15;
+  const bodyR = 0.24;
   const legLen = 1.2;
 
   return (
     <group>
+      {ComponentRegistry.get('resistor_220')!.pins.map(p=><PinHighlight key={p.id} componentId={id} pin={p}/>)}
       {/* Body */}
       <mesh material={bodyMaterial} position={[0, 0.2, 0]} rotation={[0, 0, Math.PI / 2]} castShadow>
         <cylinderGeometry args={[bodyR, bodyR, bodyLen, 12]} />

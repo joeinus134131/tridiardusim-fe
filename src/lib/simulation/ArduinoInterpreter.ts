@@ -1,179 +1,37 @@
 import { useSimulatorStore } from '@/store/useSimulatorStore';
-import { ComponentRegistry } from '../components/ComponentRegistry';
-import { clamp } from '../utils';
-
-// Global execution context for the interpreted code
-const ctx: any = {
-  pins: new Map<number, { mode: string, digitalValue: number, analogValue: number }>(),
-  timeMs: 0,
-};
-
 export class ArduinoInterpreter {
-  private isRunning = false;
-  private currentTimeout: any = null;
-  private loopInterval: any = null;
-
-  start() {
-    this.isRunning = true;
-    ctx.timeMs = 0;
-    
-    // Reset virtual pins
-    ctx.pins.clear();
-    for (let i = 0; i <= 20; i++) {
-      ctx.pins.set(i, { mode: 'INPUT', digitalValue: 0, analogValue: 0 });
-    }
-
-    const store = useSimulatorStore.getState();
-    const code = store.code;
-
-    // Transpile Arduino C++ to JS
-    // MVP limitation: Very basic regex replacement. A real parser (like esprima + custom AST) or WASM is needed for full C++
-    let jsCode = code
-      .replace(/void setup\s*\(\)\s*\{/g, 'async function setup() {')
-      .replace(/void loop\s*\(\)\s*\{/g, 'async function loop() {')
-      .replace(/int /g, 'let ')
-      .replace(/float /g, 'let ')
-      .replace(/String /g, 'let ')
-      .replace(/bool /g, 'let ')
-      .replace(/byte /g, 'let ')
-      .replace(/delay\(/g, 'await delay('); // Make delay non-blocking
-
-    // API Implementations
-    const api = `
-      const HIGH = 1;
-      const LOW = 0;
-      const INPUT = 'INPUT';
-      const OUTPUT = 'OUTPUT';
-      const INPUT_PULLUP = 'INPUT_PULLUP';
-      const LED_BUILTIN = 13;
-
-      function pinMode(pin, mode) {
-        if (ctx.pins.has(pin)) {
-          ctx.pins.get(pin).mode = mode;
+  private worker:Worker|null=null;
+  private unsubscribe:(()=>void)|null=null;
+  private warningKey='';
+  start(){
+    if(useSimulatorStore.getState().simulationState==='paused'&&this.worker){this.worker.postMessage({type:'resume'});useSimulatorStore.setState({simulationState:'running'});return;}
+    this.stop();
+    const store=useSimulatorStore.getState();
+    try{
+      this.worker=new Worker(new URL('./simulation.worker.ts',import.meta.url));
+      const worker=this.worker;
+      worker.onmessage=({data:m})=>{
+        if(this.worker!==worker)return;
+        if(m.type==='frame'){
+          useSimulatorStore.setState(s=>({components:s.components.map(c=>{const next=m.states[c.id];return next&&Object.entries(next).some(([k,v])=>c.state[k]!==v)?{...c,state:{...c.state,...next}}:c;}),diagnostics:m.warnings,elapsedMs:m.elapsed,voltages:m.voltages}));
+          const key=m.warnings.join('|');if(key&&key!==this.warningKey)store.addSerialMessage({type:'warning',message:key+'\n'});this.warningKey=key;
         }
-      }
-
-      function digitalWrite(pin, val) {
-        if (ctx.pins.has(pin)) {
-          ctx.pins.get(pin).digitalValue = val;
-          // Trigger component updates
-          updateComponents(pin, 'digital', val);
-        }
-      }
-
-      function digitalRead(pin) {
-        // Find which component is connected to this pin and read its state
-        return readComponentState(pin, 'digital');
-      }
-
-      function analogWrite(pin, val) {
-        if (ctx.pins.has(pin)) {
-          ctx.pins.get(pin).analogValue = val;
-          updateComponents(pin, 'pwm', val);
-        }
-      }
-
-      function analogRead(pin) {
-        // e.g. A0 is usually pin 14 in raw indexing
-        return readComponentState(pin, 'analog');
-      }
-
-      const Serial = {
-        begin: (baud) => { console.log('Serial begin', baud); },
-        print: (msg) => { printSerial(msg); },
-        println: (msg) => { printSerial(msg + '\\n'); }
+        if(m.type==='serial')store.addSerialMessage({type:'data',message:m.text});
+        if(m.type==='baud')useSimulatorStore.setState({sketchBaudRate:m.baud});
+        if(m.type==='warning')store.addSerialMessage({type:'warning',message:m.message+'\n'});
+        if(m.type==='error'){this.stop();useSimulatorStore.setState({simulationState:'stopped',diagnostics:[m.message]});store.addSerialMessage({type:'error',message:m.message+'\n'});}
       };
-
-      const delay = ms => new Promise(res => setTimeout(res, ms));
-      const millis = () => ctx.timeMs;
-    `;
-
-    // Inject into function body
-    const executor = new Function('ctx', 'updateComponents', 'readComponentState', 'printSerial', `
-      return (async function() {
-        ${api}
-        ${jsCode}
-        
-        try {
-          if (typeof setup === 'function') await setup();
-          return loop; // Return the loop function to be called repeatedly
-        } catch(e) {
-          console.error(e);
-          printSerial('Error: ' + e.message + '\\n');
-          return null;
-        }
-      })();
-    `);
-
-    // Bridge functions
-    const updateComponents = (pin: number, type: string, value: number) => {
-      // Very naive mapping for MVP: assume pin 13 is the LED if an LED exists
-      const store = useSimulatorStore.getState();
-      
-      // Real logic: traverse wires from Arduino Pin to Component
-      // Fake logic for MVP Blink test:
-      if (pin === 13) {
-        store.components.forEach(c => {
-          if (c.typeId === 'led_red') {
-            store.updateComponentState(c.id, { isOn: value === 1, brightness: type === 'pwm' ? value : 0 });
-          }
-        });
-      }
-    };
-
-    const readComponentState = (pin: number, type: string) => {
-      const store = useSimulatorStore.getState();
-      // Fake logic: if reading pin 2, look for a button
-      if (pin === 2 || pin === 'D2') {
-         const btn = store.components.find(c => c.typeId === 'push_button');
-         if (btn) return btn.state.isPressed ? 1 : 0;
-      }
-      if (pin === 14 || pin === 'A0') {
-         const pot = store.components.find(c => c.typeId === 'potentiometer');
-         if (pot) return Math.floor(pot.state.value * 1023);
-      }
-      return 0;
-    };
-
-    const printSerial = (msg: string) => {
-      useSimulatorStore.getState().addSerialMessage({ message: String(msg), type: 'info' });
-    };
-
-    // Execute
-    executor(ctx, updateComponents, readComponentState, printSerial).then((loopFn: any) => {
-      if (!loopFn) return;
-      
-      const runLoop = async () => {
-        if (!this.isRunning) return;
-        try {
-          await loopFn();
-          ctx.timeMs += 16; // increment time roughly by tick
-          this.currentTimeout = setTimeout(runLoop, 16);
-        } catch(e: any) {
-          console.error(e);
-          printSerial('Error in loop: ' + e.message + '\n');
-          this.stop();
-        }
-      };
-
-      runLoop();
-    });
+      worker.onerror=e=>{this.stop();useSimulatorStore.setState({simulationState:'stopped',diagnostics:[e.message]});store.addSerialMessage({type:'error',message:e.message+'\n'});};
+      worker.postMessage({type:'start',code:store.code,components:store.components,wires:store.wires});
+      // Derived output updates do not feed back into the worker.
+      let previous=this.circuitSignature();
+      this.unsubscribe=useSimulatorStore.subscribe(()=>{const next=this.circuitSignature();if(next!==previous){previous=next;const s=useSimulatorStore.getState();worker.postMessage({type:'circuit',components:s.components,wires:s.wires});}});
+      useSimulatorStore.setState({simulationState:'running',diagnostics:[],elapsedMs:0});
+    }catch(e){this.stop();useSimulatorStore.setState({simulationState:'stopped',diagnostics:[String(e)]});}
   }
-
-  stop() {
-    this.isRunning = false;
-    if (this.currentTimeout) clearTimeout(this.currentTimeout);
-    if (this.loopInterval) clearInterval(this.loopInterval);
-    
-    // Turn everything off
-    const store = useSimulatorStore.getState();
-    store.components.forEach(c => {
-      if (c.typeId === 'led_red') {
-        store.updateComponentState(c.id, { isOn: false, brightness: 0 });
-      }
-    });
-  }
+  private circuitSignature(){const s=useSimulatorStore.getState();return JSON.stringify([s.components.map(c=>[c.id,c.typeId,c.state.value,c.state.isPressed,c.state.resistance]),s.wires]);}
+  send(text:string){this.worker?.postMessage({type:'serial',bytes:Array.from(new TextEncoder().encode(text))});}
+  pause(){this.worker?.postMessage({type:'pause'});}
+  stop(){this.unsubscribe?.();this.unsubscribe=null;this.worker?.terminate();this.worker=null;this.warningKey='';useSimulatorStore.setState(s=>({voltages:{},components:s.components.map(c=>c.typeId==='led_red'||c.typeId==='arduino_uno'?{...c,state:{...c.state,isOn:false,builtinLED:false,brightness:0,currentMa:0}}:c)}));}
 }
-
-// Singleton instance
-export const arduinoEngine = new ArduinoInterpreter();
+export const arduinoEngine=new ArduinoInterpreter();

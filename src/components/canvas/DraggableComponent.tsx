@@ -1,134 +1,79 @@
 'use client';
-
-import { useThree } from '@react-three/fiber';
-import { useRef, useState, useCallback, useMemo } from 'react';
+import { ThreeEvent } from '@react-three/fiber';
+import { useRef, useState, memo } from 'react';
 import * as THREE from 'three';
 import { useSimulatorStore } from '@/store/useSimulatorStore';
-import { GRID_SIZE } from '@/lib/constants';
-import { snapToGrid } from '@/lib/utils';
 
-interface DraggableComponentProps {
+const groundPlane = new THREE.Plane(new THREE.Vector3(0, 1, 0), 0);
+const hitPoint = new THREE.Vector3();
+
+export const DraggableComponent = memo(function DraggableComponent({
+  id,
+  position,
+  rotation,
+  children,
+}: {
   id: string;
   position: [number, number, number];
   rotation: [number, number, number];
   children: React.ReactNode;
-}
+}) {
+  const drag = useRef<{ dx: number; dz: number } | null>(null);
+  const [dragging, setDragging] = useState(false);
+  const selected = useSimulatorStore((s) => s.selectedComponentId === id);
 
-export function DraggableComponent({ id, position, rotation, children }: DraggableComponentProps) {
-  const { camera, gl } = useThree();
-  const groupRef = useRef<THREE.Group>(null);
-  
-  const [isDragging, setIsDragging] = useState(false);
-  const [dragPos, setDragPos] = useState<[number, number, number]>(position);
-  const dragStartRef = useRef<THREE.Vector3 | null>(null);
-  const offsetRef = useRef<THREE.Vector3>(new THREE.Vector3());
-  
-  const updateComponentPosition = useSimulatorStore(state => state.updateComponentPosition);
-  const selectComponent = useSimulatorStore(state => state.selectComponent);
-  const isSelected = useSimulatorStore(state => state.selectedComponentId === id);
+  const getIntersect = (e: ThreeEvent<PointerEvent>) => {
+    groundPlane.constant = -position[1];
+    return e.ray.intersectPlane(groundPlane, hitPoint);
+  };
 
-  // Reuse objects to avoid GC pressure
-  const plane = useMemo(() => new THREE.Plane(new THREE.Vector3(0, 1, 0), 0), []);
-  const raycaster = useMemo(() => new THREE.Raycaster(), []);
-  const pointerVec = useMemo(() => new THREE.Vector2(), []);
-  const intersectPoint = useMemo(() => new THREE.Vector3(), []);
-
-  const getGroundPoint = useCallback((clientX: number, clientY: number): THREE.Vector3 | null => {
-    const rect = gl.domElement.getBoundingClientRect();
-    pointerVec.x = ((clientX - rect.left) / rect.width) * 2 - 1;
-    pointerVec.y = -((clientY - rect.top) / rect.height) * 2 + 1;
-    raycaster.setFromCamera(pointerVec, camera);
-    if (raycaster.ray.intersectPlane(plane, intersectPoint)) {
-      return intersectPoint.clone();
-    }
-    return null;
-  }, [camera, gl, plane, raycaster, pointerVec, intersectPoint]);
-
-  const handlePointerDown = useCallback((e: any) => {
+  const end = (e: ThreeEvent<PointerEvent>) => {
+    if (!drag.current) return;
     e.stopPropagation();
-    // Only start drag on left click
-    if (e.button !== undefined && e.button !== 0) return;
-
-    selectComponent(id);
-    
-    const point = getGroundPoint(e.clientX, e.clientY);
-    if (!point) return;
-    
-    // Calculate the offset between the click point and the component position
-    offsetRef.current.set(
-      point.x - position[0],
-      0,
-      point.z - position[2]
-    );
-    
-    dragStartRef.current = point;
-    setIsDragging(true);
-    setDragPos(position);
-    
-    // Capture pointer to track movement outside canvas
-    (e.target as HTMLElement)?.setPointerCapture?.(e.pointerId);
-  }, [id, position, selectComponent, getGroundPoint]);
-
-  const handlePointerMove = useCallback((e: any) => {
-    if (!isDragging) return;
-    e.stopPropagation();
-
-    const point = getGroundPoint(e.clientX, e.clientY);
-    if (!point) return;
-    
-    // Subtract offset so the object doesn't jump to cursor
-    const rawX = point.x - offsetRef.current.x;
-    const rawZ = point.z - offsetRef.current.z;
-    
-    const snappedX = snapToGrid(rawX, GRID_SIZE);
-    const snappedZ = snapToGrid(rawZ, GRID_SIZE);
-    
-    const newPos: [number, number, number] = [snappedX, position[1], snappedZ];
-    setDragPos(newPos);
-  }, [isDragging, position, getGroundPoint]);
-
-  const handlePointerUp = useCallback((e: any) => {
-    if (!isDragging) return;
-    e.stopPropagation();
-    
-    setIsDragging(false);
-    updateComponentPosition(id, dragPos);
-    dragStartRef.current = null;
-    
-    (e.target as HTMLElement)?.releasePointerCapture?.(e.pointerId);
-  }, [isDragging, dragPos, id, updateComponentPosition]);
-
-  const currentPos = isDragging ? dragPos : position;
+    drag.current = null;
+    setDragging(false);
+    (e.target as Element)?.releasePointerCapture(e.pointerId);
+  };
 
   return (
-    <group 
-      ref={groupRef}
-      position={currentPos}
+    <group
+      position={position}
       rotation={rotation}
-      onPointerDown={handlePointerDown}
-      onPointerMove={handlePointerMove}
-      onPointerUp={handlePointerUp}
+      onPointerDown={(e) => {
+        if (e.button !== 0) return;
+        e.stopPropagation();
+        const s = useSimulatorStore.getState();
+        s.selectComponent(id);
+        if (s.wiringState.active) return;
+        const p = getIntersect(e);
+        if (!p) return;
+        drag.current = { dx: p.x - position[0], dz: p.z - position[2] };
+        setDragging(true);
+        (e.target as Element)?.setPointerCapture(e.pointerId);
+      }}
+      onPointerMove={(e) => {
+        if (!drag.current) return;
+        e.stopPropagation();
+        const p = getIntersect(e);
+        if (p) {
+          useSimulatorStore.getState().updateComponentPosition(id, [
+            Math.round((p.x - drag.current.dx) / 0.508) * 0.508,
+            position[1],
+            Math.round((p.z - drag.current.dz) / 0.508) * 0.508,
+          ]);
+        }
+      }}
+      onPointerUp={end}
+      onPointerCancel={end}
     >
-      {/* Selection ring on the ground */}
-      {isSelected && (
-        <mesh position={[0, 0.05, 0]} rotation={[-Math.PI / 2, 0, 0]}>
-          <ringGeometry args={[6, 7, 32]} />
-          <meshBasicMaterial color="#3b82f6" opacity={0.5} transparent side={THREE.DoubleSide} />
+      {selected && (
+        <mesh position={[0, 0.01, 0]} rotation={[-Math.PI / 2, 0, 0]}>
+          <ringGeometry args={[1.15, 1.22, 24]} />
+          <meshBasicMaterial color={dragging ? '#fbbf24' : '#55aaff'} transparent opacity={0.5} />
         </mesh>
       )}
-      
-      {/* Lift effect when dragging */}
-      <group position={[0, isDragging ? 1.5 : 0, 0]}>
-        {children}
-      </group>
-
-      {/* Drop shadow when dragging */}
-      {isDragging && (
-        <mesh position={[0, 0.02, 0]} rotation={[-Math.PI / 2, 0, 0]}>
-          <circleGeometry args={[5, 32]} />
-          <meshBasicMaterial color="#000000" opacity={0.15} transparent />
-        </mesh>
-      )}
+      {children}
     </group>
   );
-}
+});
+

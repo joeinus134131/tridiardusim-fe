@@ -16,7 +16,7 @@ export interface CircuitComponent {
   type: ComponentType;
   position: [number, number, number]; // World position [x, y, z]
   rotation: [number, number, number]; // Euler rotation [x, y, z]
-  state: Record<string, any>;         // Internal state (e.g., color, isOn, value)
+  state: Record<string, number | string | boolean>;         // Internal state (e.g., color, isOn, value)
   pins: PinDefinition[];
 }
 

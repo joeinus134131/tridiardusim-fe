@@ -2,7 +2,6 @@
 
 import { useState } from 'react';
 import { Bot, User, Send, X, Sparkles, Loader2 } from 'lucide-react';
-import { useSimulatorStore } from '@/store/useSimulatorStore';
 
 interface ChatMessage {
   id: string;

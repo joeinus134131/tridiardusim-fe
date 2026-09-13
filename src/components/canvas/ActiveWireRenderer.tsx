@@ -44,7 +44,7 @@ export function ActiveWireRenderer() {
   return (
     <group>
       <mesh>
-        <tubeGeometry args={[curve, 20, 0.4, 8, false]} />
+        <tubeGeometry args={[curve, 20, 0.075, 6, false]} />
         <meshStandardMaterial 
           color="#3b82f6" // Default blue for drawing
           roughness={0.6}
@@ -54,7 +54,7 @@ export function ActiveWireRenderer() {
       </mesh>
       {/* End tip matching current mouse pos */}
       <mesh position={endPos}>
-        <sphereGeometry args={[0.5, 16, 16]} />
+        <sphereGeometry args={[0.15, 8, 6]} />
         <meshBasicMaterial color="#3b82f6" />
       </mesh>
     </group>

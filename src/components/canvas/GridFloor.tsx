@@ -1,12 +1,13 @@
 'use client';
 
+import type { ThreeEvent } from '@react-three/fiber';
 import { Grid } from '@react-three/drei';
 import * as THREE from 'three';
 import { useMemo } from 'react';
 import { useSimulatorStore } from '@/store/useSimulatorStore';
 
 export function GridFloor() {
-  const wiringState = useSimulatorStore((state) => state.wiringState);
+  const isWiringActive = useSimulatorStore((state) => state.wiringState.active);
   const updateWiringTarget = useSimulatorStore((state) => state.updateWiringTarget);
   const cancelWiring = useSimulatorStore((state) => state.cancelWiring);
 
@@ -16,15 +17,15 @@ export function GridFloor() {
     metalness: 0.05,
   }), []);
 
-  const handlePointerMove = (e: any) => {
-    if (wiringState.active) {
+  const handlePointerMove = (e: ThreeEvent<PointerEvent>) => {
+    if (isWiringActive) {
       e.stopPropagation();
       updateWiringTarget([e.point.x, e.point.y, e.point.z]);
     }
   };
 
-  const handlePointerUp = (e: any) => {
-    if (wiringState.active) {
+  const handlePointerUp = (e: ThreeEvent<PointerEvent>) => {
+    if (isWiringActive) {
       e.stopPropagation();
       cancelWiring();
     }
@@ -37,7 +38,7 @@ export function GridFloor() {
         rotation={[-Math.PI / 2, 0, 0]} 
         position={[0, 0, 0]} 
         onPointerMove={handlePointerMove}
-        onPointerUp={handlePointerUp}
+        onPointerDown={handlePointerUp}
       >
         <planeGeometry args={[1000, 1000]} />
         <meshBasicMaterial visible={false} />

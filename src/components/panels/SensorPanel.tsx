@@ -2,7 +2,7 @@
 
 import { useState } from 'react';
 import { useSimulatorStore } from '@/store/useSimulatorStore';
-import { ChevronDown, ChevronUp, Sliders, Trash2 } from 'lucide-react';
+import { ChevronDown, ChevronUp, Sliders } from 'lucide-react';
 
 export function SensorPanel() {
   const components = useSimulatorStore(state => state.components);
@@ -59,7 +59,7 @@ export function SensorPanel() {
               <div>
                 <div className="flex justify-between text-xs text-[var(--text-muted)] mb-1">
                   <span>0</span>
-                  <span>{Math.floor((sensor.state?.value || 0) * 1023)}</span>
+                  <span>{Math.floor(Number(sensor.state?.value || 0) * 1023)}</span>
                   <span>1023</span>
                 </div>
                 <input 
@@ -67,7 +67,7 @@ export function SensorPanel() {
                   min="0" 
                   max="1" 
                   step="0.01" 
-                  value={sensor.state?.value || 0}
+                  value={Number(sensor.state?.value || 0)}
                   onChange={(e) => updateComponentState(sensor.id, { value: parseFloat(e.target.value) })}
                   className="w-full accent-[var(--accent)]"
                 />

@@ -1,62 +1,82 @@
 'use client';
-
-import { useMemo, useState } from 'react';
+import { useState, memo, useCallback } from 'react';
+import { Html } from '@react-three/drei';
 import * as THREE from 'three';
-import { PinDefinition } from '@/lib/components/componentTypes';
+import type { PinDefinition } from '@/lib/components/componentTypes';
 import { useSimulatorStore } from '@/store/useSimulatorStore';
-import { COLORS } from '@/lib/constants';
 
-interface PinHighlightProps {
+// Shared geometry across all pin highlights to prevent geometry recreation
+const pinGeometry = new THREE.SphereGeometry(0.19, 8, 6);
+
+export const PinHighlight = memo(function PinHighlight({
+  componentId,
+  pin,
+}: {
   componentId: string;
   pin: PinDefinition;
-}
+}) {
+  const [hover, setHover] = useState(false);
+  
+  // Specific primitive selectors avoid re-rendering on mousemove (currentTargetPos updates)
+  const isWiringActive = useSimulatorStore((s) => s.wiringState.active);
+  const isSource = useSimulatorStore(
+    (s) => s.wiringState.sourceComponentId === componentId && s.wiringState.sourcePinId === pin.id
+  );
+  const isSelected = useSimulatorStore((s) => s.selectedComponentId === componentId);
 
-export function PinHighlight({ componentId, pin }: PinHighlightProps) {
-  const [isHovered, setIsHovered] = useState(false);
-  const startWiring = useSimulatorStore(state => state.startWiring);
-  const finishWiring = useSimulatorStore(state => state.finishWiring);
-  const wiringState = useSimulatorStore(state => state.wiringState);
+  const handleClick = useCallback(
+    (e: { stopPropagation: () => void }) => {
+      e.stopPropagation();
+      const s = useSimulatorStore.getState();
+      if (s.wiringState.active) {
+        s.finishWiring(componentId, pin.id);
+      } else {
+        s.startWiring(componentId, pin.id);
+      }
+    },
+    [componentId, pin.id]
+  );
 
-  // Material for the pin interaction zone
-  const material = useMemo(() => new THREE.MeshBasicMaterial({
-    color: isHovered ? COLORS.pin.hover : COLORS.pin.normal,
-    transparent: true,
-    opacity: isHovered ? 0.8 : 0.0, // Invisible until hovered
-    depthTest: false, // Ensure it renders over the component body
-  }), [isHovered]);
-
-  const handlePointerDown = (e: any) => {
-    e.stopPropagation();
-    // Use pointer capture so we can drag outside the pin
-    (e.target as HTMLElement)?.setPointerCapture?.(e.pointerId);
-    startWiring(componentId, pin.id);
-  };
-
-  const handlePointerUp = (e: any) => {
-    e.stopPropagation();
-    (e.target as HTMLElement)?.releasePointerCapture?.(e.pointerId);
-    
-    if (wiringState.active) {
-      finishWiring(componentId, pin.id);
-    }
-  };
+  const opacity = isSource || hover ? 0.9 : isSelected || isWiringActive ? 0.28 : 0;
+  const color = isSource ? '#fbbf24' : hover ? '#5eead4' : '#94c8ff';
 
   return (
     <group position={pin.position}>
-      {/* The interactable zone */}
-      <mesh 
-        material={material}
-        onPointerOver={(e) => { e.stopPropagation(); setIsHovered(true); }}
-        onPointerOut={(e) => { e.stopPropagation(); setIsHovered(false); }}
-        onPointerDown={handlePointerDown}
-        onPointerUp={handlePointerUp}
+      <mesh
+        geometry={pinGeometry}
+        onPointerOver={(e) => {
+          e.stopPropagation();
+          setHover(true);
+        }}
+        onPointerOut={() => setHover(false)}
+        onPointerDown={(e) => e.stopPropagation()}
+        onClick={handleClick}
       >
-        {/* Slightly larger than the pin itself to make it easy to click */}
-        <sphereGeometry args={[1.5, 16, 16]} />
+        <meshBasicMaterial
+          color={color}
+          transparent
+          opacity={opacity}
+          depthTest={false}
+        />
       </mesh>
-      
-      {/* Pin Name Tooltip (3D Text or HTML overlay) */}
-      {/* For MVP, we'll skip 3D text to save performance, relying on standard HTML tooltips if needed */}
+      {hover && (
+        <Html
+          center
+          position={[0, 0.4, 0]}
+          style={{
+            pointerEvents: 'none',
+            whiteSpace: 'nowrap',
+            background: '#0d1829',
+            color: 'white',
+            fontSize: 11,
+            padding: '3px 6px',
+            borderRadius: 4,
+          }}
+        >
+          {pin.name}
+        </Html>
+      )}
     </group>
   );
-}
+});
+

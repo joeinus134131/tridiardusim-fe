@@ -1,8 +1,9 @@
 'use client';
 
 import { Canvas } from '@react-three/fiber';
-import { Suspense } from 'react';
-import { Environment } from '@react-three/drei';
+import { Suspense, memo } from 'react';
+import * as THREE from 'three';
+
 import { CameraController } from './CameraController';
 import { GridFloor } from './GridFloor';
 import { useSimulatorStore } from '@/store/useSimulatorStore';
@@ -17,11 +18,11 @@ import { Resistor } from '@/components/models/Resistor';
 import { WireRenderer } from '@/components/canvas/WireRenderer';
 import { ActiveWireRenderer } from '@/components/canvas/ActiveWireRenderer';
 
-// Component factory
-function ComponentRenderer({ id, typeId }: { id: string; typeId: string }) {
+// Component factory (memoized to prevent unneeded recreation)
+const ComponentRenderer = memo(function ComponentRenderer({ id, typeId }: { id: string; typeId: string }) {
   switch (typeId) {
     case 'arduino_uno':
-      return <ArduinoUnoR3 />;
+      return <ArduinoUnoR3 id={id} />;
     case 'led_red':
       return <LED id={id} />;
     case 'push_button':
@@ -33,7 +34,7 @@ function ComponentRenderer({ id, typeId }: { id: string; typeId: string }) {
     case 'resistor_220':
       return <Resistor id={id} />;
     case 'jumper_red':
-    case 'jumper_black':
+      case 'jumper_black':
     case 'jumper_blue':
     case 'jumper_green':
     case 'jumper_yellow':
@@ -46,28 +47,34 @@ function ComponentRenderer({ id, typeId }: { id: string; typeId: string }) {
         </mesh>
       );
   }
-}
+});
 
-export function SimulatorCanvas() {
+export const SimulatorCanvas = memo(function SimulatorCanvas() {
   const components = useSimulatorStore((state) => state.components);
 
   return (
     <div className="w-full h-full bg-[#060a14] relative">
       <Canvas
-        shadows
-        dpr={[1, 2]}
+        shadows={{ type: THREE.PCFShadowMap }}
+        dpr={[1, 1.5]}
+        frameloop="always"
         camera={{ position: [0, 25, 25], fov: 45, near: 0.1, far: 500 }}
-        gl={{ antialias: true, alpha: false }}
+        gl={{
+          antialias: true,
+          alpha: false,
+          powerPreference: 'high-performance',
+          stencil: false,
+        }}
       >
         <CameraController />
         
         {/* Lighting — three-point setup */}
-        <ambientLight intensity={0.35} color="#c8d0e0" />
+        <ambientLight intensity={0.9} color="#c8d0e0" />
         <directionalLight
           position={[15, 30, 15]}
           intensity={1.8}
           castShadow
-          shadow-mapSize={[2048, 2048]}
+          shadow-mapSize={[1024, 1024]}
           shadow-camera-left={-30}
           shadow-camera-right={30}
           shadow-camera-top={30}
@@ -78,8 +85,6 @@ export function SimulatorCanvas() {
         />
         <directionalLight position={[-10, 15, -10]} intensity={0.4} color="#a0b0ff" />
         <pointLight position={[0, 20, 0]} intensity={0.3} color="#ffffff" />
-
-        <Environment preset="city" />
 
         {/* Work surface */}
         <GridFloor />
@@ -104,4 +109,5 @@ export function SimulatorCanvas() {
       </Canvas>
     </div>
   );
-}
+});
+

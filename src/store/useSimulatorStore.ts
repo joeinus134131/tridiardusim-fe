@@ -1,9 +1,11 @@
 import { create } from 'zustand';
+import { validWire } from '@/lib/project/project';
 import { CircuitComponent, Wire, SerialMessage } from '@/lib/components/componentTypes';
 import { generateId } from '@/lib/utils';
 import { arduinoEngine } from '@/lib/simulation/ArduinoInterpreter';
 
 interface SimulatorState {
+  cameraView: "perspective" | "top" | "front";
   // Workspace
   components: CircuitComponent[];
   wires: Wire[];
@@ -15,12 +17,16 @@ interface SimulatorState {
   simulationState: 'stopped' | 'running' | 'paused';
   serialOutput: SerialMessage[];
   baudRate: number;
+  sketchBaudRate: number;
+  diagnostics: string[];
+  elapsedMs: number;
+  voltages: Record<string, number>;
   
   // Actions - Workspace
   addComponent: (component: Omit<CircuitComponent, 'id'>) => string;
   updateComponentPosition: (id: string, position: [number, number, number]) => void;
   updateComponentRotation: (id: string, rotation: [number, number, number]) => void;
-  updateComponentState: (id: string, stateUpdate: Record<string, any>) => void;
+  updateComponentState: (id: string, stateUpdate: Record<string, number | string | boolean>) => void;
   removeComponent: (id: string) => void;
   selectComponent: (id: string | null) => void;
   
@@ -51,6 +57,7 @@ interface SimulatorState {
 }
 
 export const useSimulatorStore = create<SimulatorState>((set, get) => ({
+  cameraView: "perspective",
   // Initial State
   components: [],
   wires: [],
@@ -72,6 +79,7 @@ void loop() {
   simulationState: 'stopped',
   serialOutput: [],
   baudRate: 9600,
+  sketchBaudRate: 0, diagnostics: [], elapsedMs: 0, voltages: {},
   
   wiringState: {
     active: false,
@@ -125,6 +133,7 @@ void loop() {
   selectComponent: (id) => set({ selectedComponentId: id, selectedWireId: null }),
 
   addWire: (wire) => {
+    if (!validWire(get().components, get().wires, wire)) return '';
     const id = generateId();
     set((state) => ({
       wires: [...state.wires, { ...wire, id }],
@@ -177,7 +186,7 @@ void loop() {
       };
       
       return {
-        wires: [...state.wires, newWire],
+        wires: validWire(state.components, state.wires, newWire) ? [...state.wires, newWire] : state.wires,
         wiringState: { active: false, sourceComponentId: null, sourcePinId: null, currentTargetPos: null }
       };
     });
@@ -190,7 +199,6 @@ void loop() {
   setCode: (code) => set({ code }),
   
   startSimulation: () => {
-    set({ simulationState: 'running' });
     arduinoEngine.start();
   },
   stopSimulation: () => {
@@ -199,8 +207,7 @@ void loop() {
   },
   pauseSimulation: () => {
     set({ simulationState: 'paused' });
-    // For MVP, just stop
-    arduinoEngine.stop();
+    arduinoEngine.pause();
   },
 
   addSerialMessage: (msg) => {
@@ -210,7 +217,7 @@ void loop() {
       timestamp: Date.now(),
     };
     set((state) => ({
-      serialOutput: [...state.serialOutput, message],
+      serialOutput: [...state.serialOutput.slice(-499), { ...message, message: message.message.slice(-16000) }],
     }));
   },
 

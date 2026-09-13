@@ -1,21 +1,24 @@
 import type { Metadata } from "next";
-import { Inter, JetBrains_Mono } from "next/font/google";
+import localFont from "next/font/local";
+import { ThemeProvider } from "@/components/ThemeProvider";
 import "./globals.css";
 
-const inter = Inter({
+const inter = localFont({
+  src: "./fonts/Inter-latin.woff2",
+  weight: "100 900",
   variable: "--font-geist-sans",
-  subsets: ["latin"],
   display: "swap",
 });
 
-const jetbrainsMono = JetBrains_Mono({
+const jetbrainsMono = localFont({
+  src: "./fonts/JetBrainsMono-latin.woff2",
+  weight: "100 800",
   variable: "--font-geist-mono",
-  subsets: ["latin"],
   display: "swap",
 });
 
 export const metadata: Metadata = {
-  title: "ArduSim — 3D Arduino Simulator",
+  title: "NEXFLUX Lab 3D — 3D Arduino Simulator",
   description:
     "The easiest and most visual Arduino simulator on the web. Drag components, connect wires, write code, and run simulations in your browser.",
   keywords: [
@@ -29,14 +32,15 @@ export const metadata: Metadata = {
     "circuit",
     "education",
   ],
-  authors: [{ name: "ArduSim" }],
+  authors: [{ name: "NEXFLUX" }],
   openGraph: {
-    title: "ArduSim — 3D Arduino Simulator",
+    title: "NEXFLUX Lab 3D — 3D Arduino Simulator",
     description:
       "Drag-and-drop Arduino simulator with 3D visualization. Build circuits, write code, simulate electronics — all in your browser.",
     type: "website",
   },
 };
+
 
 export default function RootLayout({
   children,
@@ -45,11 +49,15 @@ export default function RootLayout({
 }>) {
   return (
     <html
-      lang="en"
+      lang="id"
       className={`${inter.variable} ${jetbrainsMono.variable} h-full`}
       suppressHydrationWarning
     >
-      <body className="h-full overflow-hidden antialiased" suppressHydrationWarning>{children}</body>
+      <body className="h-full overflow-hidden antialiased" suppressHydrationWarning>
+        <ThemeProvider attribute="class" defaultTheme="dark" enableSystem>
+          {children}
+        </ThemeProvider>
+      </body>
     </html>
   );
 }

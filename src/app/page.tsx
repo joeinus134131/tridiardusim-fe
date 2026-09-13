@@ -1,188 +1,556 @@
 'use client';
-
-import { useState } from 'react';
-import { SimulatorCanvas } from '@/components/canvas/SimulatorCanvas';
+import { useState,useEffect,useRef } from 'react';
+import dynamic from 'next/dynamic';
 import { useSimulatorStore } from '@/store/useSimulatorStore';
 import { ComponentRegistry } from '@/lib/components/ComponentRegistry';
 import { CodeEditorPanel } from '@/components/panels/CodeEditorPanel';
-import { SensorPanel } from '@/components/panels/SensorPanel';
 import { SerialMonitor } from '@/components/panels/SerialMonitor';
-import { AIAssistantPanel } from '@/components/panels/AIAssistantPanel';
-import { Play, Square, Plus, Code, Settings, Trash2, ChevronDown, RotateCcw } from 'lucide-react';
+import { ThemeToggle } from '@/components/ThemeToggle';
+import { parseProject, download, Project } from '@/lib/project/project';
+import { physicalInfo } from '@/lib/components/physical';
+import { example, instance } from '@/lib/project/examples';
+import type { CircuitComponent, PinDefinition } from '@/lib/components/componentTypes';
+
+const SimulatorCanvas = dynamic(() => import('@/components/canvas/SimulatorCanvas').then((m) => m.SimulatorCanvas), {
+  ssr: false,
+  loading: () => <p className="p-5">Memuat ruang 3D…</p>,
+});
+const api = process.env.NEXT_PUBLIC_API_URL || 'http://localhost:8080';
+
+function RuntimeStatus() {
+  const simulationState = useSimulatorStore((s) => s.simulationState);
+  const elapsedMs = useSimulatorStore((s) => s.elapsedMs);
+  return (
+    <span className="runtime-status">
+      {simulationState} · {(elapsedMs / 1000).toFixed(1)} s
+    </span>
+  );
+}
+
+function PinVoltages({ component }: { component: CircuitComponent }) {
+  const voltages = useSimulatorStore((s) => s.voltages);
+  const wiringActive = useSimulatorStore((s) => s.wiringState.active);
+  const finishWiring = useSimulatorStore((s) => s.finishWiring);
+  const startWiring = useSimulatorStore((s) => s.startWiring);
+  return (
+    <details>
+      <summary>Pin dan tegangan</summary>
+      {component.pins.map((p: PinDefinition) => (
+        <button
+          className="pin-row"
+          key={p.id}
+          onClick={() => (wiringActive ? finishWiring(component.id, p.id) : startWiring(component.id, p.id))}
+        >
+          {p.id} <span>{voltages[component.id + ':' + p.id]?.toFixed(2) ?? '—'} V</span>
+        </button>
+      ))}
+    </details>
+  );
+}
+
 
 export default function WorkspacePage() {
-  const { 
-    components, 
-    addComponent, 
-    removeComponent,
-    selectedComponentId,
-    simulationState,
-    startSimulation,
-    stopSimulation
-  } = useSimulatorStore();
+  const components = useSimulatorStore((s) => s.components);
+  const wires = useSimulatorStore((s) => s.wires);
+  const code = useSimulatorStore((s) => s.code);
+  const simulationState = useSimulatorStore((s) => s.simulationState);
+  const selectedComponentId = useSimulatorStore((s) => s.selectedComponentId);
+  const isWiringActive = useSimulatorStore((s) => s.wiringState.active);
+  const wiringSourcePinId = useSimulatorStore((s) => s.wiringState.sourcePinId);
+  const cancelWiring = useSimulatorStore((s) => s.cancelWiring);
+  const startSimulation = useSimulatorStore((s) => s.startSimulation);
+  const pauseSimulation = useSimulatorStore((s) => s.pauseSimulation);
+  const stopSimulation = useSimulatorStore((s) => s.stopSimulation);
+  const addComponent = useSimulatorStore((s) => s.addComponent);
+  const selectComponent = useSimulatorStore((s) => s.selectComponent);
+  const selectWire = useSimulatorStore((s) => s.selectWire);
+  const removeWire = useSimulatorStore((s) => s.removeWire);
+  const addWire = useSimulatorStore((s) => s.addWire);
+  const removeComponent = useSimulatorStore((s) => s.removeComponent);
+  const updateComponentPosition = useSimulatorStore((s) => s.updateComponentPosition);
+  const updateComponentRotation = useSimulatorStore((s) => s.updateComponentRotation);
+  const updateComponentState = useSimulatorStore((s) => s.updateComponentState);
+  const diagnostics = useSimulatorStore((s) => s.diagnostics);
 
-  const [activeCategory, setActiveCategory] = useState<string>('All');
+  const [query, setQuery] = useState('');
+  const [name, setName] = useState('Rangkaian saya');
+  const [notice, setNotice] = useState('');
+  const [tab, setTab] = useState('komponen');
+  const [projects, setProjects] = useState<{ id: string; name: string }[]>([]);
+  const [saved, setSaved] = useState('');
+  const [from, setFrom] = useState('');
+  const [to, setTo] = useState('');
+  const [color, setColor] = useState('#3b82f6');
+  const [help, setHelp] = useState(false);
+  const [busy, setBusy] = useState(false);
+  const file = useRef<HTMLInputElement>(null);
 
-  const categories = ['All', 'Boards', 'Basic', 'Wiring', 'Sensors', 'Actuators', 'Displays'];
-
-  const filteredComponents = activeCategory === 'All'
-    ? ComponentRegistry.getAll()
-    : ComponentRegistry.getByCategory(activeCategory);
-
-  const handleAddComponent = (typeId: string) => {
-    const config = ComponentRegistry.get(typeId);
-    if (!config) return;
-    
-    // Offset spawning position so components don't stack
-    const offset = components.length * 3;
-    
-    addComponent({
-      typeId,
-      name: config.name,
-      type: config.type,
-      position: [offset % 20, 0, Math.floor(offset / 20) * 3],
-      rotation: [0, 0, 0],
-      state: { ...config.defaultState },
-      pins: [...config.pins]
+  const snapshot = (): Project => ({ version: 1, name, code, components, wires });
+  const load = (p: Project) => {
+    stopSimulation();
+    useSimulatorStore.setState({
+      components: p.components,
+      wires: p.wires,
+      code: p.code,
+      selectedComponentId: null,
+      selectedWireId: null,
+      diagnostics: [],
+      elapsedMs: 0,
+      serialOutput: [],
+      sketchBaudRate: 0,
     });
+    cancelWiring();
+    setName(p.name);
+    setFrom('');
+    setTo('');
   };
 
-  const selectedComponent = components.find(c => c.id === selectedComponentId);
+  useEffect(() => {
+    const handler = (e: KeyboardEvent) => {
+      if (e.key === 'Escape') useSimulatorStore.getState().cancelWiring();
+    };
+    window.addEventListener('keydown', handler);
+    return () => window.removeEventListener('keydown', handler);
+  }, []);
+
+  const guard = async (action: () => void | Promise<void>) => {
+    setBusy(true);
+    try {
+      await action();
+    } catch (e) {
+      setNotice(e instanceof Error ? e.message : String(e));
+    } finally {
+      setBusy(false);
+    }
+  };
+
+  const backup = () => {
+    localStorage.setItem('ardusim-recovery', JSON.stringify(snapshot()));
+  };
+
+  const replace = (p: Project) => {
+    backup();
+    load(p);
+    setNotice('Rangkaian dibuka. Sebelumnya tersedia lewat Pulihkan.');
+  };
+
+  const selected = components.find((c) => c.id === selectedComponentId);
+  const physical = selected ? physicalInfo[selected.typeId.startsWith('jumper_') ? 'jumper' : selected.typeId] : undefined;
+  const options = components.flatMap((c) =>
+    c.pins.map((p) => (
+      <option key={c.id + ':' + p.id} value={c.id + ':' + p.id}>
+        {c.name} [{c.id.slice(-4)}] · {p.id}
+      </option>
+    ))
+  );
 
   return (
-    <div className="w-full h-screen flex flex-col relative overflow-hidden bg-[var(--bg-primary)]">
-      
-      {/* ── Toolbar ── */}
-      <header className="h-12 border-b border-[var(--border)] glass-panel rounded-none flex items-center justify-between px-4 z-[var(--z-toolbar)] relative shrink-0">
-        <div className="flex items-center gap-4">
-          <div className="flex items-center gap-1.5 text-white font-bold tracking-wider text-base">
-            <span className="text-[var(--accent)]">⚡</span>
-            <span className="text-[var(--accent)]">Ardu</span>Sim
-            <span className="text-[8px] text-[var(--text-tertiary)] ml-1 font-normal tracking-normal">v1.0</span>
-          </div>
-          <div className="h-5 w-px bg-[var(--border)] mx-1"></div>
-          
-          <button 
-            className={`btn-primary text-xs gap-1.5 ${simulationState === 'running' ? 'bg-red-600 hover:bg-red-700' : ''}`}
-            onClick={simulationState === 'running' ? stopSimulation : startSimulation}
-          >
-            {simulationState === 'running' ? (
-              <><Square size={13} /> Stop</>
-            ) : (
-              <><Play size={13} /> Run</>
-            )}
-          </button>
+    <div className="workspace">
+      <header className="workspace-toolbar">
+        <div className="brand">
+          NEX<span>FLUX</span> <small>LAB 3D</small>
+        </div>
 
-          {simulationState === 'running' && (
-            <div className="flex items-center gap-1.5 text-xs text-emerald-400 animate-pulse">
-              <div className="w-1.5 h-1.5 bg-emerald-400 rounded-full"></div>
-              Running
+        <input aria-label="Nama proyek" value={name} maxLength={128} onChange={(e) => setName(e.target.value)} />
+        <div className="flex gap-2">
+          <button className="btn-primary" onClick={startSimulation} disabled={simulationState === 'running'}>
+            {simulationState === 'paused' ? 'Lanjut' : '▶ Jalankan'}
+          </button>
+          <button className="small-button" onClick={pauseSimulation} disabled={simulationState !== 'running'}>
+            Jeda
+          </button>
+          <button className="small-button" onClick={stopSimulation} disabled={simulationState === 'stopped'}>
+            ■ Stop
+          </button>
+        </div>
+        <RuntimeStatus />
+        <button className="small-button" onClick={() => setHelp(!help)}>
+          Panduan
+        </button>
+        <ThemeToggle />
+      </header>
+      <div className="project-bar">
+        <button
+          className="small-button"
+          onClick={() =>
+            guard(() => {
+              localStorage.setItem('ardusim-project', JSON.stringify(snapshot()));
+              setNotice('Tersimpan lokal di browser ini.');
+            })
+          }
+        >
+          Simpan lokal
+        </button>
+        <button
+          className="small-button"
+          onClick={() => guard(() => replace(parseProject(JSON.parse(localStorage.getItem('ardusim-project') || 'null'))))}
+        >
+          Buka lokal
+        </button>
+        <button
+          className="small-button"
+          onClick={() =>
+            guard(() => {
+              const p = parseProject(JSON.parse(localStorage.getItem('ardusim-recovery') || 'null'));
+              load(p);
+              setNotice('Rangkaian sebelumnya dipulihkan.');
+            })
+          }
+        >
+          Pulihkan
+        </button>
+        <button className="small-button" onClick={() => download(name + '.json', JSON.stringify(snapshot(), null, 2))}>
+          Ekspor JSON
+        </button>
+        <button className="small-button" onClick={() => file.current?.click()}>
+          Impor JSON
+        </button>
+        <input
+          ref={file}
+          hidden
+          type="file"
+          accept=".json"
+          onChange={(e) => {
+            const f = e.target.files?.[0];
+            if (f)
+              guard(async () => {
+                if (f.size > 2e6) throw new Error('File maksimum 2 MB');
+                replace(parseProject(JSON.parse(await f.text())));
+              });
+            e.target.value = '';
+          }}
+        />
+        <button
+          className="small-button"
+          disabled={busy}
+          onClick={() =>
+            guard(async () => {
+              const response = await fetch(api + '/api/projects', {
+                method: 'POST',
+                headers: { 'Content-Type': 'application/json' },
+                body: JSON.stringify(snapshot()),
+                signal: AbortSignal.timeout(5000),
+              });
+              if (!response.ok) throw new Error('Backend menolak proyek: ' + (await response.text()));
+              const p = await response.json();
+              setNotice('Tersimpan di backend: ' + p.id);
+            })
+          }
+        >
+          Simpan server
+        </button>
+        <button
+          className="small-button"
+          disabled={busy}
+          onClick={() =>
+            guard(async () => {
+              const r = await fetch(api + '/api/projects', { signal: AbortSignal.timeout(5000) });
+              if (!r.ok) throw new Error('Backend tidak tersedia');
+              setProjects((await r.json()).projects);
+              setNotice('Daftar proyek server diperbarui.');
+            })
+          }
+        >
+          Daftar server
+        </button>
+        <select aria-label="Proyek server" value={saved} onChange={(e) => setSaved(e.target.value)}>
+          <option value="">Proyek server…</option>
+          {projects.map((p) => (
+            <option key={p.id} value={p.id}>
+              {p.name}
+            </option>
+          ))}
+        </select>
+        <button
+          className="small-button"
+          disabled={!saved || busy}
+          onClick={() =>
+            guard(async () => {
+              const r = await fetch(api + '/api/projects/' + saved, { signal: AbortSignal.timeout(5000) });
+              if (!r.ok) throw new Error('Gagal membaca proyek server');
+              replace(parseProject(await r.json()));
+            })
+          }
+        >
+          Buka server
+        </button>
+      </div>
+      {notice && (
+        <div role="status" className="notice">
+          {notice}
+          <button onClick={() => setNotice('')} aria-label="Tutup pesan">
+            ×
+          </button>
+        </div>
+      )}
+      {help && (
+        <div className="help-box">
+          <strong>Bangun → hubungkan → program → jalankan</strong>
+          <p>
+            Tambah komponen, geser bodinya, klik pin awal lalu pin tujuan. Esc membatalkan. Untuk pin kecil gunakan tab
+            Sambungan. Putar komponen melalui propertinya. Orbit: drag kanan; zoom: roda; pan: tombol tengah. Posisi bertumpuk
+            tidak otomatis tersambung: setiap sambungan harus berupa kabel.
+          </p>
+          <p>
+            Satu Uno virtual; catu ideal, resistor/pot DC, LED perkiraan 1.8 V, tombol/jumper/breadboard kontinuitas. PWM berupa
+            tegangan rata-rata; floating input deterministik 0. Tidak ada emulasi AVR/C++ penuh, SPICE, library, I2C/SPI, USB,
+            regulator Vin, toleransi atau kerusakan. RESET/AREF/NC hanya terminal fisik. Model geometris berbasis varian rujukan;
+            detail mikro dan cetakan belum identik dengan benda fisik.
+          </p>
+          <p>Contoh mengganti workspace dengan cadangan Pulihkan. Simpan lokal atau ekspor JSON sebelum menutup halaman.</p>
+        </div>
+      )}
+      <main className="workspace-main">
+        <aside className="library-panel">
+          <div className="panel-heading">
+            <button onClick={() => setTab('komponen')} className={tab === 'komponen' ? 'active' : ''}>
+              Komponen
+            </button>
+            <button onClick={() => setTab('wiring')} className={tab === 'wiring' ? 'active' : ''}>
+              Sambungan
+            </button>
+          </div>
+          {tab === 'komponen' ? (
+            <>
+              <input
+                className="library-search"
+                aria-label="Cari komponen"
+                placeholder="Cari komponen…"
+                value={query}
+                onChange={(e) => setQuery(e.target.value)}
+              />
+              <div className="library-list">
+                {ComponentRegistry.getAll()
+                  .filter((c) => (c.name + ' ' + c.description).toLowerCase().includes(query.toLowerCase()))
+                  .map((c) => (
+                    <button
+                      key={c.typeId}
+                      className="component-card"
+                      onClick={() => {
+                        if (components.length >= 100) {
+                          setNotice('Batas 100 komponen');
+                          return;
+                        }
+                        const n = components.length;
+                        const item = instance(
+                          c.typeId,
+                          crypto.randomUUID(),
+                          [
+                            (n % 4) * 6 - 8,
+                            c.typeId === 'led_red' ? 5.5 : c.typeId === 'push_button' ? 0.7 : c.typeId === 'potentiometer' ? 0.8 : 0,
+                            Math.floor(n / 4) * 6 - 4,
+                          ]
+                        );
+                        const id = addComponent(item);
+                        selectComponent(id);
+                      }}
+                    >
+                      <strong>{c.name}</strong>
+                      <small>
+                        {c.pins.length} pin · {c.category}
+                      </small>
+                      <p>{c.description}</p>
+                    </button>
+                  ))}
+              </div>
+              <div className="examples">
+                <details>
+                  <summary>Komponen terpasang ({components.length})</summary>
+                  {components.map((c) => (
+                    <button key={c.id} className="pin-row" aria-label={'Pilih ' + c.name} onClick={() => selectComponent(c.id)}>
+                      {c.name}
+                    </button>
+                  ))}
+                </details>
+                <strong>Contoh rangkaian</strong>
+                {[
+                  ['blink', 'Blink + resistor'],
+                  ['button', 'Tombol INPUT_PULLUP'],
+                  ['pwm', 'Potensiometer → PWM'],
+                  ['breadboard', 'Breadboard + jumper'],
+                  ['serial', 'Serial echo'],
+                ].map(([id, label]) => (
+                  <button key={id} className="small-button" onClick={() => guard(() => replace(example(id)))}>
+                    {label}
+                  </button>
+                ))}
+              </div>
+            </>
+          ) : (
+            <div className="wiring-panel">
+              <p>Pilih dua terminal, lalu sambungkan.</p>
+              <label>
+                Dari
+                <select aria-label="Terminal awal" value={from} onChange={(e) => setFrom(e.target.value)}>
+                  <option value="">Pilih pin…</option>
+                  {options}
+                </select>
+              </label>
+              <label>
+                Ke
+                <select aria-label="Terminal tujuan" value={to} onChange={(e) => setTo(e.target.value)}>
+                  <option value="">Pilih pin…</option>
+                  {options}
+                </select>
+              </label>
+              <label>
+                Warna
+                <input type="color" value={color} onChange={(e) => setColor(e.target.value)} />
+              </label>
+              <button
+                className="btn-primary"
+                disabled={!from || !to}
+                onClick={() => {
+                  const [a, p] = from.split(':');
+                  const [b, q] = to.split(':');
+                  const id = addWire({ sourceComponentId: a, sourcePinId: p, targetComponentId: b, targetPinId: q, color });
+                  setNotice(id ? 'Kabel terhubung.' : 'Kabel duplikat atau terminal tidak valid.');
+                }}
+              >
+                Sambungkan
+              </button>
+              <h3>{wires.length} kabel</h3>
+              {wires.map((w) => (
+                <div key={w.id} className="wire-row">
+                  <button onClick={() => selectWire(w.id)}>
+                    {components.find((c) => c.id === w.sourceComponentId)?.name} · {w.sourcePinId}
+                    <br />↳ {components.find((c) => c.id === w.targetComponentId)?.name} · {w.targetPinId}
+                  </button>
+                  <button aria-label={'Hapus kabel ' + w.id} onClick={() => removeWire(w.id)}>
+                    ×
+                  </button>
+                </div>
+              ))}
             </div>
           )}
-        </div>
-
-        <div className="flex items-center gap-1">
-          <span className="text-xs text-[var(--text-muted)] mr-2">
-            {components.length} component{components.length !== 1 ? 's' : ''}
-          </span>
-          <button className="btn-icon tooltip p-1.5" data-tooltip="Settings">
-            <Settings size={16} />
-          </button>
-        </div>
-      </header>
-
-      {/* ── Main Workspace ── */}
-      <main className="flex-1 relative flex overflow-hidden">
-        
-        {/* Left Sidebar: Component Library */}
-        <aside className="w-56 border-r border-[var(--border)] glass-panel rounded-none flex flex-col z-[var(--z-panel)] relative shrink-0">
-          <div className="panel-header flex items-center justify-between py-2 px-3">
-            <span className="text-sm font-semibold">Components</span>
-          </div>
-          
-          {/* Category tabs */}
-          <div className="px-2 pb-2 flex flex-wrap gap-1">
-            {categories.map(cat => (
-              <button
-                key={cat}
-                onClick={() => setActiveCategory(cat)}
-                className={`text-[10px] px-2 py-1 rounded-full transition-all font-medium ${
-                  activeCategory === cat
-                    ? 'bg-[var(--accent)] text-white'
-                    : 'bg-[var(--bg-elevated)] text-[var(--text-muted)] hover:text-[var(--text-primary)] hover:bg-[var(--bg-hover)]'
-                }`}
-              >
-                {cat}
+        </aside>
+        <section className="scene-panel">
+          <SimulatorCanvas />
+          <div className="camera-tools">
+            {(
+              [
+                ['perspective', 'Perspektif'],
+                ['top', 'Atas'],
+                ['front', 'Depan'],
+              ] as const
+            ).map(([view, label]) => (
+              <button key={view} className="small-button" onClick={() => useSimulatorStore.setState({ cameraView: view })}>
+                {label}
               </button>
             ))}
           </div>
-          
-          <div className="flex-1 overflow-y-auto px-2 pb-2 flex flex-col gap-1.5">
-            {filteredComponents.map(config => (
-              <div 
-                key={config.typeId}
-                className="bg-[var(--bg-elevated)] border border-[var(--border)] rounded-lg p-2.5 hover:border-[var(--accent)] cursor-pointer transition-all hover:shadow-md group"
-                onClick={() => handleAddComponent(config.typeId)}
-              >
-                <div className="flex items-center justify-between">
-                  <span className="font-medium text-xs text-[var(--text-primary)] group-hover:text-[var(--accent)] transition-colors">
-                    {config.name}
-                  </span>
-                  <Plus size={13} className="text-[var(--accent)] opacity-0 group-hover:opacity-100 transition-opacity" />
-                </div>
-                <div className="text-[10px] text-[var(--text-muted)] mt-0.5 line-clamp-1">
-                  {config.description}
-                </div>
-              </div>
-            ))}
-
-            {filteredComponents.length === 0 && (
-              <div className="text-xs text-[var(--text-tertiary)] text-center py-4 italic">
-                No components in this category yet
-              </div>
+          <div className="scene-instruction">
+            {isWiringActive ? (
+              <>
+                <strong>Tujuan untuk {wiringSourcePinId}</strong>
+                <button onClick={cancelWiring}>Batalkan · Esc</button>
+              </>
+            ) : (
+              <span>
+                {components.length} komponen · {wires.length} kabel · klik pin untuk menyambung
+              </span>
             )}
           </div>
-        </aside>
-
-        {/* Center: 3D Canvas */}
-        <section className="flex-1 relative">
-          <SimulatorCanvas />
-          
-          {/* Component Properties */}
-          {selectedComponent && (
-            <div className="absolute top-3 right-3 w-56 glass-panel p-3 z-[var(--z-panel)] animate-slide-left shadow-xl border-[var(--border-active)]">
-              <div className="flex items-center justify-between mb-3">
-                <h3 className="font-semibold text-xs text-[var(--text-primary)]">{selectedComponent.name}</h3>
-                <button 
-                  className="btn-icon text-[var(--error)] hover:text-white hover:bg-[var(--error)] p-1"
-                  onClick={() => removeComponent(selectedComponent.id)}
-                >
-                  <Trash2 size={12} />
-                </button>
-              </div>
-              
-              <div className="space-y-2">
-                <div className="bg-[var(--bg-elevated)] p-2 rounded text-[10px]">
-                  <span className="text-[var(--text-muted)] block mb-0.5">Position</span>
-                  <div className="font-mono text-[var(--accent)]">
-                    x:{selectedComponent.position[0].toFixed(1)} z:{selectedComponent.position[2].toFixed(1)}
-                  </div>
-                </div>
-                <div className="bg-[var(--bg-elevated)] p-2 rounded text-[10px]">
-                  <span className="text-[var(--text-muted)] block mb-0.5">Type</span>
-                  <div className="font-mono text-[var(--text-primary)]">{selectedComponent.typeId}</div>
-                </div>
-              </div>
+          {diagnostics.length > 0 && (
+            <div className="diagnostics" role="alert">
+              {diagnostics.map((d, i) => (
+                <p key={i}>{d}</p>
+              ))}
             </div>
           )}
-          
-          <SensorPanel />
-          <CodeEditorPanel />
-          <AIAssistantPanel />
         </section>
-
-        <SerialMonitor />
+        {selected && (
+          <div className="properties">
+            <div className="panel-heading">
+              <strong>{selected.name}</strong>
+              <button aria-label="Tutup properti" onClick={() => selectComponent(null)}>
+                ×
+              </button>
+            </div>
+            <div className="property-body">
+              <p>{physical?.variant}</p>
+              <p>{physical?.dimensions}</p>
+              <details>
+                <summary>Akurasi model</summary>
+                <p>{physical?.limits}</p>
+                {physical?.source && (
+                  <a href={physical.source} target="_blank" rel="noreferrer" className="text-blue-400">
+                    Rujukan pabrikan ↗
+                  </a>
+                )}
+              </details>
+              <button
+                className="small-button"
+                onClick={() => updateComponentRotation(selected.id, [0, selected.rotation[1] + Math.PI / 2, 0])}
+              >
+                Putar 90°
+              </button>
+              <button
+                className="small-button"
+                onClick={() => {
+                  backup();
+                  removeComponent(selected.id);
+                }}
+              >
+                Hapus komponen
+              </button>
+              {(['x', 'y', 'z'] as const).map((axis, i) => (
+                <label key={axis}>
+                  {axis}
+                  <input
+                    aria-label={'Posisi ' + axis}
+                    type="number"
+                    step="0.508"
+                    value={selected.position[i]}
+                    onChange={(e) => {
+                      const p = [...selected.position] as [number, number, number];
+                      p[i] = Number(e.target.value);
+                      updateComponentPosition(selected.id, p);
+                    }}
+                  />
+                </label>
+              ))}
+              {selected.typeId === 'potentiometer' && (
+                <label>
+                  Putaran {Math.round(Number(selected.state.value) * 100)}%
+                  <input
+                    aria-label="Putaran potensiometer"
+                    type="range"
+                    min="0"
+                    max="1"
+                    step="0.01"
+                    value={Number(selected.state.value)}
+                    onChange={(e) => updateComponentState(selected.id, { value: Number(e.target.value) })}
+                  />
+                </label>
+              )}
+              {selected.typeId === 'push_button' && (
+                <button
+                  className="btn-primary"
+                  onPointerDown={() => updateComponentState(selected.id, { isPressed: true })}
+                  onPointerUp={() => updateComponentState(selected.id, { isPressed: false })}
+                  onPointerLeave={() => updateComponentState(selected.id, { isPressed: false })}
+                  onKeyDown={(e) => {
+                    if (e.key === ' ' || e.key === 'Enter') updateComponentState(selected.id, { isPressed: true });
+                  }}
+                  onKeyUp={() => updateComponentState(selected.id, { isPressed: false })}
+                >
+                  Tahan tombol
+                </button>
+              )}
+              {selected.typeId === 'led_red' && <p>Arus: {Number(selected.state.currentMa || 0).toFixed(2)} mA</p>}
+              <PinVoltages component={selected} />
+            </div>
+          </div>
+        )}
+        <aside className="program-panel">
+          <CodeEditorPanel />
+          <SerialMonitor />
+        </aside>
       </main>
+      <footer className="workspace-footer">
+        DC kuasistatik · subset Arduino · 1 unit ≈ 5 mm <span>Referensi bentuk dan batas dukungan: docs/INVENTARIS.md</span>
+      </footer>
     </div>
   );
 }

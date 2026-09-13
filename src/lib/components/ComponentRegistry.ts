@@ -1,3 +1,4 @@
+import { unoPins } from './physical';
 import { ComponentType, PinDefinition } from './componentTypes';
 
 export interface ComponentRegistration {
@@ -6,7 +7,7 @@ export interface ComponentRegistration {
   type: ComponentType;
   description: string;
   category: 'Boards' | 'Basic' | 'Sensors' | 'Actuators' | 'Displays' | 'Wiring';
-  defaultState: Record<string, any>;
+  defaultState: Record<string, number | string | boolean>;
   pins: PinDefinition[];
 }
 
@@ -36,51 +37,33 @@ export const ComponentRegistry = new Registry();
 // BOARDS
 // ═══════════════════════════════════════════════════
 
+// Pin pitch = 0.508 units (2.54mm at 1 unit ≈ 5mm scale)
+// PCB dimensions: W = 13.72, D = 10.68
+
 ComponentRegistry.register({
   typeId: 'arduino_uno',
   name: 'Arduino Uno R3',
   type: 'board',
-  description: 'The standard Arduino microcontroller board based on the ATmega328P.',
+  description: 'Uno R3 DIP · header 2.54 mm · GPIO, PWM, ADC & Serial virtual.',
   category: 'Boards',
   defaultState: {},
-  pins: [
-    // Digital Pins (along the top edge of the board)
-    ...Array.from({ length: 14 }).map((_, i) => ({
-      id: `D${i}`,
-      name: `Digital ${i}`,
-      type: [3, 5, 6, 9, 10, 11].includes(i) ? 'pwm' as const : 'digital' as const,
-      position: [4 - (i * 0.5), 0.5, -5] as [number, number, number],
-    })),
-    // Analog Pins (along the bottom edge)
-    ...Array.from({ length: 6 }).map((_, i) => ({
-      id: `A${i}`,
-      name: `Analog ${i}`,
-      type: 'analog' as const,
-      position: [2 - (i * 0.5), 0.5, 5] as [number, number, number],
-    })),
-    // Power Pins
-    { id: '5V', name: '5 Volts', type: 'power', position: [4, 0.5, 5] },
-    { id: '3V3', name: '3.3 Volts', type: 'power', position: [4.5, 0.5, 5] },
-    { id: 'GND1', name: 'Ground 1', type: 'ground', position: [3.5, 0.5, 5] },
-    { id: 'GND2', name: 'Ground 2', type: 'ground', position: [3, 0.5, 5] },
-    { id: 'GND3', name: 'Ground 3', type: 'ground', position: [-1, 0.5, -5] },
-  ]
+  pins: unoPins
 });
 
 ComponentRegistry.register({
   typeId: 'breadboard',
-  name: 'Breadboard',
+  name: 'Breadboard BB400',
   type: 'board',
-  description: 'A standard half-size solderless breadboard for prototyping.',
+  description: 'BusBoard BB400 · 400 titik · empat rail kontinu.',
   category: 'Boards',
   defaultState: {},
   pins: (() => {
     const pins: PinDefinition[] = [];
     const cols = 30;
-    const pitch = 0.5; // 2.54mm scaled
+    const pitch = 0.508; // 2.54mm scaled
     const startX = -cols * pitch / 2 + pitch / 2;
-    const D = 10;
-    const H = 0.8;
+    const D = 10.8;
+    const H = 1.7;
     
     for (let col = 0; col < cols; col++) {
       const x = startX + col * pitch;
@@ -90,7 +73,7 @@ ComponentRegistry.register({
           id: `t${col}_${row}`,
           name: `Top Row ${col + 1} Pin ${row + 1}`,
           type: 'digital',
-          position: [x, H / 2 + 0.01, -1.5 - row * pitch],
+          position: [x, H + 0.01, -1.5 - row * pitch],
         });
       }
       // Bottom half (rows f-j, columns 1-30)
@@ -99,17 +82,17 @@ ComponentRegistry.register({
           id: `b${col}_${row}`,
           name: `Bottom Row ${col + 1} Pin ${row + 1}`,
           type: 'digital',
-          position: [x, H / 2 + 0.01, 1.5 + row * pitch],
+          position: [x, H + 0.01, 1.5 + row * pitch],
         });
       }
     }
     // Power rail holes (top and bottom)
-    for (let col = 0; col < cols; col++) {
-      const x = startX + col * pitch;
-      pins.push({ id: `pt1_${col}`, name: `Power Top + ${col}`, type: 'power', position: [x, H / 2 + 0.01, -D / 2 + 0.6] });
-      pins.push({ id: `pt2_${col}`, name: `Power Top - ${col}`, type: 'ground', position: [x, H / 2 + 0.01, -D / 2 + 1.1] });
-      pins.push({ id: `pb1_${col}`, name: `Power Bottom + ${col}`, type: 'power', position: [x, H / 2 + 0.01, D / 2 - 0.6] });
-      pins.push({ id: `pb2_${col}`, name: `Power Bottom - ${col}`, type: 'ground', position: [x, H / 2 + 0.01, D / 2 - 1.1] });
+    for (let col = 0; col < 25; col++) {
+      const x = -14 * pitch + (col + Math.floor(col / 5)) * pitch;
+      pins.push({ id: `pt1_${col}`, name: `Power Top + ${col}`, type: 'power', position: [x, H + 0.01, -D / 2 + 0.6] });
+      pins.push({ id: `pt2_${col}`, name: `Power Top - ${col}`, type: 'ground', position: [x, H + 0.01, -D / 2 + 1.1] });
+      pins.push({ id: `pb1_${col}`, name: `Power Bottom + ${col}`, type: 'power', position: [x, H + 0.01, D / 2 - 0.6] });
+      pins.push({ id: `pb2_${col}`, name: `Power Bottom - ${col}`, type: 'ground', position: [x, H + 0.01, D / 2 - 1.1] });
     }
     return pins;
   })()
@@ -127,8 +110,8 @@ ComponentRegistry.register({
   category: 'Basic',
   defaultState: { isOn: false, brightness: 0, color: '#ef4444' },
   pins: [
-    { id: 'A', name: 'Anode (+)', type: 'digital', position: [-0.25, -1, 0] },
-    { id: 'C', name: 'Cathode (-)', type: 'ground', position: [0.25, -1, 0] },
+    { id: 'A', name: 'Anode (+)', type: 'digital', position: [-0.254, -5.4, 0] },
+    { id: 'C', name: 'Cathode (-)', type: 'ground', position: [0.254, -5.1, 0] },
   ]
 });
 
@@ -140,10 +123,10 @@ ComponentRegistry.register({
   category: 'Basic',
   defaultState: { isPressed: false },
   pins: [
-    { id: '1a', name: 'Terminal 1a', type: 'digital', position: [-0.5, -0.5, -0.5] },
-    { id: '1b', name: 'Terminal 1b', type: 'digital', position: [0.5, -0.5, -0.5] },
-    { id: '2a', name: 'Terminal 2a', type: 'digital', position: [-0.5, -0.5, 0.5] },
-    { id: '2b', name: 'Terminal 2b', type: 'digital', position: [0.5, -0.5, 0.5] },
+    { id: '1a', name: 'Terminal 1a', type: 'digital', position: [-0.65, -0.68, -0.45] },
+    { id: '1b', name: 'Terminal 1b', type: 'digital', position: [0.65, -0.68, -0.45] },
+    { id: '2a', name: 'Terminal 2a', type: 'digital', position: [-0.65, -0.68, 0.45] },
+    { id: '2b', name: 'Terminal 2b', type: 'digital', position: [0.65, -0.68, 0.45] },
   ]
 });
 
@@ -155,9 +138,9 @@ ComponentRegistry.register({
   category: 'Basic',
   defaultState: { value: 0 },
   pins: [
-    { id: '1', name: 'Terminal 1', type: 'power', position: [-0.5, -0.5, 0] },
-    { id: 'W', name: 'Wiper', type: 'analog', position: [0, -0.5, 0] },
-    { id: '2', name: 'Terminal 2', type: 'ground', position: [0.5, -0.5, 0] },
+    { id: '1', name: 'Terminal 1', type: 'power', position: [-0.5, -0.7, 0.65] },
+    { id: 'W', name: 'Wiper', type: 'analog', position: [0, -0.7, 0.65] },
+    { id: '2', name: 'Terminal 2', type: 'ground', position: [0.5, -0.7, 0.65] },
   ]
 });
 
@@ -186,8 +169,8 @@ ComponentRegistry.register({
   category: 'Wiring',
   defaultState: { color: 'red', length: 4 },
   pins: [
-    { id: 'L', name: 'Left Tip', type: 'digital', position: [-2, 0.1, 0] },
-    { id: 'R', name: 'Right Tip', type: 'digital', position: [2, 0.1, 0] },
+    { id: 'L', name: 'Left Tip', type: 'digital', position: [-2, 0.23, 0] },
+    { id: 'R', name: 'Right Tip', type: 'digital', position: [2, 0.23, 0] },
   ]
 });
 
@@ -199,8 +182,8 @@ ComponentRegistry.register({
   category: 'Wiring',
   defaultState: { color: 'black', length: 4 },
   pins: [
-    { id: 'L', name: 'Left Tip', type: 'digital', position: [-2, 0.1, 0] },
-    { id: 'R', name: 'Right Tip', type: 'digital', position: [2, 0.1, 0] },
+    { id: 'L', name: 'Left Tip', type: 'digital', position: [-2, 0.23, 0] },
+    { id: 'R', name: 'Right Tip', type: 'digital', position: [2, 0.23, 0] },
   ]
 });
 
@@ -212,8 +195,8 @@ ComponentRegistry.register({
   category: 'Wiring',
   defaultState: { color: 'blue', length: 4 },
   pins: [
-    { id: 'L', name: 'Left Tip', type: 'digital', position: [-2, 0.1, 0] },
-    { id: 'R', name: 'Right Tip', type: 'digital', position: [2, 0.1, 0] },
+    { id: 'L', name: 'Left Tip', type: 'digital', position: [-2, 0.23, 0] },
+    { id: 'R', name: 'Right Tip', type: 'digital', position: [2, 0.23, 0] },
   ]
 });
 
@@ -225,8 +208,8 @@ ComponentRegistry.register({
   category: 'Wiring',
   defaultState: { color: 'green', length: 4 },
   pins: [
-    { id: 'L', name: 'Left Tip', type: 'digital', position: [-2, 0.1, 0] },
-    { id: 'R', name: 'Right Tip', type: 'digital', position: [2, 0.1, 0] },
+    { id: 'L', name: 'Left Tip', type: 'digital', position: [-2, 0.23, 0] },
+    { id: 'R', name: 'Right Tip', type: 'digital', position: [2, 0.23, 0] },
   ]
 });
 
@@ -238,7 +221,7 @@ ComponentRegistry.register({
   category: 'Wiring',
   defaultState: { color: 'yellow', length: 4 },
   pins: [
-    { id: 'L', name: 'Left Tip', type: 'digital', position: [-2, 0.1, 0] },
-    { id: 'R', name: 'Right Tip', type: 'digital', position: [2, 0.1, 0] },
+    { id: 'L', name: 'Left Tip', type: 'digital', position: [-2, 0.23, 0] },
+    { id: 'R', name: 'Right Tip', type: 'digital', position: [2, 0.23, 0] },
   ]
 });

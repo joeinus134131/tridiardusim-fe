@@ -67,6 +67,12 @@ export const physicalInfo: Record<
   string,
   { variant: string; dimensions: string; source: string; limits: string }
 > = {
+  esp32_wroom: {
+    variant: "Espressif ESP32-DevKitC V4 / ESP32-WROOM-32",
+    dimensions: "PCB ≈ 54.4 × 27.9 mm · 2 × 19 header, pitch 2.54 mm",
+    limits: "Envelope mekanik dan pinout DevKitC. GPIO 3.3 V, ADC linear ideal 12-bit; Wi-Fi, Bluetooth, RF, bootloader dan pustaka ESP-IDF belum diemulasi.",
+    source: "https://docs.espressif.com/projects/esp-idf/en/v5.3/esp32/hw-reference/esp32/get-started-devkitc.html",
+  },
   arduino_uno: {
     variant: "Arduino A000066 Uno R3 DIP",
     dimensions: "PCB 68.6 × 53.4 × 1.6 mm; pitch 2.54 mm",

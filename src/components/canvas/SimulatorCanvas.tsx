@@ -1,5 +1,6 @@
 "use client";
 
+import { ESP32Wroom } from "@/components/models/ESP32Wroom";
 import { Canvas } from "@react-three/fiber";
 import { Suspense, memo } from "react";
 import * as THREE from "three";
@@ -27,6 +28,8 @@ const ComponentRenderer = memo(function ComponentRenderer({
   typeId: string;
 }) {
   switch (typeId) {
+    case "esp32_wroom":
+      return <ESP32Wroom id={id} />;
     case "arduino_uno":
       return <ArduinoUnoR3 id={id} />;
     case "led_red":

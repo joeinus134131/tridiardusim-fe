@@ -82,6 +82,8 @@ export function parseProject(input: unknown): Project {
     for (const [k, v] of Object.entries(s))
       if (k in state && typeof v === typeof state[k])
         state[k] = v as number | string | boolean;
+    if("depth" in state) state.depth=Math.max(3,Math.min(16,Number(state.depth)||8));
+    if("bendHeight" in state) state.bendHeight=Math.max(.3,Math.min(8,Number(state.bendHeight)||.3));
     if ("value" in state)
       state.value = Math.max(0, Math.min(1, Number(state.value) || 0));
     if ("resistance" in state)
@@ -118,6 +120,10 @@ export function parseProject(input: unknown): Project {
       !validWire(components, wires, w)
     )
       throw new Error("Kabel tidak valid/duplikat atau pin hilang");
+    if(x.path !== undefined) {
+      if(!Array.isArray(x.path) || x.path.length>12) throw new Error("Maksimum 12 titik lekukan kabel");
+      w.path=x.path.map(vector);
+    }
     wireIds.add(w.id);
     wires.push(w);
   }

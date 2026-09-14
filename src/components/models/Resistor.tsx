@@ -44,7 +44,7 @@ export function Resistor({ id }: ResistorProps) {
   // Resistor is about 6mm long body, 2mm diameter
   const bodyLen = 1.26;
   const bodyR = 0.24;
-  const legLen = 1.17;
+  const legLen = 1.016 - bodyLen / 2;
 
   return (
     <group>
@@ -73,6 +73,7 @@ export function Resistor({ id }: ResistorProps) {
         </mesh>
       ))}
 
+      {[-1.016, 1.016].map(x => <mesh key={x} material={legMaterial} position={[x, -.18, 0]}><cylinderGeometry args={[.03,.03,.84,6]} /></mesh>)}
       {/* Left lead */}
       <mesh
         material={legMaterial}

@@ -1,3 +1,4 @@
+import { gpioPin, isMicrocontroller, validateOutput } from "../components/esp32";
 import { SketchParser, SketchRuntime, Value } from "./SketchRuntime";
 import { solveCircuit, IO, terminal, CircuitResult } from "./CircuitSolver";
 import type { CircuitComponent, Wire } from "../components/componentTypes";
@@ -25,15 +26,15 @@ function solve() {
   }
   return result;
 }
-const pin = (v: Value, analog = false) => {
-  const n = Number(v);
-  if (!Number.isInteger(n) || n < 0 || n > 19)
-    throw new Error(`Pin tidak valid: ${v}`);
-  return analog && n < 6 ? `A${n}` : n >= 14 ? `A${n - 14}` : `D${n}`;
+const board = () => {
+ const boards=components.filter(c=>isMicrocontroller(c.typeId));
+ if(boards.length!==1) throw new Error("Gunakan tepat satu mikrokontroler: Arduino Uno atau ESP32-WROOM.");
+ return boards[0];
 };
+const supply = () => board().typeId==='esp32_wroom'?3.3:5;
+const pin = (v:Value, analog=false) => gpioPin(board().typeId,Number(v),analog);
 const voltage = (id: string) => {
-  const board = components.find((c) => c.typeId === "arduino_uno")!;
-  const v = solve().voltages[terminal(board.id, id)];
+  const v = solve().voltages[terminal(board().id, id)];
   return v ?? 0;
 };
 let serialBuffer = "";
@@ -51,6 +52,7 @@ const api: Record<string, (...args: Value[]) => Value | Promise<Value>> = {
   pinMode: (p, m) => {
     const id = pin(p);
     if (![0, 1, 2].includes(Number(m))) throw new Error("Mode pin tidak valid");
+    validateOutput(board().typeId,id,["INPUT","OUTPUT","INPUT_PULLUP"][Number(m)]);
     io[id] = {
       mode: ["INPUT", "OUTPUT", "INPUT_PULLUP"][Number(m)] as IO["mode"],
       value: io[id]?.value || 0,
@@ -60,6 +62,7 @@ const api: Record<string, (...args: Value[]) => Value | Promise<Value>> = {
   },
   digitalWrite: (p, v) => {
     const id = pin(p);
+    validateOutput(board().typeId,id,Number(v)?"INPUT_PULLUP":io[id]?.mode||"INPUT");
     const prev = io[id] || { mode: "INPUT", value: 0 };
     io[id] = {
       mode:
@@ -68,24 +71,27 @@ const api: Record<string, (...args: Value[]) => Value | Promise<Value>> = {
           : Number(v)
             ? "INPUT_PULLUP"
             : "INPUT",
-      value: Number(v) ? 5 : 0,
+      value: Number(v) ? supply() : 0,
     };
     dirty = true;
     return 0;
   },
-  digitalRead: (p) => +(voltage(pin(p)) >= 2.5),
-  analogRead: (p) =>
-    Math.max(0, Math.min(1023, Math.round((voltage(pin(p, true)) / 5) * 1023))),
+  digitalRead: (p) => +(voltage(pin(p)) >= supply() / 2),
+  analogRead: (p) => {
+    const max=board().typeId==='esp32_wroom'?4095:1023;
+    return Math.max(0,Math.min(max,Math.round(voltage(pin(p,true))/supply()*max)));
+  },
   analogWrite: (p, v) => {
     const id = pin(p);
+    validateOutput(board().typeId,id,"OUTPUT");
     const val = Math.max(0, Math.min(255, Number(v)));
     io[id] = {
       mode: "OUTPUT",
-      value: [3, 5, 6, 9, 10, 11].includes(Number(p))
-        ? (val / 255) * 5
+      value: board().typeId === "esp32_wroom" || [3, 5, 6, 9, 10, 11].includes(Number(p))
+        ? (val / 255) * supply()
         : val < 128
           ? 0
-          : 5,
+          : supply(),
     };
     dirty = true;
     return 0;
@@ -175,10 +181,7 @@ onmessage = async (e: MessageEvent) => {
   dirty = true;
   started = performance.now();
   try {
-    if (components.filter((c) => c.typeId === "arduino_uno").length !== 1)
-      throw new Error(
-        "Gunakan tepat satu Arduino Uno untuk menjalankan sketch.",
-      );
+    board();
     runtime = new SketchRuntime(new SketchParser(m.code), api);
     await runtime.start();
     for (;;) {

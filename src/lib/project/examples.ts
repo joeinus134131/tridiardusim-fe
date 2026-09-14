@@ -1,3 +1,4 @@
+import { snapToBreadboard } from "../components/placement";
 import { ComponentRegistry } from "../components/ComponentRegistry";
 import type { CircuitComponent, Wire } from "../components/componentTypes";
 import type { Project } from "./project";
@@ -15,7 +16,7 @@ export function instance(
     pins: c.pins,
     state: { ...c.defaultState },
     rotation: [0, 0, 0],
-    position,
+    position: typeId === "resistor_220" && position[1]===0 ? [position[0],.6,position[2]] : position,
   };
 }
 export function example(kind: string): Project {
@@ -76,6 +77,18 @@ export function example(kind: string): Project {
     link("uno", "GND1", "button", "2a", "#1e293b");
     code =
       "void setup() {\n  pinMode(2, INPUT_PULLUP);\n  pinMode(13, OUTPUT);\n  Serial.begin(9600);\n}\nvoid loop() {\n  int pressed = digitalRead(2) == LOW;\n  digitalWrite(13, pressed);\n  Serial.println(pressed);\n  delay(100);\n}";
+  }
+  if(kind==='esp32' || kind==='mounted') {
+    components.length=0;
+    components.push(instance('esp32_wroom','esp',[-15,.6,0]),instance('breadboard','bb',[1,0,0]),instance('led_red','led',[12,5.5,0]));
+    const resistor=instance('resistor_220','r',[-1.286,.6,-1.778]);
+    components.push(snapToBreadboard(resistor,components));
+    // Physical feet land in C9 / C13. Only the breadboard holes are wired.
+    link('esp','GPIO25','bb','t8_0','#a855f7');
+    link('bb','t12_0','led','A','#ef4444');
+    link('led','C','esp','GND1','#64748b');
+    wires[0].path=[[-8,4,-3],[-4,3,-3]];
+    code='void setup() {\n  pinMode(25, OUTPUT);\n  Serial.begin(9600);\n}\nvoid loop() {\n  digitalWrite(25, HIGH);\n  Serial.println("ESP32 GPIO25 ON - 3.3V");\n  delay(500);\n  digitalWrite(25, LOW);\n  Serial.println("ESP32 GPIO25 OFF");\n  delay(500);\n}';
   }
   return { version: 1, name: kind, code, components, wires };
 }

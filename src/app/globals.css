@@ -840,3 +840,11 @@ body {
   line-height: 1.5;
   margin: 8px 0;
 }
+
+/* Keep object and cable editing beside the canvas, inside the workspace. */
+.workspace-main { position: relative; }
+.wire-colors { display: flex; gap: 5px; margin: 8px 0; flex-wrap: wrap; }
+.wire-colors button { width: 20px; height: 20px; border: 1px solid #ffffff70; border-radius: 50%; }
+.wire-colors button:focus-visible { outline: 2px solid var(--accent); outline-offset: 2px; }
+.property-body fieldset { border: 1px solid var(--border); border-radius: 6px; padding: 6px; margin: 8px 0; }
+.property-body select { max-width: 100%; margin: 4px 0; }

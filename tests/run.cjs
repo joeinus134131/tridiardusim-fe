@@ -34,6 +34,8 @@ const { SketchParser, SketchRuntime } = require(
 );
 const { example, instance } = require(path.join(out, "project/examples.js"));
 const { parseProject } = require(path.join(out, "project/project.js"));
+const { contacts, snapToBreadboard, placementError, worldBounds } = require(path.join(out,'components/placement.js'));
+const { gpioPin, validateOutput, esp32Pins } = require(path.join(out,'components/esp32.js'));
 let checks = 0;
 function test(name, fn) {
   fn();
@@ -178,6 +180,46 @@ function test(name, fn) {
       assert.equal(new Set(p.map((x) => x.position.join(","))).size, p.length);
       assert.ok(p.some((x) => x.id === "SDA"));
       assert.ok(p.some((x) => x.id === "VIN"));
+    });
+    test("Rigid resistor seats on pitch, occupies holes and conducts without extra wires",()=>{
+      const p=example('esp32'), r=p.components.find(c=>c.id==='r');
+      assert.deepEqual(contacts(r,p.components).map(c=>c.holeId),['t8_2','t12_2']);
+      assert.equal(placementError(r,p.components),'');
+      const a=solveCircuit(p.components,p.wires,{GPIO25:{mode:'OUTPUT',value:3.3}});
+      assert.ok(Math.abs(a.states.led.currentMa-1500/255)<.01);
+      const lifted={...r,position:[r.position[0],r.position[1]+2,r.position[2]]};
+      assert.equal(contacts(lifted,p.components).length,0);
+      assert.equal(solveCircuit(p.components.map(c=>c.id==='r'?lifted:c),p.wires,{GPIO25:{mode:'OUTPUT',value:3.3}}).states.led.isOn,false);
+      assert.match(placementError({...r,id:'duplicate'},p.components),/sudah ditempati/);
+      assert.match(placementError({...r,position:[-15,.6,0]},p.components),/bounding box/);
+      const before=worldBounds(r), after=worldBounds({...r,rotation:[0,Math.PI/2,0]});
+      assert.ok(Math.abs((before.max[0]-before.min[0])-(after.max[2]-after.min[2]))<1e-6);
+      const bb=p.components.find(c=>c.id==='bb');
+      const shifted={...bb,position:[5,0,7]};
+      const moved={...r,position:[r.position[0]+4,r.position[1],r.position[2]+7]};
+      assert.equal(contacts(moved,[shifted]).length,2);
+      const snapped=snapToBreadboard({...r,position:[r.position[0]+.15,.6,r.position[2]+.1]},p.components);
+      assert.equal(contacts(snapped,p.components).length,2);
+    });
+    test("ESP32 pinout and reserved/input-only restrictions",()=>{
+      assert.equal(esp32Pins.length,38);
+      assert.equal(new Set(esp32Pins.map(p=>p.id)).size,38);
+      assert.equal(gpioPin('esp32_wroom',36,true),'GPIO36');
+      assert.throws(()=>gpioPin('esp32_wroom',6),/flash/);
+      assert.throws(()=>gpioPin('esp32_wroom',23,true),/ADC/);
+      assert.throws(()=>validateOutput('esp32_wroom','GPIO34','OUTPUT'),/INPUT/);
+      assert.throws(()=>validateOutput('esp32_wroom','GPIO39','INPUT_PULLUP'),/pull-up/);
+      assert.equal(gpioPin('arduino_uno',14),'A0');
+      const r=solveCircuit([instance('esp32_wroom','esp',[0,.6,0])],[],{GPIO25:{mode:'INPUT_PULLUP',value:0}});
+      assert.ok(Math.abs(r.voltages['esp:GPIO25']-3.3)<.001);
+      assert.equal(r.voltages['esp:GND3'],0);
+    });
+    test("Routing color/points and mounted contacts survive JSON roundtrip",()=>{
+      const p=example('esp32'), copy=parseProject(JSON.parse(JSON.stringify(p)));
+      assert.deepEqual(copy.wires[0],p.wires[0]);
+      assert.equal(contacts(copy.components.find(c=>c.id==='r'),copy.components).length,2);
+      assert.throws(()=>parseProject({...p,wires:[{...p.wires[0],path:[[1,2]]}]}));
+      assert.throws(()=>parseProject({...p,wires:[{...p.wires[0],path:Array(13).fill([1,2,3])}]}));
     });
     let log = [];
     const rt = new SketchRuntime(

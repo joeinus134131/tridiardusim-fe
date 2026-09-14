@@ -1,3 +1,4 @@
+import { contacts, placementError, rotate, snapToBreadboard, worldBounds, type Vec } from "@/lib/components/placement";
 import { create } from "zustand";
 import { validWire } from "@/lib/project/project";
 import {
@@ -9,6 +10,7 @@ import { generateId } from "@/lib/utils";
 import { arduinoEngine } from "@/lib/simulation/ArduinoInterpreter";
 
 interface SimulatorState {
+  placementNotice: string;
   cameraView: "perspective" | "top" | "front";
   // Workspace
   components: CircuitComponent[];
@@ -43,6 +45,7 @@ interface SimulatorState {
   removeComponent: (id: string) => void;
   selectComponent: (id: string | null) => void;
 
+  updateWire: (id: string, patch: Partial<Pick<Wire, "color" | "path">>) => void;
   // Actions - Wiring
   addWire: (wire: Omit<Wire, "id">) => string;
   removeWire: (id: string) => void;
@@ -70,6 +73,7 @@ interface SimulatorState {
 }
 
 export const useSimulatorStore = create<SimulatorState>((set, get) => ({
+  placementNotice: "",
   cameraView: "perspective",
   // Initial State
   components: [],
@@ -108,34 +112,44 @@ void loop() {
   addComponent: (component) => {
     if (get().components.length >= 100) return "";
     const id = generateId();
-    set((state) => ({
-      components: [...state.components, { ...component, id }],
-    }));
+    let candidate = {...component, id};
+    const floor = worldBounds(candidate).min[1];
+    if(floor<0) candidate={...candidate,position:[candidate.position[0],candidate.position[1]-floor,candidate.position[2]]};
+    for(let n=0; placementError(candidate,get().components) && n<200; n++) candidate={...candidate,position:[candidate.position[0]+2,candidate.position[1],candidate.position[2]]};
+    set((state)=>({components:[...state.components,candidate],placementNotice:""}));
     return id;
   },
 
   updateComponentPosition: (id, position) => {
-    set((state) => ({
-      components: state.components.map((c) =>
-        c.id === id ? { ...c, position } : c,
-      ),
-    }));
+    const all=get().components, old=all.find(c=>c.id===id);
+    if(!old || position.some(v=>!Number.isFinite(v))) return;
+    let candidate={...old,position};
+    if(position[0]!==old.position[0] || position[2]!==old.position[2]) candidate=snapToBreadboard(candidate,all);
+    const children=all.filter(c=>contacts(c,all).some(p=>p.boardId===id));
+    const moved=all.map(c=>c.id===id?candidate:children.includes(c)?{...c,position:c.position.map((v,i)=>v+candidate.position[i]-old.position[i]) as Vec}:c);
+    const error=[candidate,...moved.filter(c=>children.some(x=>x.id===c.id))].map(c=>placementError(c,moved)).find(Boolean)||"";
+    set(error?{placementNotice:error}:{components:moved,placementNotice:contacts(candidate,moved).length?"Kaki terpasang; kontak breadboard tersambung otomatis.":""});
   },
-
   updateComponentRotation: (id, rotation) => {
-    set((state) => ({
-      components: state.components.map((c) =>
-        c.id === id ? { ...c, rotation } : c,
-      ),
-    }));
+    const all=get().components, old=all.find(c=>c.id===id);
+    if(!old) return;
+    const candidate=snapToBreadboard({...old,rotation},all);
+    const delta=rotation.map((v,i)=>v-old.rotation[i]) as Vec;
+    const moved=all.map(c=>c.id===id?candidate:contacts(c,all).some(p=>p.boardId===id)?{...c,position:rotate(c.position.map((v,i)=>v-old.position[i]) as Vec,delta).map((v,i)=>v+old.position[i]) as Vec,rotation:c.rotation.map((v,i)=>v+delta[i]) as Vec}:c);
+    const error=moved.filter(c=>c!==all.find(x=>x.id===c.id)).map(c=>placementError(c,moved)).find(Boolean)||"";
+    set(error?{placementNotice:error}:{components:moved,placementNotice:""});
   },
+  updateWire: (id, patch) => set(s=>({wires:s.wires.map(w=>w.id===id?{...w,...patch}:w)})),
 
   updateComponentState: (id, stateUpdate) => {
-    set((state) => ({
-      components: state.components.map((c) =>
-        c.id === id ? { ...c, state: { ...c.state, ...stateUpdate } } : c,
-      ),
-    }));
+    const all=get().components;
+    const old=all.find(c=>c.id===id); if(!old) return;
+    const candidate={...old,state:{...old.state,...stateUpdate}};
+    if(old.typeId.startsWith("jumper_") && ("depth" in stateUpdate || "bendHeight" in stateUpdate)) {
+      const error=placementError(candidate,all);
+      if(error) { set({placementNotice:error}); return; }
+    }
+    set({components:all.map(c=>c.id===id?candidate:c),placementNotice:""});
   },
 
   removeComponent: (id) => {

@@ -104,11 +104,13 @@ export class ArduinoInterpreter {
       s.components.map((c) => [
         c.id,
         c.typeId,
+        c.position,
+        c.rotation,
         c.state.value,
         c.state.isPressed,
         c.state.resistance,
       ]),
-      s.wires,
+      s.wires.map(w=>[w.sourceComponentId,w.sourcePinId,w.targetComponentId,w.targetPinId]),
     ]);
   }
   send(text: string) {
@@ -129,7 +131,7 @@ export class ArduinoInterpreter {
     useSimulatorStore.setState((s) => ({
       voltages: {},
       components: s.components.map((c) =>
-        c.typeId === "led_red" || c.typeId === "arduino_uno"
+        c.typeId === "led_red" || c.typeId === "arduino_uno" || c.typeId === "esp32_wroom"
           ? {
               ...c,
               state: {

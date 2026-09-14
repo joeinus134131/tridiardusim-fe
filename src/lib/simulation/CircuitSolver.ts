@@ -1,3 +1,5 @@
+import { isMicrocontroller } from "../components/esp32";
+import { contacts } from "../components/placement";
 import type {
   CircuitComponent,
   Wire,
@@ -35,6 +37,7 @@ export function solveCircuit(
   const join = (a: string, b: string) => {
     if (parent.has(a) && parent.has(b)) parent.set(root(a), root(b));
   };
+  for(const c of components) for(const p of contacts(c,components)) join(terminal(p.componentId,p.pinId),terminal(p.boardId,p.holeId));
   for (const w of wires)
     join(
       terminal(w.sourceComponentId, w.sourcePinId),
@@ -57,6 +60,7 @@ export function solveCircuit(
       for (const rail of ["pt1", "pt2", "pb1", "pb2"])
         for (let col = 1; col < 30; col++) j(`${rail}_0`, `${rail}_${col}`);
     }
+    if(c.typeId === "esp32_wroom") {j("GND1","GND2"); j("GND1","GND3");}
     if (c.typeId === "arduino_uno") {
       j("GND1", "GND2");
       j("GND1", "GND3");
@@ -85,7 +89,7 @@ export function solveCircuit(
     fixed.set(n, v);
   };
   for (const c of components) {
-    if (c.typeId === "arduino_uno") {
+    if (isMicrocontroller(c.typeId)) {
       fix(node(c, "GND1"), 0);
       fix(node(c, "5V"), 5);
       fix(node(c, "3V3"), 3.3);
@@ -98,7 +102,7 @@ export function solveCircuit(
             resistance: 25,
           });
         else if (pin?.mode === "INPUT_PULLUP")
-          sources.push({ node: node(c, p.id), voltage: 5, resistance: 30000 });
+          sources.push({ node: node(c, p.id), voltage: c.typeId === "esp32_wroom" ? 3.3 : 5, resistance: 30000 });
       }
     }
     if (c.typeId === "resistor_220")
@@ -212,7 +216,7 @@ export function solveCircuit(
       );
   const states: CircuitResult["states"] = {};
   for (const c of components) {
-    if (c.typeId === "arduino_uno")
+    if (isMicrocontroller(c.typeId))
       states[c.id] = {
         isOn: true,
         builtinLED: (voltage.get(node(c, "D13")) || 0) > 2.5,

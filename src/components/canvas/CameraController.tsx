@@ -1,4 +1,5 @@
 "use client";
+import { worldBounds } from "@/lib/components/placement";
 import { useThree } from "@react-three/fiber";
 import { OrbitControls } from "@react-three/drei";
 import { useRef, useLayoutEffect } from "react";
@@ -15,9 +16,9 @@ export function CameraController() {
     const components = useSimulatorStore.getState().components;
     const bounds = new THREE.Box3();
     for (const c of components) {
-      const half = c.typeId === "arduino_uno" ? [7,3,5.5] : c.typeId === "breadboard" ? [8.4,1.7,5.43] : c.typeId.startsWith("jumper_") ? [4,.5,8] : [2,3,2];
-      bounds.expandByPoint(new THREE.Vector3(c.position[0]-half[0],0,c.position[2]-half[2]));
-      bounds.expandByPoint(new THREE.Vector3(c.position[0]+half[0],c.position[1]+half[1],c.position[2]+half[2]));
+      const b=worldBounds(c);
+      bounds.expandByPoint(new THREE.Vector3(...b.min));
+      bounds.expandByPoint(new THREE.Vector3(...b.max));
     }
     if(bounds.isEmpty()) bounds.set(new THREE.Vector3(-10,0,-8),new THREE.Vector3(10,3,8));
     const center = bounds.getCenter(new THREE.Vector3());

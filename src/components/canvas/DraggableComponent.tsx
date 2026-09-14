@@ -1,4 +1,5 @@
 "use client";
+import { localBounds } from "@/lib/components/placement";
 import { ThreeEvent } from "@react-three/fiber";
 import { useRef, useState, memo } from "react";
 import * as THREE from "three";
@@ -20,6 +21,8 @@ export const DraggableComponent = memo(function DraggableComponent({
 }) {
   const drag = useRef<{ dx: number; dz: number } | null>(null);
   const [dragging, setDragging] = useState(false);
+  const component = useSimulatorStore(s=>s.components.find(c=>c.id===id));
+  const bounds = component ? localBounds(component) : null;
   const selected = useSimulatorStore((s) => s.selectedComponentId === id);
 
   const getIntersect = (e: ThreeEvent<PointerEvent>) => {
@@ -68,16 +71,10 @@ export const DraggableComponent = memo(function DraggableComponent({
       onPointerUp={end}
       onPointerCancel={end}
     >
-      {selected && (
-        <mesh position={[0, 0.01, 0]} rotation={[-Math.PI / 2, 0, 0]}>
-          <ringGeometry args={[1.15, 1.22, 24]} />
-          <meshBasicMaterial
-            color={dragging ? "#fbbf24" : "#55aaff"}
-            transparent
-            opacity={0.5}
-          />
-        </mesh>
-      )}
+      {selected && bounds && <mesh raycast={()=>null} position={bounds.min.map((v,i)=>(v+bounds.max[i])/2) as [number,number,number]}>
+        <boxGeometry args={bounds.min.map((v,i)=>bounds.max[i]-v) as [number,number,number]} />
+        <meshBasicMaterial color={dragging?"#fbbf24":"#55aaff"} wireframe transparent opacity={.65} depthWrite={false} />
+      </mesh>}
       {children}
     </group>
   );

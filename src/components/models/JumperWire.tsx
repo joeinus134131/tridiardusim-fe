@@ -6,18 +6,19 @@ import { ComponentRegistry } from "@/lib/components/ComponentRegistry";
 import { PinHighlight } from "@/components/canvas/PinHighlight";
 export function JumperWire({ id }: { id: string }) {
   const c = useSimulatorStore((s) => s.components.find((c) => c.id === id));
+  const depth = Number(c?.state.depth || 8), height = Number(c?.state.bendHeight || .3);
   const curve = useMemo(
     () =>
       new THREE.CatmullRomCurve3([
         new THREE.Vector3(-2, 0.23, -2.1),
-        new THREE.Vector3(-3.3, 0.3, -4),
-        new THREE.Vector3(-3, 0.3, -7),
-        new THREE.Vector3(0, 0.3, -8),
-        new THREE.Vector3(3, 0.3, -7),
-        new THREE.Vector3(3.3, 0.3, -4),
+        new THREE.Vector3(-3.3, height, -depth*.5),
+        new THREE.Vector3(-3, height, -depth*.875),
+        new THREE.Vector3(0, height, -depth),
+        new THREE.Vector3(3, height, -depth*.875),
+        new THREE.Vector3(3.3, height, -depth*.5),
         new THREE.Vector3(2, 0.23, -2.1),
       ]),
-    [],
+    [depth,height],
   );
   return (
     <group>

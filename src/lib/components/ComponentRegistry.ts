@@ -1,3 +1,4 @@
+import { esp32Pins } from "./esp32";
 import { unoPins } from "./physical";
 import { ComponentType, PinDefinition } from "./componentTypes";
 
@@ -49,6 +50,11 @@ ComponentRegistry.register({
   category: "Boards",
   defaultState: {},
   pins: unoPins,
+});
+
+ComponentRegistry.register({
+ typeId: "esp32_wroom", name: "ESP32-WROOM DevKitC", type: "board", category: "Boards",
+ description: "DevKitC V4 · 38 pin · GPIO 3.3 V, ADC 12-bit, PWM & Serial virtual.", defaultState: {}, pins: esp32Pins,
 });
 
 ComponentRegistry.register({
@@ -213,8 +219,8 @@ ComponentRegistry.register({
   category: "Basic",
   defaultState: { resistance: 220 },
   pins: [
-    { id: "L", name: "Lead 1", type: "digital", position: [-1.8, 0.24, 0] },
-    { id: "R", name: "Lead 2", type: "digital", position: [1.8, 0.24, 0] },
+    { id: "L", name: "Lead 1", type: "digital", position: [-1.016, -0.6, 0] },
+    { id: "R", name: "Lead 2", type: "digital", position: [1.016, -0.6, 0] },
   ],
 });
 
@@ -228,7 +234,7 @@ ComponentRegistry.register({
   type: "passive",
   description: "A red male-to-male jumper wire for power connections.",
   category: "Wiring",
-  defaultState: { color: "red", length: 4 },
+  defaultState: { color: "red", length: 4, depth: 8, bendHeight: 0.3 },
   pins: [
     { id: "L", name: "Left Tip", type: "digital", position: [-2, 0.23, 0] },
     { id: "R", name: "Right Tip", type: "digital", position: [2, 0.23, 0] },
@@ -241,7 +247,7 @@ ComponentRegistry.register({
   type: "passive",
   description: "A black male-to-male jumper wire for ground connections.",
   category: "Wiring",
-  defaultState: { color: "black", length: 4 },
+  defaultState: { color: "black", length: 4, depth: 8, bendHeight: 0.3 },
   pins: [
     { id: "L", name: "Left Tip", type: "digital", position: [-2, 0.23, 0] },
     { id: "R", name: "Right Tip", type: "digital", position: [2, 0.23, 0] },
@@ -254,7 +260,7 @@ ComponentRegistry.register({
   type: "passive",
   description: "A blue male-to-male jumper wire for signal connections.",
   category: "Wiring",
-  defaultState: { color: "blue", length: 4 },
+  defaultState: { color: "blue", length: 4, depth: 8, bendHeight: 0.3 },
   pins: [
     { id: "L", name: "Left Tip", type: "digital", position: [-2, 0.23, 0] },
     { id: "R", name: "Right Tip", type: "digital", position: [2, 0.23, 0] },
@@ -267,7 +273,7 @@ ComponentRegistry.register({
   type: "passive",
   description: "A green male-to-male jumper wire for signal connections.",
   category: "Wiring",
-  defaultState: { color: "green", length: 4 },
+  defaultState: { color: "green", length: 4, depth: 8, bendHeight: 0.3 },
   pins: [
     { id: "L", name: "Left Tip", type: "digital", position: [-2, 0.23, 0] },
     { id: "R", name: "Right Tip", type: "digital", position: [2, 0.23, 0] },
@@ -280,7 +286,7 @@ ComponentRegistry.register({
   type: "passive",
   description: "A yellow male-to-male jumper wire for signal connections.",
   category: "Wiring",
-  defaultState: { color: "yellow", length: 4 },
+  defaultState: { color: "yellow", length: 4, depth: 8, bendHeight: 0.3 },
   pins: [
     { id: "L", name: "Left Tip", type: "digital", position: [-2, 0.23, 0] },
     { id: "R", name: "Right Tip", type: "digital", position: [2, 0.23, 0] },

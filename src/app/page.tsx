@@ -1,4 +1,6 @@
 "use client";
+import { PhysicalProperties } from "@/components/panels/PhysicalProperties";
+import { WireProperties } from "@/components/panels/WireProperties";
 import { useState, useEffect, useRef } from "react";
 import dynamic from "next/dynamic";
 import { useSimulatorStore } from "@/store/useSimulatorStore";
@@ -69,6 +71,7 @@ export default function WorkspacePage() {
   const wires = useSimulatorStore((s) => s.wires);
   const code = useSimulatorStore((s) => s.code);
   const simulationState = useSimulatorStore((s) => s.simulationState);
+  const placementNotice = useSimulatorStore(s=>s.placementNotice);
   const selectedComponentId = useSimulatorStore((s) => s.selectedComponentId);
   const isWiringActive = useSimulatorStore((s) => s.wiringState.active);
   const wiringSourcePinId = useSimulatorStore((s) => s.wiringState.sourcePinId);
@@ -464,6 +467,7 @@ export default function WorkspacePage() {
                 </details>
                 <strong>Contoh rangkaian</strong>
                 {[
+                  ["esp32", "ESP32 + resistor terpasang"],
                   ["blink", "Blink + resistor"],
                   ["button", "Tombol INPUT_PULLUP"],
                   ["pwm", "Potensiometer → PWM"],
@@ -590,6 +594,7 @@ export default function WorkspacePage() {
               </span>
             )}
           </div>
+          {placementNotice && <div className="diagnostics" role="status">{placementNotice}</div>}
           {diagnostics.length > 0 && (
             <div className="diagnostics" role="alert">
               {diagnostics.map((d, i) => (
@@ -610,6 +615,7 @@ export default function WorkspacePage() {
               </button>
             </div>
             <div className="property-body">
+              <PhysicalProperties key={selected.id} component={selected} />
               <p>{physical?.variant}</p>
               <p>{physical?.dimensions}</p>
               <details>
@@ -717,6 +723,7 @@ export default function WorkspacePage() {
             </div>
           </div>
         )}
+        <WireProperties />
         <aside className="program-panel">
           <CodeEditorPanel />
           <SerialMonitor />

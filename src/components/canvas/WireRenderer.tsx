@@ -1,5 +1,6 @@
 "use client";
-import { memo, useMemo } from "react";
+import { ThreeEvent } from "@react-three/fiber";
+import { memo, useMemo, useRef } from "react";
 import * as THREE from "three";
 import { useSimulatorStore } from "@/store/useSimulatorStore";
 import type { Wire } from "@/lib/components/componentTypes";
@@ -30,25 +31,41 @@ const Connection = memo(function Connection({
     const end = new THREE.Vector3(...tp)
       .applyEuler(new THREE.Euler(...targetRotation))
       .add(new THREE.Vector3(...target));
+    if(wire.path?.length) return new THREE.CatmullRomCurve3([start,...wire.path.map(p=>new THREE.Vector3(...p)),end],false,"centripetal");
     const mid = start.clone().lerp(end, 0.5);
     mid.y += Math.min(start.distanceTo(end) * 0.2, 5);
     return new THREE.QuadraticBezierCurve3(start, mid, end);
-  }, [source, rotation, target, targetRotation, sp, tp]);
+  }, [source, rotation, target, targetRotation, sp, tp, wire.path]);
   return (
-    <mesh
+    <group><mesh
       onClick={(e) => {
         e.stopPropagation();
         useSimulatorStore.getState().selectWire(wire.id);
       }}
     >
-      <tubeGeometry args={[curve, 24, 0.075, 6, false]} />
+      <tubeGeometry args={[curve, 64, 0.075, 6, false]} />
       <meshStandardMaterial
-        color={selected ? "#fbbf24" : wire.color}
+        color={wire.color}
+        emissive={selected ? wire.color : "black"}
+        emissiveIntensity={selected ? .3 : 0}
         roughness={0.7}
       />
-    </mesh>
+    </mesh>{selected && wire.path?.map((p,i)=><BendHandle key={i} wire={wire} index={i} point={p}/>)}</group>
   );
 });
+function BendHandle({wire,index,point}:{wire:Wire;index:number;point:Vec}) {
+ const dragging=useRef(false);
+ const move=(e:ThreeEvent<PointerEvent>)=>{
+  if(!dragging.current) return;
+  e.stopPropagation();
+  const hit=e.ray.intersectPlane(new THREE.Plane(new THREE.Vector3(0,1,0),-point[1]),new THREE.Vector3());
+  if(hit) useSimulatorStore.getState().updateWire(wire.id,{path:wire.path!.map((p,i)=>i===index?[hit.x,point[1],hit.z]:p)});
+ };
+ const end=(e:ThreeEvent<PointerEvent>)=>{e.stopPropagation();dragging.current=false;(e.target as Element).releasePointerCapture(e.pointerId);};
+ return <mesh position={point} onPointerDown={e=>{if(e.button!==0)return;e.stopPropagation();dragging.current=true;(e.target as Element).setPointerCapture(e.pointerId);}} onPointerMove={move} onPointerUp={end} onPointerCancel={end}>
+  <sphereGeometry args={[.22,12,8]}/><meshBasicMaterial color="#fbbf24" depthTest={false}/>
+ </mesh>;
+}
 export function WireRenderer() {
   const wires = useSimulatorStore((s) => s.wires);
   const components = useSimulatorStore((s) => s.components);

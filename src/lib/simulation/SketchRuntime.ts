@@ -28,14 +28,33 @@ const types = new Set([
   "float",
   "double",
   "bool",
+  "boolean",
   "byte",
   "char",
   "String",
   "unsigned",
   "const",
+  "static",
+  "volatile",
+  "int8_t",
+  "int16_t",
+  "int32_t",
   "uint8_t",
   "uint16_t",
   "uint32_t",
+  "size_t",
+  "short",
+  "auto",
+  "WiFiClient",
+  "WiFiServer",
+  "HTTPClient",
+  "IPAddress",
+  "File",
+  "Servo",
+  "LiquidCrystal",
+  "DHT",
+  "Adafruit_SSD1306",
+  "Adafruit_GFX",
 ]);
 const precedence: Record<string, number> = {
   "=": 1,
@@ -69,16 +88,59 @@ export class SketchParser {
   globals: Stmt[] = [];
   constructor(source: string) {
     if (source.length > 64000) throw new Error("Sketch maksimum 64 KB.");
+
+    // 1. Preprocessor: Handle #include, #define, and preprocessor directives
+    const rawLines = source.split(/\r?\n/);
+    const defines = new Map<string, string>();
+    const processedLines: string[] = [];
+
+    for (const lineStr of rawLines) {
+      const trimmed = lineStr.trim();
+      if (trimmed.startsWith("#include") || trimmed.startsWith("#pragma")) {
+        // Keep blank line to preserve line count for accurate error positions
+        processedLines.push("");
+        continue;
+      }
+      const defMatch = trimmed.match(/^#define\s+([A-Za-z_]\w*)(?:\s+(.+))?$/);
+      if (defMatch) {
+        const [, defName, rawVal] = defMatch;
+        let defVal = rawVal ? rawVal.trim() : "1";
+        if (defVal.includes("//")) defVal = defVal.split("//")[0].trim();
+        defines.set(defName, defVal);
+        processedLines.push("");
+        continue;
+      }
+      if (
+        trimmed.startsWith("#ifdef") ||
+        trimmed.startsWith("#ifndef") ||
+        trimmed.startsWith("#endif") ||
+        trimmed.startsWith("#else") ||
+        trimmed.startsWith("#if")
+      ) {
+        processedLines.push("");
+        continue;
+      }
+      processedLines.push(lineStr);
+    }
+
+    let preprocessedSource = processedLines.join("\n");
+    for (const [defName, defVal] of defines.entries()) {
+      preprocessedSource = preprocessedSource.replace(
+        new RegExp(`\\b${defName}\\b`, "g"),
+        defVal,
+      );
+    }
+
     let line = 1;
     const re =
       /\s+|\/\/[^\n]*|\/\*[\s\S]*?\*\/|"(?:\\.|[^"\\])*"|'(?:\\.|[^'\\])*'|0x[\da-fA-F]+|\d+(?:\.\d+)?|[A-Za-z_]\w*|\+\+|--|==|!=|<=|>=|&&|\|\||<<|>>|\+=|-=|\*=|\/=|[{}();,.+\-*/%<>=!~&|^]/gy;
     let pos = 0;
-    while (pos < source.length) {
+    while (pos < preprocessedSource.length) {
       re.lastIndex = pos;
-      const m = re.exec(source);
+      const m = re.exec(preprocessedSource);
       if (!m)
         throw new Error(
-          `Baris ${line}: sintaks tidak didukung (${source.slice(pos, pos + 20)}).`,
+          `Baris ${line}: sintaks tidak didukung (${preprocessedSource.slice(pos, pos + 20)}).`,
         );
       const t = m[0];
       if (!/^\s|^\/\//.test(t) && !t.startsWith("/*"))
@@ -91,15 +153,30 @@ export class SketchParser {
       this.type();
       const name = this.name();
       if (this.eat("(")) {
-        const params: string[] = [];
-        if (this.peek() !== ")")
-          do {
-            this.type();
-            params.push(this.name());
-          } while (this.eat(","));
-        this.need(")");
-        if (this.functions.has(name)) this.fail("Fungsi duplikat");
-        this.functions.set(name, { params, body: this.block() });
+        if (this.peek() === ")" || this.isType()) {
+          const params: string[] = [];
+          if (this.peek() !== ")")
+            do {
+              this.type();
+              params.push(this.name());
+            } while (this.eat(","));
+          this.need(")");
+          if (this.functions.has(name)) this.fail("Fungsi duplikat");
+          this.functions.set(name, { params, body: this.block() });
+        } else {
+          // Object constructor e.g. LiquidCrystal lcd(12, 11, 5, 4, 3, 2);
+          while (this.peek() !== ")" && this.peek() !== "<eof>") {
+            this.expr();
+            this.eat(",");
+          }
+          this.need(")");
+          this.need(";");
+          this.globals.push({
+            kind: "declare",
+            name,
+            value: { kind: "literal", value: 0 },
+          });
+        }
       } else {
         const value = this.eat("=")
           ? this.expr()
@@ -135,9 +212,31 @@ export class SketchParser {
     this.i++;
     return n;
   }
+  private isType(): boolean {
+    const t = this.peek();
+    if (types.has(t)) return true;
+    const next = this.tokens[this.i + 1]?.text;
+    if (
+      /^[A-Za-z_]\w*$/.test(t) &&
+      next &&
+      /^[A-Za-z_]\w*$/.test(next) &&
+      !precedence[next] &&
+      next !== "("
+    ) {
+      return true;
+    }
+    return false;
+  }
   private type() {
-    if (!types.has(this.peek())) this.fail("Tipe/deklarasi tidak didukung");
+    if (!this.isType()) this.fail("Tipe/deklarasi tidak didukung");
     while (types.has(this.peek())) this.i++;
+    if (
+      /^[A-Za-z_]\w*$/.test(this.peek()) &&
+      this.tokens[this.i + 1] &&
+      /^[A-Za-z_]\w*$/.test(this.tokens[this.i + 1].text)
+    ) {
+      this.i++;
+    }
   }
   private block(): Stmt {
     this.need("{");
@@ -184,9 +283,18 @@ export class SketchParser {
       this.need(";");
       return { kind: "break" };
     }
-    if (types.has(this.peek())) {
+    if (this.isType()) {
       this.type();
       const name = this.name();
+      if (this.eat("(")) {
+        while (this.peek() !== ")" && this.peek() !== "<eof>") {
+          this.expr();
+          this.eat(",");
+        }
+        this.need(")");
+        this.need(";");
+        return { kind: "declare", name, value: { kind: "literal", value: 0 } };
+      }
       const value = this.eat("=")
         ? this.expr()
         : { kind: "literal" as const, value: 0 };
@@ -201,7 +309,7 @@ export class SketchParser {
     let left: Expr;
     const t = this.peek();
     this.i++;
-    if (["!", "-", "+", "~"].includes(t))
+    if (["!", "-", "+", "~", "&", "*"].includes(t))
       left = { kind: "unary", op: t, value: this.expr(12) };
     else if (t === "(") {
       left = this.expr();
@@ -287,6 +395,11 @@ export class SketchRuntime {
       LED_BUILTIN: 13,
       true: 1,
       false: 0,
+      PI: Math.PI,
+      HALF_PI: Math.PI / 2,
+      TWO_PI: Math.PI * 2,
+      DEG_TO_RAD: Math.PI / 180,
+      RAD_TO_DEG: 180 / Math.PI,
       A0: 14,
       A1: 15,
       A2: 16,
@@ -297,6 +410,20 @@ export class SketchRuntime {
       HEX: 16,
       OCT: 8,
       BIN: 2,
+      WL_IDLE_STATUS: 0,
+      WL_NO_SSID_AVAIL: 1,
+      WL_SCAN_COMPLETED: 2,
+      WL_CONNECTED: 3,
+      WL_CONNECT_FAILED: 4,
+      WL_CONNECTION_LOST: 5,
+      WL_DISCONNECTED: 6,
+      HTTP_CODE_OK: 200,
+      SSD1306_SWITCHCAPVCC: 2,
+      SSD1306_EXTERNALVCC: 1,
+      WHITE: 1,
+      BLACK: 0,
+      INVERSE: 2,
+      Wire: 1,
       ...constants,
     }))
       this.scope.values.set(k, v);
@@ -353,6 +480,9 @@ export class SketchRuntime {
         return this.call(e.name, args);
       }
       case "unary": {
+        if (e.op === "&" || e.op === "*") {
+          return await this.expr(e.value, s);
+        }
         const v = Number(await this.expr(e.value, s));
         return e.op === "!" ? +!v : e.op === "-" ? -v : e.op === "~" ? ~v : v;
       }

@@ -16,6 +16,7 @@ import { Potentiometer } from "@/components/models/Potentiometer";
 import { Breadboard } from "@/components/models/Breadboard";
 import { JumperWire } from "@/components/models/JumperWire";
 import { Resistor } from "@/components/models/Resistor";
+import { OLEDDisplay } from "@/components/models/OLEDDisplay";
 import { WireRenderer } from "@/components/canvas/WireRenderer";
 import { ActiveWireRenderer } from "@/components/canvas/ActiveWireRenderer";
 
@@ -32,6 +33,8 @@ const ComponentRenderer = memo(function ComponentRenderer({
       return <ESP32Wroom id={id} />;
     case "arduino_uno":
       return <ArduinoUnoR3 id={id} />;
+    case "oled_ssd1306":
+      return <OLEDDisplay id={id} />;
     case "led_red":
       return <LED id={id} />;
     case "push_button":

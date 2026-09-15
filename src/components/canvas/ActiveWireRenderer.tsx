@@ -31,32 +31,67 @@ export function ActiveWireRenderer() {
     return localPos.add(compPos);
   }, [active, sourceComponentId, sourcePinId, components]);
 
-  if (!active || !startPos || !currentTargetPos) return null;
+  const { curve, endPos } = useMemo(() => {
+    if (!active || !startPos || !currentTargetPos) return { curve: null, endPos: null };
 
-  const endPos = new THREE.Vector3(...currentTargetPos);
+    const end = new THREE.Vector3(...currentTargetPos);
+    const dist = startPos.distanceTo(end);
 
-  // Arch height based on distance
-  const distance = startPos.distanceTo(endPos);
-  const midPoint = startPos.clone().lerp(endPos, 0.5);
-  midPoint.y += Math.min(distance * 0.3, 10);
+    // Vertical rigid clearance: sBase -> sTop -> sRigid ensures 100% straight vertical wire exiting boot
+    const sBase = startPos.clone().add(new THREE.Vector3(0, 0.2, 0));
+    const sTop = startPos.clone().add(new THREE.Vector3(0, 0.65, 0));
+    const sRigid = startPos.clone().add(new THREE.Vector3(0, 1.25, 0));
 
-  const curve = new THREE.QuadraticBezierCurve3(startPos, midPoint, endPos);
+    const mid = startPos.clone().lerp(end, 0.5);
+    const maxPinY = Math.max(startPos.y, end.y);
+    const archLift = Math.max(1.0, Math.min(dist * 0.25, 4.0));
+    mid.y = Math.max(mid.y, maxPinY) + archLift;
+
+    const p3 = end.clone().add(new THREE.Vector3(0, 0.6, 0));
+
+    const naturalCurve = new THREE.CatmullRomCurve3(
+      [sBase, sTop, sRigid, mid, p3, end],
+      false,
+      "catmullrom",
+      0.35
+    );
+
+    return { curve: naturalCurve, endPos: end };
+  }, [active, startPos, currentTargetPos]);
+
+  if (!active || !startPos || !endPos || !curve) return null;
 
   return (
     <group>
+      {/* Dynamic Active Jumper Wire */}
       <mesh>
-        <tubeGeometry args={[curve, 20, 0.075, 6, false]} />
+        <tubeGeometry args={[curve, 40, 0.08, 8, false]} />
         <meshStandardMaterial
-          color="#3b82f6" // Default blue for drawing
-          roughness={0.6}
+          color="#3b82f6"
+          emissive="#3b82f6"
+          emissiveIntensity={0.25}
+          roughness={0.5}
           transparent
-          opacity={0.8}
+          opacity={0.92}
         />
       </mesh>
-      {/* End tip matching current mouse pos */}
+
+      {/* Rigid Terminal Boot at starting pin */}
+      <group position={[startPos.x, startPos.y + 0.325, startPos.z]}>
+        <mesh>
+          <cylinderGeometry args={[0.13, 0.13, 0.65, 16]} />
+          <meshStandardMaterial color="#0f172a" roughness={0.65} metalness={0.1} />
+        </mesh>
+        <mesh position={[0, 0.28, 0]}>
+          <cylinderGeometry args={[0.15, 0.14, 0.07, 16]} />
+          <meshStandardMaterial color="#1e293b" roughness={0.5} />
+        </mesh>
+      </group>
+
+      {/* Cursor tip target */}
       <mesh position={endPos}>
-        <sphereGeometry args={[0.15, 8, 6]} />
-        <meshBasicMaterial color="#3b82f6" />
+        <sphereGeometry args={[0.16, 12, 8]} />
+        <meshBasicMaterial color="#60a5fa" />
       </mesh>
     </group>
   );

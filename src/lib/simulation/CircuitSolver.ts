@@ -132,6 +132,13 @@ export function solveCircuit(
         vf: 1.8,
         led: c.id,
       });
+    if (c.typeId === "oled_ssd1306")
+      edges.push({
+        a: node(c, "VCC"),
+        b: node(c, "GND"),
+        r: 220,
+        vf: 0,
+      });
   }
   // Only solve electrically active nets; unused breadboard holes cost no matrix rows.
   const active = new Set([
@@ -239,6 +246,18 @@ export function solveCircuit(
         warnings.add(
           `${c.name}: arus LED >20 mA. Tambahkan resistor pembatas.`,
         );
+    }
+    if (c.typeId === "oled_ssd1306") {
+      const vcc = voltage.get(node(c, "VCC")) || 0;
+      const gnd = voltage.get(node(c, "GND")) || 0;
+      const vDiff = vcc - gnd;
+      const isPowered = vDiff >= 2.7;
+      states[c.id] = {
+        ...c.state,
+        isOn: isPowered,
+        isPowered,
+        vDiff,
+      };
     }
   }
   const voltages: Record<string, number> = {};

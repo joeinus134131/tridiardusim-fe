@@ -245,10 +245,12 @@ function test(name, fn) {
     await assert.rejects(() => runaway.loop(), /50.000/);
     checks++;
     console.log("PASS runaway operation budget");
-    test("Unsupported directives and member access rejected", () => {
-      assert.throws(
+    test("Include and define directives supported, arbitrary browser members rejected", () => {
+      assert.doesNotThrow(
         () =>
-          new SketchParser("#include <WiFi.h>\nvoid setup() {} void loop() {}"),
+          new SketchParser(
+            "#include <WiFi.h>\n#define LED 13\nvoid setup() { pinMode(LED, OUTPUT); } void loop() {}",
+          ),
       );
       assert.throws(
         () =>
@@ -266,6 +268,27 @@ function test(name, fn) {
     await assert.rejects(() => invalid.start(), /belum didukung/);
     checks++;
     console.log("PASS no arbitrary JavaScript execution");
+
+    test("OLED SSD1306 example circuit powers display and supports Adafruit_SSD1306", () => {
+      const oledProj = example("oled");
+      assert.ok(oledProj.components.some((c) => c.typeId === "oled_ssd1306"));
+      const r = solveCircuit(oledProj.components, oledProj.wires, {});
+      assert.equal(r.states.oled.isPowered, true);
+      assert.ok(r.states.oled.vDiff >= 4.5);
+
+      // Verify sketch parser parses Adafruit_SSD1306 without error
+      assert.doesNotThrow(() => new SketchParser(oledProj.code));
+    });
+
+    test("LED supports custom user color and persists across project parse", () => {
+      const proj = example("blink");
+      proj.components.find((c) => c.typeId === "led_red").state.color = "#3b82f6";
+      const json = JSON.stringify(proj);
+      const parsed = parseProject(JSON.parse(json));
+      const ledComp = parsed.components.find((c) => c.typeId === "led_red");
+      assert.equal(ledComp.state.color, "#3b82f6");
+    });
+
     const bench = example("breadboard");
     const t = performance.now();
     for (let i = 0; i < 200; i++)

@@ -1,5 +1,5 @@
 import { esp32Pins } from "./esp32";
-import { unoPins } from "./physical";
+import { oledPins, unoPins } from "./physical";
 import { ComponentType, PinDefinition } from "./componentTypes";
 
 export interface ComponentRegistration {
@@ -131,9 +131,9 @@ ComponentRegistry.register({
 
 ComponentRegistry.register({
   typeId: "led_red",
-  name: "Red LED",
+  name: "LED (5mm Multi-Color)",
   type: "actuator",
-  description: "A standard 5mm red light emitting diode.",
+  description: "LED 5mm difus standar dengan pilihan warna dinamis.",
   category: "Basic",
   defaultState: { isOn: false, brightness: 0, color: "#ef4444" },
   pins: [
@@ -141,15 +141,32 @@ ComponentRegistry.register({
       id: "A",
       name: "Anode (+)",
       type: "digital",
-      position: [-0.254, -5.4, 0],
+      position: [-0.254, -0.6, 0],
     },
     {
       id: "C",
       name: "Cathode (-)",
       type: "ground",
-      position: [0.254, -5.1, 0],
+      position: [0.254, -0.6, 0],
     },
   ],
+});
+
+ComponentRegistry.register({
+  typeId: "oled_ssd1306",
+  name: "OLED Display 0.96\" (SSD1306)",
+  type: "actuator",
+  description: "Display OLED I2C 128×64 monokrom · 4 pin: GND, VCC, SCL, SDA.",
+  category: "Displays",
+  defaultState: {
+    isOn: true,
+    isPowered: false,
+    text: "NEXFLUX LAB 3D\nOLED SSD1306 0.96\"\nI2C: 0x3C Ready\nHello World!",
+    image: "logo",
+    contrast: 255,
+    inverted: false,
+  },
+  pins: oledPins,
 });
 
 ComponentRegistry.register({
@@ -164,25 +181,25 @@ ComponentRegistry.register({
       id: "1a",
       name: "Terminal 1a",
       type: "digital",
-      position: [-0.65, -0.7, -0.45],
+      position: [-0.508, -0.6, -0.762],
     },
     {
       id: "1b",
       name: "Terminal 1b",
       type: "digital",
-      position: [0.65, -0.7, -0.45],
+      position: [0.508, -0.6, -0.762],
     },
     {
       id: "2a",
       name: "Terminal 2a",
       type: "digital",
-      position: [-0.65, -0.7, 0.45],
+      position: [-0.508, -0.6, 0.762],
     },
     {
       id: "2b",
       name: "Terminal 2b",
       type: "digital",
-      position: [0.65, -0.7, 0.45],
+      position: [0.508, -0.6, 0.762],
     },
   ],
 });
@@ -199,14 +216,14 @@ ComponentRegistry.register({
       id: "1",
       name: "Terminal 1",
       type: "power",
-      position: [-0.5, -0.7, 0.65],
+      position: [-0.508, -0.6, 0],
     },
-    { id: "W", name: "Wiper", type: "analog", position: [0, -0.7, 0.65] },
+    { id: "W", name: "Wiper", type: "analog", position: [0, -0.6, 0] },
     {
       id: "2",
       name: "Terminal 2",
       type: "ground",
-      position: [0.5, -0.7, 0.65],
+      position: [0.508, -0.6, 0],
     },
   ],
 });

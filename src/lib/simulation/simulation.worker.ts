@@ -106,6 +106,7 @@ const api: Record<string, (...args: Value[]) => Value | Promise<Value>> = {
     } while (remaining > 0);
     return 0;
   },
+  delayMicroseconds: () => 0,
   millis: () =>
     Math.floor((paused ? pauseAt : performance.now()) - started - pausedMs),
   micros: () =>
@@ -122,6 +123,15 @@ const api: Record<string, (...args: Value[]) => Value | Promise<Value>> = {
   abs: (x) => Math.abs(Number(x)),
   min: (a, b) => Math.min(Number(a), Number(b)),
   max: (a, b) => Math.max(Number(a), Number(b)),
+  sq: (x) => Number(x) * Number(x),
+  sqrt: (x) => Math.sqrt(Number(x)),
+  pow: (x, y) => Math.pow(Number(x), Number(y)),
+  random: (a, b) => {
+    if (b === undefined) return Math.floor(Math.random() * Number(a));
+    return Math.floor(Number(a) + Math.random() * (Number(b) - Number(a)));
+  },
+  randomSeed: () => 0,
+  analogReadResolution: () => 0,
   "Serial.begin": (b) => {
     baud = Number(b);
     send({ type: "baud", baud });
@@ -137,7 +147,144 @@ const api: Record<string, (...args: Value[]) => Value | Promise<Value>> = {
     return 0;
   },
   "Serial.write": (v) => print(String.fromCharCode(Number(v) & 255)),
+
+  // ESP32 Virtual Wi-Fi Emulation
+  "WiFi.begin": (ssid = "Nexflux-Virtual-WiFi") => {
+    wifiState.ssid = String(ssid);
+    wifiState.attempts = 0;
+    wifiState.connected = false;
+    wifiState.connectTime = performance.now() + 800;
+    return 0;
+  },
+  "WiFi.status": () => {
+    if (!wifiState.ssid) return 6; // WL_DISCONNECTED
+    if (!wifiState.connected) {
+      wifiState.attempts++;
+      if (performance.now() >= wifiState.connectTime || wifiState.attempts >= 3) {
+        wifiState.connected = true;
+        wifiState.ip = "192.168.1." + (100 + Math.floor(Math.random() * 50));
+      }
+    }
+    return wifiState.connected ? 3 : 0; // 3 = WL_CONNECTED, 0 = WL_IDLE_STATUS
+  },
+  "WiFi.localIP": () => (wifiState.connected ? wifiState.ip : "0.0.0.0"),
+  "WiFi.SSID": () => wifiState.ssid,
+  "WiFi.RSSI": () => (wifiState.connected ? -48 - Math.floor(Math.random() * 12) : 0),
+  "WiFi.macAddress": () => "24:6F:28:8A:4C:9E",
+  "WiFi.isConnected": () => (wifiState.connected ? 1 : 0),
+  "WiFi.disconnect": () => {
+    wifiState.connected = false;
+    wifiState.ssid = "";
+    wifiState.ip = "0.0.0.0";
+    return 0;
+  },
+
+  // Real Internet Communication for ESP32
+  httpGet: async (url) => {
+    try {
+      const res = await fetch(String(url), { signal: AbortSignal.timeout(6000) });
+      const text = await res.text();
+      return text.slice(0, 4096);
+    } catch (e) {
+      return "ERROR: " + (e instanceof Error ? e.message : String(e));
+    }
+  },
+  "http.get": async (url) => {
+    try {
+      const res = await fetch(String(url), { signal: AbortSignal.timeout(6000) });
+      lastHttpCode = res.status;
+      lastHttpResponse = (await res.text()).slice(0, 4096);
+      return res.status;
+    } catch (e) {
+      lastHttpCode = 500;
+      lastHttpResponse = "ERROR: " + (e instanceof Error ? e.message : String(e));
+      return 500;
+    }
+  },
+  "http.getString": () => lastHttpResponse,
+  "http.statusCode": () => lastHttpCode,
+
+  // Adafruit_SSD1306 / GFX OLED Emulation
+  "display.begin": () => {
+    oledState.buffer = "";
+    updateOledComponents();
+    return 1;
+  },
+  "display.clearDisplay": () => {
+    oledState.buffer = "";
+    updateOledComponents();
+    return 0;
+  },
+  "display.setTextSize": (s = 1) => {
+    oledState.textSize = Number(s);
+    return 0;
+  },
+  "display.setTextColor": (c = 1) => {
+    oledState.textColor = Number(c);
+    return 0;
+  },
+  "display.setCursor": (x = 0, y = 0) => {
+    oledState.cursorX = Number(x);
+    oledState.cursorY = Number(y);
+    return 0;
+  },
+  "display.print": (v = "") => {
+    oledState.buffer += String(v);
+    return 0;
+  },
+  "display.println": (v = "") => {
+    oledState.buffer += String(v) + "\n";
+    return 0;
+  },
+  "display.display": () => {
+    updateOledComponents();
+    return 0;
+  },
+  "display.invertDisplay": (inv = 1) => {
+    oledState.inverted = Boolean(inv);
+    updateOledComponents();
+    return 0;
+  },
+  "display.drawPixel": () => 0,
+  "display.drawLine": () => 0,
+  "display.drawRect": () => 0,
+  "display.fillRect": () => 0,
+  "display.drawCircle": () => 0,
+  "display.fillCircle": () => 0,
+  "display.drawBitmap": () => 0,
 };
+
+let oledState = {
+  cursorX: 0,
+  cursorY: 0,
+  textSize: 1,
+  textColor: 1,
+  buffer: "",
+  inverted: false,
+};
+
+function updateOledComponents() {
+  const oleds = components.filter((c) => c.typeId === "oled_ssd1306");
+  for (const c of oleds) {
+    c.state = {
+      ...c.state,
+      text: oledState.buffer || c.state.text,
+      inverted: oledState.inverted,
+      image: "custom_text",
+    };
+  }
+  dirty = true;
+}
+
+let wifiState = {
+  connected: false,
+  ssid: "",
+  ip: "0.0.0.0",
+  connectTime: 0,
+  attempts: 0,
+};
+let lastHttpResponse = "";
+let lastHttpCode = 0;
 setInterval(() => {
   try {
     if (runtime) {
@@ -180,6 +327,15 @@ onmessage = async (e: MessageEvent) => {
   io = {};
   dirty = true;
   started = performance.now();
+  wifiState = {
+    connected: false,
+    ssid: "",
+    ip: "0.0.0.0",
+    connectTime: 0,
+    attempts: 0,
+  };
+  lastHttpResponse = "";
+  lastHttpCode = 0;
   try {
     board();
     runtime = new SketchRuntime(new SketchParser(m.code), api);

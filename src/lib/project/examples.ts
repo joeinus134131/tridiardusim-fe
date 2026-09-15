@@ -90,5 +90,30 @@ export function example(kind: string): Project {
     wires[0].path=[[-8,4,-3],[-4,3,-3]];
     code='void setup() {\n  pinMode(25, OUTPUT);\n  Serial.begin(9600);\n}\nvoid loop() {\n  digitalWrite(25, HIGH);\n  Serial.println("ESP32 GPIO25 ON - 3.3V");\n  delay(500);\n  digitalWrite(25, LOW);\n  Serial.println("ESP32 GPIO25 OFF");\n  delay(500);\n}';
   }
+  if (kind === "esp32_wifi") {
+    components.length = 0;
+    components.push(
+      instance("esp32_wroom", "esp", [-8, 0.6, 0]),
+      instance("breadboard", "bb", [8, 0, 0]),
+      instance("led_red", "led", [12, 0.8, 0])
+    );
+    link("esp", "GPIO2", "led", "A", "#3b82f6");
+    link("led", "C", "esp", "GND1", "#1e293b");
+    code =
+      '#include <WiFi.h>\n\nconst char* ssid = "Wokwi-GUEST";\nconst char* password = "";\n\nvoid setup() {\n  Serial.begin(115200);\n  pinMode(2, OUTPUT);\n  WiFi.begin(ssid, password);\n  Serial.print("Menghubungkan WiFi");\n  while (WiFi.status() != WL_CONNECTED) {\n    delay(500);\n    Serial.print(".");\n  }\n  Serial.println("");\n  Serial.println("WiFi Terhubung!");\n  Serial.print("IP Address: ");\n  Serial.println(WiFi.localIP());\n  digitalWrite(2, HIGH);\n}\n\nvoid loop() {\n  delay(1000);\n}';
+  }
+  if (kind === "oled" || kind === "oled_demo") {
+    components.length = 0;
+    components.push(
+      instance("arduino_uno", "uno", [-8, 0, 0]),
+      instance("oled_ssd1306", "oled", [5, 0.6, 0]),
+    );
+    link("uno", "5V", "oled", "VCC", "#ef4444");
+    link("uno", "GND1", "oled", "GND", "#1e293b");
+    link("uno", "SCL", "oled", "SCL", "#eab308");
+    link("uno", "SDA", "oled", "SDA", "#3b82f6");
+    code =
+      '#include <Wire.h>\n#include <Adafruit_GFX.h>\n#include <Adafruit_SSD1306.h>\n\n#define SCREEN_WIDTH 128\n#define SCREEN_HEIGHT 64\n#define OLED_RESET -1\n#define SCREEN_ADDRESS 0x3C\n\nAdafruit_SSD1306 display(SCREEN_WIDTH, SCREEN_HEIGHT, &Wire, OLED_RESET);\n\nint counter = 0;\n\nvoid setup() {\n  Serial.begin(9600);\n  display.begin(SSD1306_SWITCHCAPVCC, SCREEN_ADDRESS);\n  display.clearDisplay();\n  display.setTextSize(1);\n  display.setTextColor(WHITE);\n  display.setCursor(0, 0);\n  display.println("NEXFLUX LAB 3D");\n  display.println("SSD1306 0.96\\" OLED");\n  display.println("I2C Bus: Connected");\n  display.display();\n  delay(1000);\n}\n\nvoid loop() {\n  counter++;\n  display.clearDisplay();\n  display.setCursor(0, 0);\n  display.println("=== NEXFLUX OLED ===");\n  display.print("Detik Aktif: ");\n  display.println(counter);\n  display.println("Resolusi: 128x64");\n  display.println("I2C Addr: 0x3C OK");\n  display.display();\n  Serial.print("OLED Frame Detik: ");\n  Serial.println(counter);\n  delay(1000);\n}';
+  }
   return { version: 1, name: kind, code, components, wires };
 }

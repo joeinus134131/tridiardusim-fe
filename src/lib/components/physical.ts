@@ -84,6 +84,19 @@ export const oledPins: PinDefinition[] = [
   pin("SDA", 1.5 * PITCH, -2.3, "digital", 0.4),
 ];
 
+export const servoPins: PinDefinition[] = [
+  pin("GND", -1 * PITCH, 2.0, "ground", 0.4),
+  pin("VCC", 0, 2.0, "power", 0.4),
+  pin("PWM", 1 * PITCH, 2.0, "pwm", 0.4),
+];
+
+export const lcd1602Pins: PinDefinition[] = [
+  pin("GND", -1.5 * PITCH, -2.8, "ground", 0.4),
+  pin("VCC", -0.5 * PITCH, -2.8, "power", 0.4),
+  pin("SDA", 0.5 * PITCH, -2.8, "digital", 0.4),
+  pin("SCL", 1.5 * PITCH, -2.8, "digital", 0.4),
+];
+
 export const physicalInfo: Record<string, ComponentDatasheet> = {
   esp32_wroom: {
     variant: "Espressif ESP32-DevKitC V4 / ESP32-WROOM-32",
@@ -244,5 +257,41 @@ export const physicalInfo: Record<string, ComponentDatasheet> = {
     pinoutSummary: "2 Ujung Terminal: Pin Awal (Source) dan Pin Akhir (Target).",
     limits: "Konduktivitas ideal 0 Ω pada analisis jaringan DC solver.",
     source: "https://www.busboard.com/ZW-MM-10",
+  },
+  servo_sg90: {
+    variant: "TowerPro SG90 9g Micro Servo Motor",
+    manufacturer: "TowerPro / Standard RC",
+    dimensions: "Bodi 22.8 × 12.2 × 28.5 mm; Berat 9 gram; Pitch Kabel 2.54 mm",
+    operatingVoltage: "4.8V hingga 6.0V DC (Rekomendasi 5.0V)",
+    currentRating: "Arus Diam ~50 mA; Arus Kerja ~150-250 mA; Stall Current ~650 mA",
+    specs: [
+      "Rentang Sudut Rotasi: 0° hingga 180°",
+      "Kecepatan Operasi: 0.1 detik / 60 derajat (pada 4.8V)",
+      "Torsi Stall: 1.8 kgf·cm (pada 4.8V)",
+      "Sinyal Kontrol: PWM Periode 20 ms (50 Hz), Pulsa 1 ms (0°) hingga 2 ms (180°)",
+      "Bodi: Polycarbonate biru transparan dengan roda gigi nilon",
+    ],
+    pinoutSummary: "3 Pin: GND (Cokelat), VCC 5V (Merah), PWM Sinyal (Oranye).",
+    limits:
+      "Tegangan minimum 4.0V agar motor servo dapat menahan torsi dan berputar sesuai sudut.",
+    source: "http://www.towerpro.com.tw/product/sg90-7/",
+  },
+  lcd1602_i2c: {
+    variant: "HD44780 1602 Character LCD with PCF8574 I2C Backpack",
+    manufacturer: "Hitachi / NXP PCF8574",
+    dimensions: "Modul 80.0 × 36.0 × 12.0 mm; Area Tampilan 64.5 × 16.0 mm",
+    operatingVoltage: "4.5V hingga 5.5V DC (Standar 5.0V)",
+    currentRating: "Arus Backlight LED ~20 mA; Arus Logika ~2 mA; Total ~25 mA",
+    specs: [
+      "Kapasitas Tampilan: 16 Karakter × 2 Baris",
+      "Format Karakter: 5 × 8 Dot Matrix dengan Kursor",
+      "Komunikasi: I2C Dua Kawat (SDA, SCL), Alamat Default 0x27 (atau 0x3F)",
+      "Kontras: Trimpot Potensiometer Putar Biru bawaan pada backpack",
+      "Backlight: LED Kuning-Hijau atau Biru dengan kontrol switch/jumper",
+    ],
+    pinoutSummary: "4 Pin: GND, VCC 5V, SDA (I2C Data), SCL (I2C Clock).",
+    limits:
+      "Membutuhkan tegangan minimal 4.2V agar karakter dot matrix dan lampu latar backlight menyala optimal.",
+    source: "https://www.nxp.com/docs/en/data-sheet/PCF8574_PCF8574A.pdf",
   },
 };

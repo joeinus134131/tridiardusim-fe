@@ -139,6 +139,20 @@ export function solveCircuit(
         r: 220,
         vf: 0,
       });
+    if (c.typeId === "servo_sg90")
+      edges.push({
+        a: node(c, "VCC"),
+        b: node(c, "GND"),
+        r: 100,
+        vf: 0,
+      });
+    if (c.typeId === "lcd1602_i2c")
+      edges.push({
+        a: node(c, "VCC"),
+        b: node(c, "GND"),
+        r: 160,
+        vf: 0,
+      });
   }
   // Only solve electrically active nets; unused breadboard holes cost no matrix rows.
   const active = new Set([
@@ -255,6 +269,28 @@ export function solveCircuit(
       states[c.id] = {
         ...c.state,
         isOn: isPowered,
+        isPowered,
+        vDiff,
+      };
+    }
+    if (c.typeId === "servo_sg90") {
+      const vcc = voltage.get(node(c, "VCC")) || 0;
+      const gnd = voltage.get(node(c, "GND")) || 0;
+      const vDiff = vcc - gnd;
+      const isPowered = vDiff >= 4.0;
+      states[c.id] = {
+        ...c.state,
+        isPowered,
+        vDiff,
+      };
+    }
+    if (c.typeId === "lcd1602_i2c") {
+      const vcc = voltage.get(node(c, "VCC")) || 0;
+      const gnd = voltage.get(node(c, "GND")) || 0;
+      const vDiff = vcc - gnd;
+      const isPowered = vDiff >= 4.2;
+      states[c.id] = {
+        ...c.state,
         isPowered,
         vDiff,
       };

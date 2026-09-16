@@ -252,6 +252,103 @@ const api: Record<string, (...args: Value[]) => Value | Promise<Value>> = {
   "display.drawCircle": () => 0,
   "display.fillCircle": () => 0,
   "display.drawBitmap": () => 0,
+
+  // ─── Micro Servo Motor SG90 Emulation ───
+  "*.attach": (pin = 9) => {
+    servoState.attachedPin = Number(pin);
+    return 1;
+  },
+  "*.write": (val = 90) => {
+    const a = Math.max(0, Math.min(180, Number(val)));
+    servoState.angle = a;
+    updateServoComponents(a);
+    return 0;
+  },
+  "*.writeMicroseconds": (us = 1500) => {
+    const a = Math.max(0, Math.min(180, Math.round(((Number(us) - 1000) / 1000) * 180)));
+    servoState.angle = a;
+    updateServoComponents(a);
+    return 0;
+  },
+  "*.read": () => servoState.angle,
+  "*.attached": () => (servoState.attachedPin >= 0 ? 1 : 0),
+  "*.detach": () => {
+    servoState.attachedPin = -1;
+    return 0;
+  },
+
+  // ─── LiquidCrystal_I2C (LCD 16x2) Emulation ───
+  "*.init": () => {
+    lcdState.line0 = "                ";
+    lcdState.line1 = "                ";
+    lcdState.cursorCol = 0;
+    lcdState.cursorRow = 0;
+    updateLcdComponents();
+    return 0;
+  },
+  "*.begin": () => {
+    lcdState.line0 = "                ";
+    lcdState.line1 = "                ";
+    lcdState.cursorCol = 0;
+    lcdState.cursorRow = 0;
+    updateLcdComponents();
+    return 0;
+  },
+  "*.backlight": () => {
+    lcdState.backlight = true;
+    updateLcdComponents();
+    return 0;
+  },
+  "*.noBacklight": () => {
+    lcdState.backlight = false;
+    updateLcdComponents();
+    return 0;
+  },
+  "*.clear": () => {
+    lcdState.line0 = "                ";
+    lcdState.line1 = "                ";
+    lcdState.cursorCol = 0;
+    lcdState.cursorRow = 0;
+    updateLcdComponents();
+    return 0;
+  },
+  "*.home": () => {
+    lcdState.cursorCol = 0;
+    lcdState.cursorRow = 0;
+    return 0;
+  },
+  "*.setCursor": (col = 0, row = 0) => {
+    lcdState.cursorCol = Math.max(0, Math.min(15, Number(col)));
+    lcdState.cursorRow = Math.max(0, Math.min(1, Number(row)));
+    return 0;
+  },
+  "*.cursor": () => 0,
+  "*.noCursor": () => 0,
+  "*.blink": () => 0,
+  "*.noBlink": () => 0,
+  "lcd.print": (v = "") => {
+    const s = String(v);
+    const rowKey = lcdState.cursorRow === 0 ? "line0" : "line1";
+    let cur = lcdState[rowKey].padEnd(16, " ");
+    const col = lcdState.cursorCol;
+    const nextStr = (cur.slice(0, col) + s + cur.slice(col + s.length)).slice(0, 16);
+    lcdState[rowKey] = nextStr;
+    lcdState.cursorCol = Math.min(16, col + s.length);
+    updateLcdComponents();
+    return s.length;
+  },
+  "lcd.println": (v = "") => {
+    const s = String(v);
+    const rowKey = lcdState.cursorRow === 0 ? "line0" : "line1";
+    let cur = lcdState[rowKey].padEnd(16, " ");
+    const col = lcdState.cursorCol;
+    const nextStr = (cur.slice(0, col) + s + cur.slice(col + s.length)).slice(0, 16);
+    lcdState[rowKey] = nextStr;
+    lcdState.cursorCol = 0;
+    lcdState.cursorRow = lcdState.cursorRow === 0 ? 1 : 0;
+    updateLcdComponents();
+    return s.length;
+  },
 };
 
 let oledState = {
@@ -271,6 +368,45 @@ function updateOledComponents() {
       text: oledState.buffer || c.state.text,
       inverted: oledState.inverted,
       image: "custom_text",
+    };
+  }
+  dirty = true;
+}
+
+let servoState = {
+  angle: 90,
+  attachedPin: -1,
+};
+
+function updateServoComponents(angle?: number) {
+  const servos = components.filter((c) => c.typeId === "servo_sg90");
+  for (const c of servos) {
+    c.state = {
+      ...c.state,
+      angle: typeof angle === "number" ? angle : servoState.angle,
+    };
+  }
+  dirty = true;
+}
+
+let lcdState = {
+  line0: "Nexflux Lab 3D  ",
+  line1: "LCD 16x2 I2C OK ",
+  cursorCol: 0,
+  cursorRow: 0,
+  backlight: true,
+};
+
+function updateLcdComponents() {
+  const lcds = components.filter((c) => c.typeId === "lcd1602_i2c");
+  for (const c of lcds) {
+    c.state = {
+      ...c.state,
+      line0: lcdState.line0,
+      line1: lcdState.line1,
+      backlight: lcdState.backlight,
+      cursorCol: lcdState.cursorCol,
+      cursorRow: lcdState.cursorRow,
     };
   }
   dirty = true;

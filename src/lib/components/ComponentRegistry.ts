@@ -1,5 +1,5 @@
 import { esp32Pins } from "./esp32";
-import { oledPins, unoPins } from "./physical";
+import { lcd1602Pins, oledPins, servoPins, unoPins } from "./physical";
 import { ComponentType, PinDefinition } from "./componentTypes";
 
 export interface ComponentRegistration {
@@ -167,6 +167,41 @@ ComponentRegistry.register({
     inverted: false,
   },
   pins: oledPins,
+});
+
+ComponentRegistry.register({
+  typeId: "lcd1602_i2c",
+  name: "LCD 16x2 Display (I2C)",
+  type: "actuator",
+  description: "Display karakter LCD 16×2 dengan PCF8574 I2C backpack · 4 pin: GND, VCC, SDA, SCL.",
+  category: "Displays",
+  defaultState: {
+    isPowered: false,
+    backlight: true,
+    contrast: 85,
+    theme: "yellow_green",
+    address: "0x27",
+    cursorCol: 0,
+    cursorRow: 0,
+    line0: "Nexflux Lab 3D  ",
+    line1: "LCD 16x2 I2C OK ",
+  },
+  pins: lcd1602Pins,
+});
+
+ComponentRegistry.register({
+  typeId: "servo_sg90",
+  name: "Micro Servo SG90 (9g)",
+  type: "actuator",
+  description: "Motor servo mikro 9g · rotasi 0°-180° · 3 pin: GND, VCC, PWM.",
+  category: "Actuators",
+  defaultState: {
+    angle: 90,
+    targetAngle: 90,
+    isPowered: false,
+    hornType: "single",
+  },
+  pins: servoPins,
 });
 
 ComponentRegistry.register({

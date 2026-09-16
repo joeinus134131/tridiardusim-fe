@@ -572,6 +572,8 @@ export default function WorkspacePage() {
                 </details>
                 <strong>Contoh siap pakai</strong>
                 {[
+                  ["servo", "Micro Servo SG90 9g"],
+                  ["lcd1602", "LCD 16x2 Display I2C"],
                   ["oled", "OLED Display 0.96\" SSD1306"],
                   ["esp32_wifi", "ESP32 Wi-Fi + Internet Fetch"],
                   ["esp32", "ESP32 DevKit + Breadboard"],

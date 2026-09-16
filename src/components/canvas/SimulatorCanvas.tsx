@@ -17,6 +17,8 @@ import { Breadboard } from "@/components/models/Breadboard";
 import { JumperWire } from "@/components/models/JumperWire";
 import { Resistor } from "@/components/models/Resistor";
 import { OLEDDisplay } from "@/components/models/OLEDDisplay";
+import { ServoMotor } from "@/components/models/ServoMotor";
+import { LCD1602Display } from "@/components/models/LCD1602Display";
 import { WireRenderer } from "@/components/canvas/WireRenderer";
 import { ActiveWireRenderer } from "@/components/canvas/ActiveWireRenderer";
 
@@ -35,6 +37,10 @@ const ComponentRenderer = memo(function ComponentRenderer({
       return <ArduinoUnoR3 id={id} />;
     case "oled_ssd1306":
       return <OLEDDisplay id={id} />;
+    case "lcd1602_i2c":
+      return <LCD1602Display id={id} />;
+    case "servo_sg90":
+      return <ServoMotor id={id} />;
     case "led_red":
       return <LED id={id} />;
     case "push_button":

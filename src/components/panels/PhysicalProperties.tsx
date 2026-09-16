@@ -1,6 +1,7 @@
 'use client';
 import { WireColors } from './WireColors';
 import { useState } from 'react';
+import { ExternalLink } from 'lucide-react';
 import { useSimulatorStore } from '@/store/useSimulatorStore';
 import { contacts, world, type Vec } from '@/lib/components/placement';
 import type { CircuitComponent } from '@/lib/components/componentTypes';
@@ -24,6 +25,9 @@ export function PhysicalProperties({
     blue: '#3b82f6',
     green: '#22c55e',
     yellow: '#eab308',
+    white: '#f5f5f5',
+    orange: '#f97316',
+    purple: '#a855f7',
   };
   const state = useSimulatorStore.getState;
 
@@ -36,18 +40,19 @@ export function PhysicalProperties({
         {onOpenDatasheet && (
           <button
             type="button"
-            className="text-xs text-blue-600 dark:text-blue-400 hover:underline font-semibold"
+            className="text-xs text-blue-600 dark:text-blue-400 hover:underline font-semibold flex items-center gap-1"
             onClick={() => onOpenDatasheet(c.typeId.startsWith('jumper_') ? 'jumper' : c.typeId)}
           >
-            Datasheet Asli ↗
+            <span>Datasheet Asli</span>
+            <ExternalLink size={12} />
           </button>
         )}
       </div>
 
-      {['resistor_220', 'led_red', 'potentiometer', 'push_button', 'esp32_wroom', 'oled_ssd1306'].includes(c.typeId) && (
+      {['resistor_220', 'led_red', 'potentiometer', 'push_button', 'esp32_wroom', 'oled_ssd1306', 'lcd1602_i2c'].includes(c.typeId) && (
         <details open className="inspector-details">
           <summary>
-            Koneksi Breadboard ({mounted.length ? `${mounted.length} Pin Tersambung` : '⚪ Belum Tertancap'})
+            Koneksi Breadboard ({mounted.length ? `${mounted.length} Pin Tersambung` : 'Belum Tertancap'})
           </summary>
           <p className="text-[11px] opacity-80 mt-1 mb-2 leading-tight">
             {mounted.length
@@ -168,7 +173,7 @@ export function PhysicalProperties({
                   : 'bg-red-500/20 text-red-300 border border-red-500/40'
               }`}
             >
-              {c.state.isPowered !== false ? '● Daya 3.3V-5V OK' : '○ Belum Ada Daya'}
+              {c.state.isPowered !== false ? 'Daya 3.3V-5V OK' : 'Belum Ada Daya'}
             </span>
           </div>
 
@@ -176,11 +181,11 @@ export function PhysicalProperties({
             <span className="text-[11px] opacity-80">Preset Gambar & Grafik:</span>
             <div className="grid grid-cols-3 gap-1">
               {[
-                { id: 'logo', label: '🛡️ Logo' },
-                { id: 'circuit', label: '⚡ Circuit' },
-                { id: 'gauge', label: '📊 Gauge' },
-                { id: 'invader', label: '👾 Retro 8-Bit' },
-                { id: 'custom', label: '✍️ Teks Bebas' },
+                { id: 'logo', label: 'Logo' },
+                { id: 'circuit', label: 'Sirkuit' },
+                { id: 'gauge', label: 'Gauge' },
+                { id: 'invader', label: 'Retro 8-Bit' },
+                { id: 'custom', label: 'Teks Bebas' },
               ].map((p) => (
                 <button
                   key={p.id}
@@ -222,9 +227,152 @@ export function PhysicalProperties({
                 state().updateComponentState(c.id, { inverted: !c.state.inverted })
               }
             >
-              {c.state.inverted ? '☀️ Normal (Hitam)' : '🌙 Invert Warna'}
+              {c.state.inverted ? 'Normal (Hitam)' : 'Invert Warna'}
             </button>
             <span className="text-[10px] opacity-60 font-mono">SSD1306 · 128×64</span>
+          </div>
+        </div>
+      )}
+
+      {c.typeId === 'servo_sg90' && (
+        <div className="inspector-card flex flex-col gap-2.5">
+          <div className="flex justify-between items-center">
+            <span className="text-xs font-semibold">Micro Servo SG90 (9g)</span>
+            <span
+              className={`text-[10px] font-mono px-1.5 py-0.5 rounded ${
+                c.state.isPowered !== false
+                  ? 'bg-emerald-500/20 text-emerald-300 border border-emerald-500/40'
+                  : 'bg-rose-500/20 text-rose-300 border border-rose-500/40'
+              }`}
+            >
+              {c.state.isPowered !== false ? 'Daya Cukup (4.8-6V)' : 'Tanpa Daya (Min 4.0V)'}
+            </span>
+          </div>
+
+          <div className="flex flex-col gap-1.5">
+            <div className="flex justify-between text-xs">
+              <span>Sudut Servo (Angle)</span>
+              <span className="font-mono font-bold text-sky-400">
+                {Math.round(Number(c.state.angle ?? 90))}°
+              </span>
+            </div>
+            <input
+              aria-label="Sudut rotasi servo"
+              type="range"
+              min={0}
+              max={180}
+              step={1}
+              value={Number(c.state.angle ?? 90)}
+              onChange={(e) =>
+                state().updateComponentState(c.id, { angle: Number(e.target.value) })
+              }
+              className="w-full cursor-pointer accent-sky-500"
+            />
+            <div className="flex justify-between text-[10px] opacity-60">
+              <span>0° (Kiri)</span>
+              <span>90° (Tengah)</span>
+              <span>180° (Kanan)</span>
+            </div>
+          </div>
+
+          <div className="flex flex-col gap-1">
+            <span className="text-[11px] opacity-80">Bentuk Lengan Horn:</span>
+            <div className="grid grid-cols-3 gap-1.5">
+              {[
+                { id: 'single', label: '1 Sisi (Single)' },
+                { id: 'double', label: '2 Sisi (Double)' },
+                { id: 'cross', label: 'Silang (Cross)' },
+              ].map((h) => (
+                <button
+                  key={h.id}
+                  type="button"
+                  className={`text-[11px] py-1 rounded border transition-colors ${
+                    (c.state.hornType || 'single') === h.id
+                      ? 'border-sky-400 bg-sky-500/20 font-bold text-sky-200'
+                      : 'border-slate-700 hover:border-slate-500 bg-slate-800/40'
+                  }`}
+                  onClick={() => state().updateComponentState(c.id, { hornType: h.id })}
+                >
+                  {h.label}
+                </button>
+              ))}
+            </div>
+          </div>
+
+          <div className="text-[10px] opacity-70 p-1.5 bg-slate-900/60 rounded border border-slate-700/40 leading-relaxed font-mono">
+            Kabel: Cokelat=GND · Merah=5V · Oranye=PWM (Pin D9/GPIO)
+          </div>
+        </div>
+      )}
+
+      {c.typeId === 'lcd1602_i2c' && (
+        <div className="inspector-card flex flex-col gap-2.5">
+          <div className="flex justify-between items-center">
+            <span className="text-xs font-semibold">LCD 16x2 I2C (PCF8574)</span>
+            <span
+              className={`text-[10px] font-mono px-1.5 py-0.5 rounded ${
+                c.state.isPowered !== false
+                  ? 'bg-emerald-500/20 text-emerald-300 border border-emerald-500/40'
+                  : 'bg-rose-500/20 text-rose-300 border border-rose-500/40'
+              }`}
+            >
+              {c.state.isPowered !== false ? 'Daya OK (5V)' : 'Butuh 5V (Min 4.2V)'}
+            </span>
+          </div>
+
+          <div className="flex flex-col gap-1.5">
+            <span className="text-[11px] opacity-80">Teks Baris 1 (Maks 16 karakter):</span>
+            <input
+              type="text"
+              maxLength={16}
+              className="inspector-input text-xs font-mono p-1.5"
+              value={String(c.state.line0 ?? '')}
+              placeholder="Baris 1..."
+              onChange={(e) =>
+                state().updateComponentState(c.id, { line0: e.target.value.slice(0, 16) })
+              }
+            />
+          </div>
+
+          <div className="flex flex-col gap-1.5">
+            <span className="text-[11px] opacity-80">Teks Baris 2 (Maks 16 karakter):</span>
+            <input
+              type="text"
+              maxLength={16}
+              className="inspector-input text-xs font-mono p-1.5"
+              value={String(c.state.line1 ?? '')}
+              placeholder="Baris 2..."
+              onChange={(e) =>
+                state().updateComponentState(c.id, { line1: e.target.value.slice(0, 16) })
+              }
+            />
+          </div>
+
+          <div className="flex justify-between items-center pt-1 border-t border-slate-700/40">
+            <button
+              type="button"
+              className="small-button text-xs py-1"
+              onClick={() =>
+                state().updateComponentState(c.id, { backlight: c.state.backlight === false })
+              }
+            >
+              {c.state.backlight !== false ? 'Backlight ON' : 'Backlight OFF'}
+            </button>
+
+            <button
+              type="button"
+              className="small-button text-xs py-1"
+              onClick={() =>
+                state().updateComponentState(c.id, {
+                  theme: c.state.theme === 'blue' ? 'yellow_green' : 'blue',
+                })
+              }
+            >
+              {c.state.theme === 'blue' ? 'Tema Biru' : 'Tema Hijau'}
+            </button>
+          </div>
+          <div className="text-[10px] opacity-60 font-mono text-center">
+            I2C Addr: {String(c.state.address || '0x27')} · SDA/SCL
           </div>
         </div>
       )}

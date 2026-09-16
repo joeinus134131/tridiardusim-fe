@@ -4,6 +4,7 @@ import { ESP32Wroom } from "@/components/models/ESP32Wroom";
 import { Canvas } from "@react-three/fiber";
 import { Suspense, memo } from "react";
 import * as THREE from "three";
+import { useTheme } from "next-themes";
 
 import { CameraController } from "./CameraController";
 import { GridFloor } from "./GridFloor";
@@ -17,6 +18,8 @@ import { Breadboard } from "@/components/models/Breadboard";
 import { JumperWire } from "@/components/models/JumperWire";
 import { Resistor } from "@/components/models/Resistor";
 import { OLEDDisplay } from "@/components/models/OLEDDisplay";
+import { ServoMotor } from "@/components/models/ServoMotor";
+import { LCD1602Display } from "@/components/models/LCD1602Display";
 import { WireRenderer } from "@/components/canvas/WireRenderer";
 import { ActiveWireRenderer } from "@/components/canvas/ActiveWireRenderer";
 
@@ -35,6 +38,10 @@ const ComponentRenderer = memo(function ComponentRenderer({
       return <ArduinoUnoR3 id={id} />;
     case "oled_ssd1306":
       return <OLEDDisplay id={id} />;
+    case "lcd1602_i2c":
+      return <LCD1602Display id={id} />;
+    case "servo_sg90":
+      return <ServoMotor id={id} />;
     case "led_red":
       return <LED id={id} />;
     case "push_button":
@@ -63,9 +70,15 @@ const ComponentRenderer = memo(function ComponentRenderer({
 
 export const SimulatorCanvas = memo(function SimulatorCanvas() {
   const components = useSimulatorStore((state) => state.components);
+  const { resolvedTheme } = useTheme();
+  const isLight = resolvedTheme === "light";
 
   return (
-    <div className="w-full h-full bg-[#060a14] relative">
+    <div
+      className={`w-full h-full relative transition-colors duration-300 ${
+        isLight ? "bg-[#e2e8f0]" : "bg-[#060a14]"
+      }`}
+    >
       <Canvas
         shadows={{ type: THREE.PCFShadowMap }}
         dpr={[1, 1.5]}
@@ -80,11 +93,14 @@ export const SimulatorCanvas = memo(function SimulatorCanvas() {
       >
         <CameraController />
 
-        {/* Lighting — three-point setup */}
-        <ambientLight intensity={0.9} color="#c8d0e0" />
+        {/* Lighting — three-point setup with light mode daylight adaptation */}
+        <ambientLight
+          intensity={isLight ? 1.4 : 0.9}
+          color={isLight ? "#ffffff" : "#c8d0e0"}
+        />
         <directionalLight
           position={[15, 30, 15]}
-          intensity={1.8}
+          intensity={isLight ? 2.2 : 1.8}
           castShadow
           shadow-mapSize={[1024, 1024]}
           shadow-camera-left={-30}
@@ -97,10 +113,14 @@ export const SimulatorCanvas = memo(function SimulatorCanvas() {
         />
         <directionalLight
           position={[-10, 15, -10]}
-          intensity={0.4}
-          color="#a0b0ff"
+          intensity={isLight ? 0.8 : 0.4}
+          color={isLight ? "#e0e7ff" : "#a0b0ff"}
         />
-        <pointLight position={[0, 20, 0]} intensity={0.3} color="#ffffff" />
+        <pointLight
+          position={[0, 20, 0]}
+          intensity={isLight ? 0.6 : 0.3}
+          color="#ffffff"
+        />
 
         {/* Work surface */}
         <GridFloor />

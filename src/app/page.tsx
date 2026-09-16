@@ -4,6 +4,19 @@ import { WireProperties } from "@/components/panels/WireProperties";
 import { DesktopMenuBar } from "@/components/panels/DesktopMenuBar";
 import { DatasheetModal } from "@/components/panels/DatasheetModal";
 import { useState, useEffect, useRef } from "react";
+import {
+  FileText,
+  SlidersHorizontal,
+  RotateCcw,
+  Hand,
+  Focus,
+  X,
+  PanelRightClose,
+  PanelRightOpen,
+  Play,
+  Square,
+  ExternalLink,
+} from "lucide-react";
 import dynamic from "next/dynamic";
 import { useSimulatorStore } from "@/store/useSimulatorStore";
 import { ComponentRegistry } from "@/lib/components/ComponentRegistry";
@@ -101,6 +114,9 @@ export default function WorkspacePage() {
   );
   const updateComponentState = useSimulatorStore((s) => s.updateComponentState);
   const diagnostics = useSimulatorStore((s) => s.diagnostics);
+  const cameraView = useSimulatorStore((s) => s.cameraView);
+  const cameraMode = useSimulatorStore((s) => s.cameraMode);
+  const setCameraMode = useSimulatorStore((s) => s.setCameraMode);
 
   const [query, setQuery] = useState("");
   const [name, setName] = useState("Rangkaian saya");
@@ -203,6 +219,13 @@ export default function WorkspacePage() {
             0,
           ]);
         }
+      }
+
+      if (e.key === "h" || e.key === "H") {
+        setCameraMode("pan");
+      }
+      if (e.key === "o" || e.key === "O") {
+        setCameraMode("orbit");
       }
     };
     window.addEventListener("keydown", handler);
@@ -360,11 +383,18 @@ export default function WorkspacePage() {
         />
         <div className="flex gap-2">
           <button
-            className="btn-primary"
+            className="btn-primary flex items-center gap-1.5"
             onClick={startSimulation}
             disabled={simulationState === "running"}
           >
-            {simulationState === "paused" ? "Lanjut" : "▶ Jalankan"}
+            {simulationState === "paused" ? (
+              "Lanjut"
+            ) : (
+              <>
+                <Play size={13} className="fill-current" />
+                <span>Jalankan</span>
+              </>
+            )}
           </button>
           <button
             className="small-button"
@@ -374,11 +404,12 @@ export default function WorkspacePage() {
             Jeda
           </button>
           <button
-            className="small-button"
+            className="small-button flex items-center gap-1.5"
             onClick={stopSimulation}
             disabled={simulationState === "stopped"}
           >
-            ■ Stop
+            <Square size={11} className="fill-current" />
+            <span>Stop</span>
           </button>
         </div>
         <RuntimeStatus />
@@ -393,14 +424,16 @@ export default function WorkspacePage() {
             openDatasheetFor(activeKey);
           }}
         >
-          <span>📄</span> Datasheet
+          <FileText size={13} />
+          <span>Datasheet</span>
         </button>
         <button
-          className="small-button flex items-center gap-1"
+          className="small-button flex items-center gap-1.5"
           onClick={() => setRightPanelOpen(!rightPanelOpen)}
           title="Buka/Tutup Panel Properti di sebelah kanan"
         >
-          <span>⚙️</span> Properti {rightPanelOpen ? "▾" : "▸"}
+          <SlidersHorizontal size={13} />
+          <span>Properti</span>
         </button>
         <button className="small-button" onClick={() => setHelp(!help)}>
           Panduan
@@ -446,27 +479,27 @@ export default function WorkspacePage() {
               <h3 className="font-bold text-lg text-slate-100 flex items-center gap-2">
                 Panduan Penggunaan Nexflux Lab 3D
               </h3>
-              <button className="datasheet-close-btn" onClick={() => setHelp(false)}>
-                ✕
+              <button className="datasheet-close-btn flex items-center justify-center" onClick={() => setHelp(false)}>
+                <X size={16} />
               </button>
             </div>
             <div className="text-xs text-slate-300 space-y-3 leading-relaxed">
               <div className="p-3 bg-slate-800/80 rounded border border-slate-700">
                 <strong className="text-blue-400 block mb-1">Navigasi Kamera 3D Standar:</strong>
-                <p>• <strong>Drag Mouse Kiri</strong>: Orbit / Putar sudut pandang 360° ke segala arah.</p>
-                <p>• <strong>Drag Mouse Kanan / Shift + Kiri / Roda Tengah</strong>: Pan / Menggeser kamera.</p>
-                <p>• <strong>Scroll Wheel</strong>: Zoom in / Zoom out.</p>
+                <p>- <strong>Drag Mouse Kiri</strong>: Orbit / Putar sudut pandang 360° ke segala arah.</p>
+                <p>- <strong>Drag Mouse Kanan / Shift + Kiri / Roda Tengah</strong>: Pan / Menggeser kamera.</p>
+                <p>- <strong>Scroll Wheel</strong>: Zoom in / Zoom out.</p>
               </div>
               <div className="p-3 bg-slate-800/80 rounded border border-slate-700">
                 <strong className="text-emerald-400 block mb-1">Pemasangan Fisik & Breadboard:</strong>
-                <p>• Seret komponen (resistor, led, potensiometer, tombol, ESP32) langsung ke atas breadboard.</p>
-                <p>• Kaki komponen otomatis menempel dan tertancap pas ke lubang breadboard tanpa melayang.</p>
-                <p>• Tekan tombol <kbd className="px-1 py-0.5 bg-slate-700 rounded">R</kbd> untuk memutar orientasi komponen 90°.</p>
+                <p>- Seret komponen (resistor, led, potensiometer, tombol, ESP32) langsung ke atas breadboard.</p>
+                <p>- Kaki komponen otomatis menempel dan tertancap pas ke lubang breadboard tanpa melayang.</p>
+                <p>- Tekan tombol <kbd className="px-1 py-0.5 bg-slate-700 rounded">R</kbd> untuk memutar orientasi komponen 90°.</p>
               </div>
               <div className="p-3 bg-slate-800/80 rounded border border-slate-700">
                 <strong className="text-amber-400 block mb-1">Pengkabelan & Wiring:</strong>
-                <p>• Klik pin terminal awal, lalu klik pin terminal tujuan untuk membuat koneksi kabel.</p>
-                <p>• Tekan <kbd className="px-1 py-0.5 bg-slate-700 rounded">Esc</kbd> untuk membatalkan penarikan kabel.</p>
+                <p>- Klik pin terminal awal, lalu klik pin terminal tujuan untuk membuat koneksi kabel.</p>
+                <p>- Tekan <kbd className="px-1 py-0.5 bg-slate-700 rounded">Esc</kbd> untuk membatalkan penarikan kabel.</p>
               </div>
             </div>
             <div className="mt-4 pt-3 border-t border-slate-700 flex justify-end">
@@ -570,25 +603,33 @@ export default function WorkspacePage() {
                     </button>
                   ))}
                 </details>
-                <strong>Contoh siap pakai</strong>
-                {[
-                  ["oled", "OLED Display 0.96\" SSD1306"],
-                  ["esp32_wifi", "ESP32 Wi-Fi + Internet Fetch"],
-                  ["esp32", "ESP32 DevKit + Breadboard"],
-                  ["blink", "Uno Blink + Resistor"],
-                  ["button", "Tombol INPUT_PULLUP"],
-                  ["pwm", "Potensiometer → PWM"],
-                  ["breadboard", "Breadboard + Jumper"],
-                  ["serial", "Serial Echo Monitor"],
-                ].map(([id, label]) => (
-                  <button
-                    key={id}
-                    className="small-button"
-                    onClick={() => guard(() => replace(example(id)))}
-                  >
-                    {label}
-                  </button>
-                ))}
+                <div className="flex items-center justify-between mt-1 mb-1">
+                  <strong>Contoh siap pakai</strong>
+                  <span className="text-[10px] opacity-60 font-mono">10 Presets</span>
+                </div>
+                <div className="examples-scroll-container">
+                  {[
+                    ["servo", "Micro Servo SG90 9g"],
+                    ["lcd1602", "LCD 16x2 Display I2C"],
+                    ["oled", "OLED Display 0.96\" SSD1306"],
+                    ["esp32_wifi", "ESP32 Wi-Fi + Internet Fetch"],
+                    ["esp32", "ESP32 DevKit + Breadboard"],
+                    ["blink", "Uno Blink + Resistor"],
+                    ["button", "Tombol INPUT_PULLUP"],
+                    ["pwm", "Potensiometer ke PWM"],
+                    ["breadboard", "Breadboard + Jumper"],
+                    ["serial", "Serial Echo Monitor"],
+                  ].map(([id, label]) => (
+                    <button
+                      key={id}
+                      className="small-button text-left truncate"
+                      style={{ flexShrink: 0, minHeight: 32 }}
+                      onClick={() => guard(() => replace(example(id)))}
+                    >
+                      {label}
+                    </button>
+                  ))}
+                </div>
               </div>
             </>
           ) : (
@@ -652,7 +693,8 @@ export default function WorkspacePage() {
                   <button onClick={() => selectWire(w.id)}>
                     {components.find((c) => c.id === w.sourceComponentId)?.name}{" "}
                     · {w.sourcePinId}
-                    <br />↳{" "}
+                    <br />
+                    <span className="opacity-60 text-[11px]">ke </span>
                     {
                       components.find((c) => c.id === w.targetComponentId)?.name
                     }{" "}
@@ -661,8 +703,9 @@ export default function WorkspacePage() {
                   <button
                     aria-label={"Hapus kabel " + w.id}
                     onClick={() => removeWire(w.id)}
+                    className="flex items-center justify-center p-1 hover:text-red-400"
                   >
-                    ×
+                    <X size={12} />
                   </button>
                 </div>
               ))}
@@ -674,21 +717,56 @@ export default function WorkspacePage() {
         <section className="scene-panel">
           <SimulatorCanvas />
           <div className="camera-tools">
+            <button
+              className={`small-button flex items-center gap-1 ${cameraMode === "orbit" ? "active" : ""}`}
+              onClick={() => setCameraMode("orbit")}
+              title="Mode Putar / Orbit 3D [O] (Klik-kiri drag untuk memutar)"
+            >
+              <RotateCcw size={12} />
+              <span>Putar</span>
+            </button>
+            <button
+              className={`small-button flex items-center gap-1 ${cameraMode === "pan" ? "active" : ""}`}
+              onClick={() => setCameraMode("pan")}
+              title="Mode Geser / Pan Bebas [H] (Klik-kiri drag untuk menggeser bebas)"
+            >
+              <Hand size={12} />
+              <span>Geser</span>
+            </button>
+            <div className="divider" />
             {(
               [
-                ["perspective", "Perspektif 3D"],
-                ["top", "Tampak Atas"],
-                ["front", "Tampak Depan"],
+                ["perspective", "3D"],
+                ["top", "Atas"],
+                ["front", "Depan"],
               ] as const
             ).map(([view, label]) => (
               <button
                 key={view}
-                className="small-button"
+                className={`small-button ${cameraView === view ? "active" : ""}`}
                 onClick={() => useSimulatorStore.setState({ cameraView: view })}
               >
                 {label}
               </button>
             ))}
+            <div className="divider" />
+            <button
+              className="small-button flex items-center gap-1"
+              onClick={() => {
+                const current = useSimulatorStore.getState().cameraView;
+                useSimulatorStore.setState({
+                  cameraView: current === "perspective" ? "front" : "perspective",
+                });
+                setTimeout(
+                  () => useSimulatorStore.setState({ cameraView: current }),
+                  20,
+                );
+              }}
+              title="Pusatkan kembali tampilan ke seluruh komponen (Fit View)"
+            >
+              <Focus size={12} />
+              <span>Fit</span>
+            </button>
           </div>
           <div className="scene-instruction">
             {isWiringActive ? (
@@ -698,7 +776,11 @@ export default function WorkspacePage() {
               </>
             ) : (
               <span>
-                {components.length} komponen · {wires.length} kabel · Drag kiri untuk putar 3D · Klik pin untuk menyambung
+                {cameraMode === "pan"
+                  ? "Mode Geser Aktif: Drag kiri untuk geser kanvas bebas · Tahan Spasi / Klik Kanan juga bisa geser"
+                  : "Mode Putar Aktif: Drag kiri untuk putar 3D · Tahan Spasi / Klik Kanan untuk geser bebas"}
+                {" · "}
+                Klik pin untuk menyambung kabel
               </span>
             )}
           </div>
@@ -724,15 +806,16 @@ export default function WorkspacePage() {
             {rightPanelOpen ? (
               <>
                 <div className="flex items-center gap-1.5 font-bold text-xs tracking-wider">
-                  <span></span>
+                  <SlidersHorizontal size={13} className="text-cyan-400" />
                   <span>PROPERTI & INSPEKTOR</span>
                 </div>
                 <button
                   className="small-button text-xs px-2 py-0.5"
                   onClick={() => setRightPanelOpen(false)}
                   title="Tutup Panel Properti"
+                  aria-label="Tutup Panel Properti"
                 >
-                  ✕
+                  <PanelRightClose size={14} />
                 </button>
               </>
             ) : (
@@ -741,8 +824,9 @@ export default function WorkspacePage() {
                   className="small-button text-xs p-1"
                   onClick={() => setRightPanelOpen(true)}
                   title="Buka Panel Properti"
+                  aria-label="Buka Panel Properti"
                 >
-                  ⇲
+                  <PanelRightOpen size={14} />
                 </button>
                 <span className="collapsed-title">PROPERTI</span>
               </>
@@ -763,7 +847,7 @@ export default function WorkspacePage() {
                       onClick={() => selectComponent(null)}
                       className="text-xs p-1 opacity-60 hover:opacity-100 font-bold"
                     >
-                      ✕
+                      <X size={14} />
                     </button>
                   </div>
 
@@ -781,9 +865,10 @@ export default function WorkspacePage() {
                       <button
                         type="button"
                         onClick={() => openDatasheetFor(selected.typeId.startsWith("jumper_") ? "jumper" : selected.typeId)}
-                        className="text-[11px] text-blue-600 dark:text-blue-400 hover:underline font-semibold text-left mt-1"
+                        className="text-[11px] text-blue-600 dark:text-blue-400 hover:underline font-semibold flex items-center gap-1 mt-1 text-left"
                       >
-                        Lihat Spesifikasi & Datasheet Asli ↗
+                        <span>Lihat Spesifikasi & Datasheet Asli</span>
+                        <ExternalLink size={12} />
                       </button>
                     )}
                   </div>

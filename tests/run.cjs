@@ -289,6 +289,24 @@ function test(name, fn) {
       assert.equal(ledComp.state.color, "#3b82f6");
     });
 
+    test("Servo SG90 example circuit powers motor and supports Servo.h library", () => {
+      const servoProj = example("servo");
+      assert.ok(servoProj.components.some((c) => c.typeId === "servo_sg90"));
+      const r = solveCircuit(servoProj.components, servoProj.wires, {});
+      assert.equal(r.states.servo.isPowered, true);
+      assert.ok(r.states.servo.vDiff >= 4.5);
+      assert.doesNotThrow(() => new SketchParser(servoProj.code));
+    });
+
+    test("LCD 16x2 I2C example circuit powers display and supports LiquidCrystal_I2C.h", () => {
+      const lcdProj = example("lcd1602");
+      assert.ok(lcdProj.components.some((c) => c.typeId === "lcd1602_i2c"));
+      const r = solveCircuit(lcdProj.components, lcdProj.wires, {});
+      assert.equal(r.states.lcd.isPowered, true);
+      assert.ok(r.states.lcd.vDiff >= 4.5);
+      assert.doesNotThrow(() => new SketchParser(lcdProj.code));
+    });
+
     const bench = example("breadboard");
     const t = performance.now();
     for (let i = 0; i < 200; i++)

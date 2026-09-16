@@ -5,8 +5,12 @@ import { Grid } from "@react-three/drei";
 import * as THREE from "three";
 import { useMemo } from "react";
 import { useSimulatorStore } from "@/store/useSimulatorStore";
+import { useTheme } from "next-themes";
 
 export function GridFloor() {
+  const { resolvedTheme } = useTheme();
+  const isLight = resolvedTheme === "light";
+
   const isWiringActive = useSimulatorStore((state) => state.wiringState.active);
   const updateWiringTarget = useSimulatorStore(
     (state) => state.updateWiringTarget,
@@ -16,11 +20,11 @@ export function GridFloor() {
   const surfaceMaterial = useMemo(
     () =>
       new THREE.MeshStandardMaterial({
-        color: "#1a2035",
+        color: isLight ? "#f1f5f9" : "#1a2035",
         roughness: 0.95,
         metalness: 0.05,
       }),
-    [],
+    [isLight],
   );
 
   const handlePointerMove = (e: ThreeEvent<PointerEvent>) => {
@@ -65,12 +69,12 @@ export function GridFloor() {
         position={[0, -0.01, 0]}
         args={[60, 60]}
         cellSize={0.5}
-        cellThickness={0.6}
-        cellColor="#253050"
+        cellThickness={isLight ? 0.8 : 0.6}
+        cellColor={isLight ? "#cbd5e1" : "#253050"}
         sectionSize={5}
-        sectionThickness={1}
-        sectionColor="#334170"
-        fadeDistance={50}
+        sectionThickness={isLight ? 1.2 : 1}
+        sectionColor={isLight ? "#94a3b8" : "#334170"}
+        fadeDistance={isLight ? 60 : 50}
         fadeStrength={1.5}
         infiniteGrid
       />

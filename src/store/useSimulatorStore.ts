@@ -12,6 +12,8 @@ import { arduinoEngine } from "@/lib/simulation/ArduinoInterpreter";
 interface SimulatorState {
   placementNotice: string;
   cameraView: "perspective" | "top" | "front";
+  cameraMode: "orbit" | "pan";
+  setCameraMode: (mode: "orbit" | "pan") => void;
   // Workspace
   components: CircuitComponent[];
   wires: Wire[];
@@ -75,6 +77,8 @@ interface SimulatorState {
 export const useSimulatorStore = create<SimulatorState>((set, get) => ({
   placementNotice: "",
   cameraView: "perspective",
+  cameraMode: "orbit",
+  setCameraMode: (mode) => set({ cameraMode: mode }),
   // Initial State
   components: [],
   wires: [],

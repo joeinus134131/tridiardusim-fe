@@ -51,7 +51,9 @@ const types = new Set([
   "IPAddress",
   "File",
   "Servo",
+  "ESP32Servo",
   "LiquidCrystal",
+  "LiquidCrystal_I2C",
   "DHT",
   "Adafruit_SSD1306",
   "Adafruit_GFX",
@@ -451,6 +453,15 @@ export class SketchRuntime {
       const v = await this.api[name](...args);
       if (name === "delay") this.resetBudget();
       return v;
+    }
+    const dotIdx = name.indexOf(".");
+    if (dotIdx > 0) {
+      const method = name.slice(dotIdx + 1);
+      const wildcard = "*." + method;
+      if (this.api[wildcard]) {
+        const v = await this.api[wildcard](...args);
+        return v;
+      }
     }
     const fn = this.parser.functions.get(name);
     if (!fn) throw new Error(`Fungsi/API belum didukung: ${name}`);

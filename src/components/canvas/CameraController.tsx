@@ -2,7 +2,7 @@
 import { worldBounds } from "@/lib/components/placement";
 import { useThree } from "@react-three/fiber";
 import { OrbitControls } from "@react-three/drei";
-import { useRef, useLayoutEffect } from "react";
+import { useRef, useLayoutEffect, useState, useEffect, useMemo } from "react";
 import type { OrbitControls as Controls } from "three-stdlib";
 import * as THREE from "three";
 import { useSimulatorStore } from "@/store/useSimulatorStore";
@@ -12,7 +12,36 @@ export function CameraController() {
   const ref = useRef<Controls>(null);
   const wiring = useSimulatorStore((s) => s.wiringState.active);
   const view = useSimulatorStore((s) => s.cameraView);
+  const cameraMode = useSimulatorStore((s) => s.cameraMode);
   const prevView = useRef<string | null>(null);
+
+  const [isPanKeyActive, setIsPanKeyActive] = useState(false);
+
+  // Allow temporary pan mode by holding Spacebar or Shift key
+  useEffect(() => {
+    const handleKeyDown = (e: KeyboardEvent) => {
+      if (
+        e.target instanceof HTMLInputElement ||
+        e.target instanceof HTMLTextAreaElement
+      ) {
+        return;
+      }
+      if (e.code === "Space" || e.key === "Shift") {
+        setIsPanKeyActive(true);
+      }
+    };
+    const handleKeyUp = (e: KeyboardEvent) => {
+      if (e.code === "Space" || e.key === "Shift") {
+        setIsPanKeyActive(false);
+      }
+    };
+    window.addEventListener("keydown", handleKeyDown);
+    window.addEventListener("keyup", handleKeyUp);
+    return () => {
+      window.removeEventListener("keydown", handleKeyDown);
+      window.removeEventListener("keyup", handleKeyUp);
+    };
+  }, []);
 
   useLayoutEffect(() => {
     // Only re-position camera if view explicitly changes or on initial mount
@@ -55,6 +84,38 @@ export function CameraController() {
     invalidate();
   }, [view, camera, invalidate, size.width, size.height]);
 
+  const isPan = cameraMode === "pan" || isPanKeyActive;
+
+  const mouseButtons = useMemo(
+    () =>
+      isPan
+        ? {
+            LEFT: THREE.MOUSE.PAN,
+            MIDDLE: THREE.MOUSE.DOLLY,
+            RIGHT: THREE.MOUSE.ROTATE,
+          }
+        : {
+            LEFT: THREE.MOUSE.ROTATE,
+            MIDDLE: THREE.MOUSE.DOLLY,
+            RIGHT: THREE.MOUSE.PAN,
+          },
+    [isPan]
+  );
+
+  const touches = useMemo(
+    () =>
+      isPan
+        ? {
+            ONE: THREE.TOUCH.PAN,
+            TWO: THREE.TOUCH.DOLLY_PAN,
+          }
+        : {
+            ONE: THREE.TOUCH.ROTATE,
+            TWO: THREE.TOUCH.DOLLY_PAN,
+          },
+    [isPan]
+  );
+
   return (
     <OrbitControls
       ref={ref}
@@ -62,21 +123,15 @@ export function CameraController() {
       enabled={!wiring}
       enableDamping
       dampingFactor={0.08}
+      screenSpacePanning={true}
       rotateSpeed={0.9}
-      panSpeed={0.9}
-      zoomSpeed={1.1}
+      panSpeed={1.8}
+      zoomSpeed={1.2}
       minDistance={2}
-      maxDistance={250}
+      maxDistance={350}
       maxPolarAngle={Math.PI / 2 - 0.01}
-      mouseButtons={{
-        LEFT: THREE.MOUSE.ROTATE,
-        MIDDLE: THREE.MOUSE.DOLLY,
-        RIGHT: THREE.MOUSE.PAN,
-      }}
-      touches={{
-        ONE: THREE.TOUCH.ROTATE,
-        TWO: THREE.TOUCH.DOLLY_PAN,
-      }}
+      mouseButtons={mouseButtons}
+      touches={touches}
     />
   );
 }

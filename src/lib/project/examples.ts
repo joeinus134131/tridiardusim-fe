@@ -115,5 +115,30 @@ export function example(kind: string): Project {
     code =
       '#include <Wire.h>\n#include <Adafruit_GFX.h>\n#include <Adafruit_SSD1306.h>\n\n#define SCREEN_WIDTH 128\n#define SCREEN_HEIGHT 64\n#define OLED_RESET -1\n#define SCREEN_ADDRESS 0x3C\n\nAdafruit_SSD1306 display(SCREEN_WIDTH, SCREEN_HEIGHT, &Wire, OLED_RESET);\n\nint counter = 0;\n\nvoid setup() {\n  Serial.begin(9600);\n  display.begin(SSD1306_SWITCHCAPVCC, SCREEN_ADDRESS);\n  display.clearDisplay();\n  display.setTextSize(1);\n  display.setTextColor(WHITE);\n  display.setCursor(0, 0);\n  display.println("NEXFLUX LAB 3D");\n  display.println("SSD1306 0.96\\" OLED");\n  display.println("I2C Bus: Connected");\n  display.display();\n  delay(1000);\n}\n\nvoid loop() {\n  counter++;\n  display.clearDisplay();\n  display.setCursor(0, 0);\n  display.println("=== NEXFLUX OLED ===");\n  display.print("Detik Aktif: ");\n  display.println(counter);\n  display.println("Resolusi: 128x64");\n  display.println("I2C Addr: 0x3C OK");\n  display.display();\n  Serial.print("OLED Frame Detik: ");\n  Serial.println(counter);\n  delay(1000);\n}';
   }
+  if (kind === "servo" || kind === "servo_sweep") {
+    components.length = 0;
+    components.push(
+      instance("arduino_uno", "uno", [-8, 0, 0]),
+      instance("servo_sg90", "servo", [6, 0.6, 0]),
+    );
+    link("uno", "5V", "servo", "VCC", "#ef4444");
+    link("uno", "GND1", "servo", "GND", "#1e293b");
+    link("uno", "D9", "servo", "PWM", "#ea580c");
+    code =
+      '#include <Servo.h>\n\nServo myservo;\n\nvoid setup() {\n  Serial.begin(9600);\n  myservo.attach(9);\n  Serial.println("Servo SG90 Siap!");\n}\n\nvoid loop() {\n  Serial.println("Putar ke 0 derajat");\n  myservo.write(0);\n  delay(1000);\n\n  Serial.println("Putar ke 90 derajat (Tengah)");\n  myservo.write(90);\n  delay(1000);\n\n  Serial.println("Putar ke 180 derajat");\n  myservo.write(180);\n  delay(1000);\n}';
+  }
+  if (kind === "lcd1602" || kind === "lcd") {
+    components.length = 0;
+    components.push(
+      instance("arduino_uno", "uno", [-10, 0, 0]),
+      instance("lcd1602_i2c", "lcd", [9, 0.6, 0]),
+    );
+    link("uno", "5V", "lcd", "VCC", "#ef4444");
+    link("uno", "GND1", "lcd", "GND", "#1e293b");
+    link("uno", "SDA", "lcd", "SDA", "#3b82f6");
+    link("uno", "SCL", "lcd", "SCL", "#eab308");
+    code =
+      '#include <Wire.h>\n#include <LiquidCrystal_I2C.h>\n\nLiquidCrystal_I2C lcd(0x27, 16, 2);\n\nint detik = 0;\n\nvoid setup() {\n  Serial.begin(9600);\n  lcd.init();\n  lcd.backlight();\n  lcd.setCursor(0, 0);\n  lcd.print("Nexflux Lab 3D");\n  lcd.setCursor(0, 1);\n  lcd.print("LCD 16x2 I2C OK");\n  delay(1500);\n}\n\nvoid loop() {\n  detik++;\n  lcd.setCursor(0, 0);\n  lcd.print("Nexflux Lab 3D  ");\n  lcd.setCursor(0, 1);\n  lcd.print("Detik: ");\n  lcd.print(detik);\n  lcd.print(" detik   ");\n  Serial.print("Waktu LCD: ");\n  Serial.println(detik);\n  delay(1000);\n}';
+  }
   return { version: 1, name: kind, code, components, wires };
 }

@@ -1,6 +1,7 @@
 "use client";
 import React, { useState, useRef, useEffect } from "react";
 import { useSimulatorStore } from "@/store/useSimulatorStore";
+import { Play, Pause, Square, Check } from "lucide-react";
 
 interface DesktopMenuBarProps {
   onNewProject: () => void;
@@ -53,6 +54,8 @@ export function DesktopMenuBar({
     (s) => s.updateComponentRotation,
   );
   const cancelWiring = useSimulatorStore((s) => s.cancelWiring);
+  const cameraMode = useSimulatorStore((s) => s.cameraMode);
+  const setCameraMode = useSimulatorStore((s) => s.setCameraMode);
 
   // Close menus when clicking outside
   useEffect(() => {
@@ -253,12 +256,32 @@ export function DesktopMenuBar({
               <div className="dropdown-divider" />
               <button
                 className="dropdown-item"
+                onClick={() => actionAndClose(() => setCameraMode("orbit"))}
+              >
+                <span className="flex items-center gap-1.5">
+                  {cameraMode === "orbit" && <Check size={12} />}
+                  Mode Putar (Orbit 3D)
+                </span>
+                <span className="shortcut">O</span>
+              </button>
+              <button
+                className="dropdown-item"
+                onClick={() => actionAndClose(() => setCameraMode("pan"))}
+              >
+                <span className="flex items-center gap-1.5">
+                  {cameraMode === "pan" && <Check size={12} />}
+                  Mode Geser Bebas (Pan)
+                </span>
+                <span className="shortcut">H</span>
+              </button>
+              <div className="dropdown-divider" />
+              <button
+                className="dropdown-item"
                 onClick={() => actionAndClose(onToggleRightPanel)}
               >
                 <span>
                   {isRightPanelOpen ? "Tutup Panel Properti" : "Buka Panel Properti"}
                 </span>
-                <span className="shortcut">{isRightPanelOpen ? "✕" : "⇲"}</span>
               </button>
             </div>
           )}
@@ -280,7 +303,10 @@ export function DesktopMenuBar({
                 disabled={simulationState === "running"}
                 onClick={() => actionAndClose(startSimulation)}
               >
-                <span className="text-emerald-400">▶ Jalankan Simulasi</span>
+                <span className="text-emerald-400 flex items-center gap-1.5">
+                  <Play size={12} />
+                  Jalankan Simulasi
+                </span>
                 <span className="shortcut">F5</span>
               </button>
               <button
@@ -288,14 +314,20 @@ export function DesktopMenuBar({
                 disabled={simulationState !== "running"}
                 onClick={() => actionAndClose(pauseSimulation)}
               >
-                <span>⏸ Jeda Simulasi</span>
+                <span className="flex items-center gap-1.5">
+                  <Pause size={12} />
+                  Jeda Simulasi
+                </span>
               </button>
               <button
                 className="dropdown-item"
                 disabled={simulationState === "stopped"}
                 onClick={() => actionAndClose(stopSimulation)}
               >
-                <span className="text-rose-400">⏹ Hentikan Simulasi</span>
+                <span className="text-rose-400 flex items-center gap-1.5">
+                  <Square size={12} />
+                  Hentikan Simulasi
+                </span>
                 <span className="shortcut">Shift+F5</span>
               </button>
               <div className="dropdown-divider" />

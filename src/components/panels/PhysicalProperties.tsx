@@ -1,6 +1,7 @@
 'use client';
 import { WireColors } from './WireColors';
 import { useState } from 'react';
+import { ExternalLink } from 'lucide-react';
 import { useSimulatorStore } from '@/store/useSimulatorStore';
 import { contacts, world, type Vec } from '@/lib/components/placement';
 import type { CircuitComponent } from '@/lib/components/componentTypes';
@@ -24,6 +25,9 @@ export function PhysicalProperties({
     blue: '#3b82f6',
     green: '#22c55e',
     yellow: '#eab308',
+    white: '#f5f5f5',
+    orange: '#f97316',
+    purple: '#a855f7',
   };
   const state = useSimulatorStore.getState;
 
@@ -36,10 +40,11 @@ export function PhysicalProperties({
         {onOpenDatasheet && (
           <button
             type="button"
-            className="text-xs text-blue-600 dark:text-blue-400 hover:underline font-semibold"
+            className="text-xs text-blue-600 dark:text-blue-400 hover:underline font-semibold flex items-center gap-1"
             onClick={() => onOpenDatasheet(c.typeId.startsWith('jumper_') ? 'jumper' : c.typeId)}
           >
-            Datasheet Asli ↗
+            <span>Datasheet Asli</span>
+            <ExternalLink size={12} />
           </button>
         )}
       </div>
@@ -47,7 +52,7 @@ export function PhysicalProperties({
       {['resistor_220', 'led_red', 'potentiometer', 'push_button', 'esp32_wroom', 'oled_ssd1306', 'lcd1602_i2c'].includes(c.typeId) && (
         <details open className="inspector-details">
           <summary>
-            Koneksi Breadboard ({mounted.length ? `${mounted.length} Pin Tersambung` : '⚪ Belum Tertancap'})
+            Koneksi Breadboard ({mounted.length ? `${mounted.length} Pin Tersambung` : 'Belum Tertancap'})
           </summary>
           <p className="text-[11px] opacity-80 mt-1 mb-2 leading-tight">
             {mounted.length
@@ -168,7 +173,7 @@ export function PhysicalProperties({
                   : 'bg-red-500/20 text-red-300 border border-red-500/40'
               }`}
             >
-              {c.state.isPowered !== false ? '● Daya 3.3V-5V OK' : '○ Belum Ada Daya'}
+              {c.state.isPowered !== false ? 'Daya 3.3V-5V OK' : 'Belum Ada Daya'}
             </span>
           </div>
 
@@ -176,11 +181,11 @@ export function PhysicalProperties({
             <span className="text-[11px] opacity-80">Preset Gambar & Grafik:</span>
             <div className="grid grid-cols-3 gap-1">
               {[
-                { id: 'logo', label: '🛡️ Logo' },
-                { id: 'circuit', label: '⚡ Circuit' },
-                { id: 'gauge', label: '📊 Gauge' },
-                { id: 'invader', label: '👾 Retro 8-Bit' },
-                { id: 'custom', label: '✍️ Teks Bebas' },
+                { id: 'logo', label: 'Logo' },
+                { id: 'circuit', label: 'Sirkuit' },
+                { id: 'gauge', label: 'Gauge' },
+                { id: 'invader', label: 'Retro 8-Bit' },
+                { id: 'custom', label: 'Teks Bebas' },
               ].map((p) => (
                 <button
                   key={p.id}
@@ -222,7 +227,7 @@ export function PhysicalProperties({
                 state().updateComponentState(c.id, { inverted: !c.state.inverted })
               }
             >
-              {c.state.inverted ? '☀️ Normal (Hitam)' : '🌙 Invert Warna'}
+              {c.state.inverted ? 'Normal (Hitam)' : 'Invert Warna'}
             </button>
             <span className="text-[10px] opacity-60 font-mono">SSD1306 · 128×64</span>
           </div>
@@ -240,7 +245,7 @@ export function PhysicalProperties({
                   : 'bg-rose-500/20 text-rose-300 border border-rose-500/40'
               }`}
             >
-              {c.state.isPowered !== false ? '⚡ Daya Cukup (4.8-6V)' : '⚠️ Tanpa Daya (Min 4.0V)'}
+              {c.state.isPowered !== false ? 'Daya Cukup (4.8-6V)' : 'Tanpa Daya (Min 4.0V)'}
             </span>
           </div>
 
@@ -311,7 +316,7 @@ export function PhysicalProperties({
                   : 'bg-rose-500/20 text-rose-300 border border-rose-500/40'
               }`}
             >
-              {c.state.isPowered !== false ? '⚡ Daya OK (5V)' : '⚠️ Butuh 5V (Min 4.2V)'}
+              {c.state.isPowered !== false ? 'Daya OK (5V)' : 'Butuh 5V (Min 4.2V)'}
             </span>
           </div>
 
@@ -321,9 +326,10 @@ export function PhysicalProperties({
               type="text"
               maxLength={16}
               className="inspector-input text-xs font-mono p-1.5"
-              value={String(c.state.line0 ?? 'Nexflux Lab 3D  ')}
+              value={String(c.state.line0 ?? '')}
+              placeholder="Baris 1..."
               onChange={(e) =>
-                state().updateComponentState(c.id, { line0: e.target.value.padEnd(16, ' ').slice(0, 16) })
+                state().updateComponentState(c.id, { line0: e.target.value.slice(0, 16) })
               }
             />
           </div>
@@ -334,9 +340,10 @@ export function PhysicalProperties({
               type="text"
               maxLength={16}
               className="inspector-input text-xs font-mono p-1.5"
-              value={String(c.state.line1 ?? 'LCD 16x2 I2C OK ')}
+              value={String(c.state.line1 ?? '')}
+              placeholder="Baris 2..."
               onChange={(e) =>
-                state().updateComponentState(c.id, { line1: e.target.value.padEnd(16, ' ').slice(0, 16) })
+                state().updateComponentState(c.id, { line1: e.target.value.slice(0, 16) })
               }
             />
           </div>
@@ -349,7 +356,7 @@ export function PhysicalProperties({
                 state().updateComponentState(c.id, { backlight: c.state.backlight === false })
               }
             >
-              {c.state.backlight !== false ? '💡 Backlight ON' : '🌑 Backlight OFF'}
+              {c.state.backlight !== false ? 'Backlight ON' : 'Backlight OFF'}
             </button>
 
             <button
@@ -361,7 +368,7 @@ export function PhysicalProperties({
                 })
               }
             >
-              {c.state.theme === 'blue' ? '🎨 Tema Biru' : '🌿 Tema Hijau'}
+              {c.state.theme === 'blue' ? 'Tema Biru' : 'Tema Hijau'}
             </button>
           </div>
           <div className="text-[10px] opacity-60 font-mono text-center">

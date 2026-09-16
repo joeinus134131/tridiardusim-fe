@@ -1,6 +1,7 @@
 "use client";
 import React, { useState } from "react";
 import { physicalInfo, ComponentDatasheet } from "@/lib/components/physical";
+import { X, ExternalLink } from "lucide-react";
 
 interface DatasheetModalProps {
   isOpen: boolean;
@@ -62,10 +63,10 @@ export function DatasheetModal({
           </div>
           <button
             onClick={onClose}
-            className="datasheet-close-btn font-bold text-base"
+            className="datasheet-close-btn flex items-center justify-center"
             aria-label="Tutup datasheet"
           >
-            ✕
+            <X size={18} />
           </button>
         </div>
 
@@ -101,10 +102,10 @@ export function DatasheetModal({
                   href={data.source}
                   target="_blank"
                   rel="noreferrer"
-                  className="datasheet-pdf-link flex items-center gap-1 font-semibold"
+                  className="datasheet-pdf-link flex items-center gap-1.5 font-semibold"
                 >
                   <span>PDF / Rujukan Resmi</span>
-                  <span>↗</span>
+                  <ExternalLink size={13} />
                 </a>
               </div>
 

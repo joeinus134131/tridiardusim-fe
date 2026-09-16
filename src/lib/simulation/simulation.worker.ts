@@ -326,7 +326,7 @@ const api: Record<string, (...args: Value[]) => Value | Promise<Value>> = {
   "*.noCursor": () => 0,
   "*.blink": () => 0,
   "*.noBlink": () => 0,
-  "lcd.print": (v = "") => {
+  "*.print": (v = "") => {
     const s = String(v);
     const rowKey = lcdState.cursorRow === 0 ? "line0" : "line1";
     let cur = lcdState[rowKey].padEnd(16, " ");
@@ -337,7 +337,7 @@ const api: Record<string, (...args: Value[]) => Value | Promise<Value>> = {
     updateLcdComponents();
     return s.length;
   },
-  "lcd.println": (v = "") => {
+  "*.println": (v = "") => {
     const s = String(v);
     const rowKey = lcdState.cursorRow === 0 ? "line0" : "line1";
     let cur = lcdState[rowKey].padEnd(16, " ");
@@ -349,6 +349,8 @@ const api: Record<string, (...args: Value[]) => Value | Promise<Value>> = {
     updateLcdComponents();
     return s.length;
   },
+  "lcd.print": (v = "") => api["*.print"](v),
+  "lcd.println": (v = "") => api["*.println"](v),
 };
 
 let oledState = {
@@ -439,6 +441,13 @@ onmessage = async (e: MessageEvent) => {
   if (m.type === "circuit") {
     components = m.components;
     wires = m.wires;
+    const lcd = components.find((c) => c.typeId === "lcd1602_i2c");
+    if (lcd && lcd.state) {
+      if (typeof lcd.state.line0 === "string") lcdState.line0 = lcd.state.line0;
+      if (typeof lcd.state.line1 === "string") lcdState.line1 = lcd.state.line1;
+      if (typeof lcd.state.backlight === "boolean")
+        lcdState.backlight = lcd.state.backlight;
+    }
     dirty = true;
     return;
   }
@@ -460,6 +469,20 @@ onmessage = async (e: MessageEvent) => {
   if (m.type !== "start") return;
   components = m.components;
   wires = m.wires;
+  const lcd = components.find((c) => c.typeId === "lcd1602_i2c");
+  if (lcd && lcd.state) {
+    lcdState.line0 =
+      typeof lcd.state.line0 === "string"
+        ? lcd.state.line0
+        : "Nexflux Lab 3D  ";
+    lcdState.line1 =
+      typeof lcd.state.line1 === "string"
+        ? lcd.state.line1
+        : "LCD 16x2 I2C OK ";
+    lcdState.backlight = lcd.state.backlight !== false;
+    lcdState.cursorCol = 0;
+    lcdState.cursorRow = 0;
+  }
   io = {};
   dirty = true;
   started = performance.now();

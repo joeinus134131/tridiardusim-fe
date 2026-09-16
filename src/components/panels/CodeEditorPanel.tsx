@@ -22,14 +22,19 @@ export function CodeEditorPanel() {
   const setCode = useSimulatorStore((s) => s.setCode);
   const { resolvedTheme } = useTheme();
 
+  const [mounted, setMounted] = useState<boolean>(false);
   const [showLineNumbers, setShowLineNumbers] = useState<boolean>(true);
   const [editorTheme, setEditorTheme] = useState<string>("auto");
   const [fontSize, setFontSize] = useState<number>(13);
 
-  // Determine actual Monaco theme
+  useEffect(() => {
+    setMounted(true);
+  }, []);
+
+  // Determine actual Monaco theme safely for SSR
   const activeTheme =
     editorTheme === "auto"
-      ? resolvedTheme === "light"
+      ? mounted && resolvedTheme === "light"
         ? "vs"
         : "vs-dark"
       : editorTheme;
@@ -70,7 +75,10 @@ export function CodeEditorPanel() {
           </button>
 
           {/* Theme Selector */}
-          <div className="flex items-center rounded border border-slate-700 bg-slate-800/60 p-0.5">
+          <div
+            suppressHydrationWarning
+            className="flex items-center rounded border border-slate-700 bg-slate-800/60 p-0.5"
+          >
             <button
               type="button"
               className={`px-1.5 py-0.5 rounded text-[10px] font-mono transition-colors ${

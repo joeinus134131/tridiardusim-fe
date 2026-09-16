@@ -1,6 +1,7 @@
-import React, { useMemo, useRef } from "react";
+"use client";
+
+import React, { useMemo, useEffect, useRef } from "react";
 import * as THREE from "three";
-import { useFrame } from "@react-three/fiber";
 import { useSimulatorStore } from "@/store/useSimulatorStore";
 import { PinHighlight } from "@/components/canvas/PinHighlight";
 
@@ -13,38 +14,37 @@ export function LCD1602Display({ id }: LCDProps) {
     state.components.find((c) => c.id === id),
   );
 
-  const textureRef = useRef<THREE.CanvasTexture | null>(null);
   const canvasRef = useRef<HTMLCanvasElement | null>(null);
+  const textureRef = useRef<THREE.CanvasTexture | null>(null);
 
   const isPowered = component?.state?.isPowered !== false;
   const backlight = component?.state?.backlight !== false && isPowered;
   const theme = (component?.state?.theme as string) || "yellow_green";
-  const contrast = typeof component?.state?.contrast === "number" ? component.state.contrast : 85;
+  const contrast =
+    typeof component?.state?.contrast === "number"
+      ? component.state.contrast
+      : 85;
 
-  const line0 = String(component?.state?.line0 ?? "Nexflux Lab 3D  ").slice(0, 16).padEnd(16, " ");
-  const line1 = String(component?.state?.line1 ?? "LCD 16x2 I2C OK ").slice(0, 16).padEnd(16, " ");
+  const line0 = String(component?.state?.line0 ?? "Nexflux Lab 3D  ").slice(0, 16);
+  const line1 = String(component?.state?.line1 ?? "LCD 16x2 I2C OK ").slice(0, 16);
 
-  // Create & manage 512x128 5x8 dot matrix canvas
-  const canvasTexture = useMemo(() => {
-    if (typeof document === "undefined") return null;
-    const canvas = document.createElement("canvas");
-    canvas.width = 512;
-    canvas.height = 144;
-    canvasRef.current = canvas;
-
-    const tex = new THREE.CanvasTexture(canvas);
+  // Create & manage 512x144 CanvasTexture
+  const { canvas, texture } = useMemo(() => {
+    if (typeof document === "undefined") return { canvas: null, texture: null };
+    const c = document.createElement("canvas");
+    c.width = 512;
+    c.height = 144;
+    const tex = new THREE.CanvasTexture(c);
     tex.magFilter = THREE.NearestFilter;
     tex.minFilter = THREE.LinearFilter;
+    canvasRef.current = c;
     textureRef.current = tex;
-    return tex;
+    return { canvas: c, texture: tex };
   }, []);
 
-  // Update canvas contents when lines or power changes
-  useFrame(() => {
-    const canvas = canvasRef.current;
-    const tex = textureRef.current;
-    if (!canvas || !tex) return;
-
+  // Update canvas contents when lines, power, theme, or backlight change
+  useEffect(() => {
+    if (!canvas || !texture) return;
     const ctx = canvas.getContext("2d");
     if (!ctx) return;
 
@@ -52,10 +52,10 @@ export function LCD1602Display({ id }: LCDProps) {
 
     // 1. Background Fill
     if (!isPowered) {
-      ctx.fillStyle = isBlue ? "#091428" : "#253316";
+      ctx.fillStyle = isBlue ? "#07111e" : "#172312";
       ctx.fillRect(0, 0, canvas.width, canvas.height);
     } else if (backlight) {
-      ctx.fillStyle = isBlue ? "#1d4ed8" : "#84cc16";
+      ctx.fillStyle = isBlue ? "#1e40af" : "#84cc16";
       ctx.fillRect(0, 0, canvas.width, canvas.height);
     } else {
       ctx.fillStyle = isBlue ? "#172554" : "#4d7c0f";
@@ -63,68 +63,65 @@ export function LCD1602Display({ id }: LCDProps) {
     }
 
     // 2. Draw 16x2 Character Cells
-    const charWidth = 28;
-    const charHeight = 52;
-    const padX = 32;
-    const padY = 16;
-    const gapY = 12;
+    const colWidth = 27;
+    const rowHeight = 48;
+    const padX = 26;
+    const row0Y = 16;
+    const row1Y = 78;
 
-    const cellBgColor = !isPowered
-      ? (isBlue ? "#0c1b38" : "#2d3d1b")
+    const cellBg = !isPowered
+      ? (isBlue ? "#0c1829" : "#1f2e18")
       : backlight
-      ? (isBlue ? "#1e40af" : "#a3e635")
-      : (isBlue ? "#1e293b" : "#3f6212");
+      ? (isBlue ? "#1d4ed8" : "#9ae61a")
+      : (isBlue ? "#1e3a8a" : "#3f6212");
 
-    const activeTextColor = !isPowered
-      ? (isBlue ? "#172554" : "#1b2611")
+    const textColor = !isPowered
+      ? (isBlue ? "#12233b" : "#142010")
       : isBlue
-      ? "#f0f9ff"
-      : "#14532d";
+      ? "#ffffff"
+      : "#051605"; // Deep crisp charcoal/black
 
-    const inactiveDotColor = !isPowered
+    const inactiveDot = !isPowered
       ? "transparent"
       : isBlue
-      ? "rgba(30, 58, 138, 0.45)"
-      : "rgba(101, 163, 13, 0.35)";
+      ? "rgba(30, 58, 138, 0.4)"
+      : "rgba(77, 124, 15, 0.25)";
 
-    const lines = [line0, line1];
+    const lines = [line0.padEnd(16, " "), line1.padEnd(16, " ")];
 
-    for (let row = 0; row < 2; row++) {
-      const yStart = padY + row * (charHeight + gapY);
-      const text = lines[row];
+    for (let r = 0; r < 2; r++) {
+      const yStart = r === 0 ? row0Y : row1Y;
+      const text = lines[r];
 
-      for (let col = 0; col < 16; col++) {
-        const xStart = padX + col * (charWidth + 2);
-        const char = text[col] || " ";
+      for (let c = 0; c < 16; c++) {
+        const xStart = padX + c * 29;
+        const char = text[c] || " ";
 
-        // Draw character cell background box
-        ctx.fillStyle = cellBgColor;
-        ctx.fillRect(xStart - 1, yStart - 1, charWidth, charHeight);
+        // Cell background box with border
+        ctx.fillStyle = cellBg;
+        ctx.fillRect(xStart, yStart, colWidth, rowHeight);
 
-        // Render character text in bitmap style
-        ctx.font = "bold 44px monospace";
-        ctx.textBaseline = "top";
-        ctx.fillStyle = isPowered ? activeTextColor : inactiveDotColor;
-        ctx.fillText(char, xStart + 2, yStart - 2);
-
-        // Subtle dot matrix overlay grid for authentic LCD texture
-        ctx.fillStyle = inactiveDotColor;
+        // Dot matrix overlay
+        ctx.fillStyle = inactiveDot;
         for (let dy = 0; dy < 8; dy++) {
           for (let dx = 0; dx < 5; dx++) {
-            if (Math.random() < 0.05 && !isPowered) continue;
-            ctx.fillRect(
-              xStart + dx * (4 + 1) + 2,
-              yStart + dy * (4 + 1) + 3,
-              1.2,
-              1.2
-            );
+            ctx.fillRect(xStart + 3 + dx * 4.5, yStart + 4 + dy * 5, 1, 1);
           }
+        }
+
+        // Draw character text
+        if (char !== " ") {
+          ctx.fillStyle = textColor;
+          ctx.font = "900 36px 'Courier New', monospace";
+          ctx.textAlign = "center";
+          ctx.textBaseline = "middle";
+          ctx.fillText(char, xStart + colWidth / 2, yStart + rowHeight / 2 + 1);
         }
       }
     }
 
-    tex.needsUpdate = true;
-  });
+    texture.needsUpdate = true;
+  }, [canvas, texture, line0, line1, isPowered, backlight, theme, contrast]);
 
   const materials = useMemo(
     () => ({
@@ -149,21 +146,21 @@ export function LCD1602Display({ id }: LCDProps) {
       }),
       potBlue: new THREE.MeshStandardMaterial({
         color: "#2563eb",
-        roughness: 0.4,
+        roughness: 0.3,
       }),
       potScrewBrass: new THREE.MeshStandardMaterial({
-        color: "#eab308",
+        color: "#d4af37",
         metalness: 0.8,
         roughness: 0.2,
       }),
-      blackPlastic: new THREE.MeshStandardMaterial({
-        color: "#111827",
-        roughness: 0.5,
-      }),
       goldPin: new THREE.MeshStandardMaterial({
         color: "#f59e0b",
-        metalness: 0.9,
-        roughness: 0.2,
+        metalness: 0.85,
+        roughness: 0.15,
+      }),
+      blackPlastic: new THREE.MeshStandardMaterial({
+        color: "#18181b",
+        roughness: 0.5,
       }),
     }),
     [],
@@ -206,38 +203,13 @@ export function LCD1602Display({ id }: LCDProps) {
         <boxGeometry args={[14.4, 0.2, 5.0]} />
       </mesh>
 
-      {/* ─── 3. LCD GLASS PANEL & DYNAMIC CANVAS TEXTURE ─── */}
-      {canvasTexture && (
+      {/* ─── 3. LCD GLASS PANEL & DYNAMIC CANVAS TEXTURE (Crisp & Clear) ─── */}
+      {texture && (
         <mesh position={[0, 0.33, 0.1]} rotation={[-Math.PI / 2, 0, 0]}>
           <planeGeometry args={[13.2, 4.0]} />
-          <meshStandardMaterial
-            map={canvasTexture}
-            roughness={0.15}
-            metalness={0.05}
-            emissive={
-              isPowered && backlight
-                ? theme === "blue"
-                  ? "#1d4ed8"
-                  : "#65a30d"
-                : "#000000"
-            }
-            emissiveIntensity={isPowered && backlight ? 0.35 : 0}
-          />
+          <meshBasicMaterial map={texture} />
         </mesh>
       )}
-
-      {/* Top Glass Polarizer Sheen */}
-      <mesh position={[0, 0.34, 0.1]} rotation={[-Math.PI / 2, 0, 0]}>
-        <planeGeometry args={[13.2, 4.0]} />
-        <meshPhysicalMaterial
-          color="#ffffff"
-          transmission={0.88}
-          opacity={0.3}
-          transparent
-          roughness={0.1}
-          reflectivity={0.6}
-        />
-      </mesh>
 
       {/* ─── 4. PCF8574 I2C BACKPACK MODULE (Attached directly under the 16 pins at TOP RIGHT) ─── */}
       <group position={[4.3, -0.35, -2.0]}>

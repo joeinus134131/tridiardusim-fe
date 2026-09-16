@@ -130,15 +130,15 @@ export function example(kind: string): Project {
   if (kind === "lcd1602" || kind === "lcd") {
     components.length = 0;
     components.push(
-      instance("arduino_uno", "uno", [-8, 0, 0]),
-      instance("lcd1602_i2c", "lcd", [6, 0.6, 0]),
+      instance("arduino_uno", "uno", [-10, 0, 0]),
+      instance("lcd1602_i2c", "lcd", [9, 0.6, 0]),
     );
     link("uno", "5V", "lcd", "VCC", "#ef4444");
     link("uno", "GND1", "lcd", "GND", "#1e293b");
     link("uno", "SDA", "lcd", "SDA", "#3b82f6");
     link("uno", "SCL", "lcd", "SCL", "#eab308");
     code =
-      '#include <Wire.h>\n#include <LiquidCrystal_I2C.h>\n\nLiquidCrystal_I2C lcd(0x27, 16, 2);\n\nint detik = 0;\n\nvoid setup() {\n  Serial.begin(9600);\n  lcd.init();\n  lcd.backlight();\n  lcd.setCursor(0, 0);\n  lcd.print("Nexflux Lab 3D");\n  lcd.setCursor(0, 1);\n  lcd.print("LCD 16x2 I2C OK");\n  delay(1500);\n}\n\nvoid loop() {\n  detik++;\n  lcd.setCursor(0, 0);\n  lcd.print("Nexflux Lab 3D  ");\n  lcd.setCursor(0, 1);\n  lcd.print("Detik: ");\n  lcd.print(detik);\n  lcd.print(" s    ");\n  Serial.print("Waktu LCD: ");\n  Serial.println(detik);\n  delay(1000);\n}';
+      '#include <Wire.h>\n#include <LiquidCrystal_I2C.h>\n\nLiquidCrystal_I2C lcd(0x27, 16, 2);\n\nint detik = 0;\n\nvoid setup() {\n  Serial.begin(9600);\n  lcd.init();\n  lcd.backlight();\n  lcd.setCursor(0, 0);\n  lcd.print("Nexflux Lab 3D");\n  lcd.setCursor(0, 1);\n  lcd.print("LCD 16x2 I2C OK");\n  delay(1500);\n}\n\nvoid loop() {\n  detik++;\n  lcd.setCursor(0, 0);\n  lcd.print("Nexflux Lab 3D  ");\n  lcd.setCursor(0, 1);\n  lcd.print("Detik: ");\n  lcd.print(detik);\n  lcd.print(" detik   ");\n  Serial.print("Waktu LCD: ");\n  Serial.println(detik);\n  delay(1000);\n}';
   }
   return { version: 1, name: kind, code, components, wires };
 }

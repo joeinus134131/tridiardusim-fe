@@ -212,13 +212,13 @@ export function LCD1602Display({ id }: LCDProps) {
       </group>
 
       {/* ─── 2. METAL BEZEL FRAME ─── */}
-      <mesh material={materials.bezelMetal} position={[0, 0.25, 0.1]}>
-        <boxGeometry args={[14.4, 0.3, 5.0]} />
+      <mesh material={materials.bezelMetal} position={[0, 0.22, 0.1]}>
+        <boxGeometry args={[14.4, 0.2, 5.0]} />
       </mesh>
 
       {/* ─── 3. LCD GLASS PANEL & DYNAMIC CANVAS TEXTURE ─── */}
       {canvasTexture && (
-        <mesh position={[0, 0.42, 0.1]}>
+        <mesh position={[0, 0.33, 0.1]} rotation={[-Math.PI / 2, 0, 0]}>
           <planeGeometry args={[13.2, 4.0]} />
           <meshStandardMaterial
             map={canvasTexture}
@@ -237,7 +237,7 @@ export function LCD1602Display({ id }: LCDProps) {
       )}
 
       {/* Top Glass Polarizer Sheen */}
-      <mesh position={[0, 0.44, 0.1]}>
+      <mesh position={[0, 0.34, 0.1]} rotation={[-Math.PI / 2, 0, 0]}>
         <planeGeometry args={[13.2, 4.0]} />
         <meshPhysicalMaterial
           color="#ffffff"

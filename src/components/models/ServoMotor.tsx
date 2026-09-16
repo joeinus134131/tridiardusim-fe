@@ -234,64 +234,66 @@ export function ServoMotor({ id }: ServoProps) {
       </group>
 
       {/* ─── 3-WIRE RIBBON CABLE & DUPONT CONNECTOR ─── */}
-      {/* Cable exit grommet at bottom left */}
-      <mesh material={materials.blackHousing} position={[-2.1, -1.0, 0]}>
-        <boxGeometry args={[0.3, 0.4, 0.7]} />
+      {/* Cable exit grommet at front-bottom of servo casing */}
+      <mesh material={materials.blackHousing} position={[0, -0.95, 1.22]}>
+        <boxGeometry args={[1.7, 0.28, 0.15]} />
       </mesh>
 
-      {/* 3 Color-Coded Wires (Brown=GND, Red=VCC, Orange=PWM) */}
-      <group position={[-2.1, -1.0, 0]}>
-        {/* Brown Wire (GND) */}
-        <mesh
-          material={materials.cableBrown}
-          position={[-0.508, 0.2, 2.0]}
-          rotation={[0.4, 0, 0]}
-        >
-          <cylinderGeometry args={[0.08, 0.08, 2.8, 8]} />
+      {/* 3 Color-Coded Ribbon Conductors (Brown=GND, Red=VCC, Orange=PWM) running straight into DuPont housing */}
+      <group position={[0, -0.95, 1.6]}>
+        {/* Brown Wire (GND, x = -0.508) */}
+        <mesh material={materials.cableBrown} position={[-0.508, 0, 0]}>
+          <boxGeometry args={[0.2, 0.12, 0.8]} />
         </mesh>
-        {/* Red Wire (VCC 5V) */}
-        <mesh
-          material={materials.cableRed}
-          position={[0, 0.2, 2.0]}
-          rotation={[0.4, 0, 0]}
-        >
-          <cylinderGeometry args={[0.08, 0.08, 2.8, 8]} />
+        {/* Red Wire (VCC, x = 0) */}
+        <mesh material={materials.cableRed} position={[0, 0, 0]}>
+          <boxGeometry args={[0.2, 0.12, 0.8]} />
         </mesh>
-        {/* Orange Wire (PWM Signal) */}
-        <mesh
-          material={materials.cableOrange}
-          position={[0.508, 0.2, 2.0]}
-          rotation={[0.4, 0, 0]}
-        >
-          <cylinderGeometry args={[0.08, 0.08, 2.8, 8]} />
+        {/* Orange Wire (PWM Signal, x = 0.508) */}
+        <mesh material={materials.cableOrange} position={[0.508, 0, 0]}>
+          <boxGeometry args={[0.2, 0.12, 0.8]} />
         </mesh>
       </group>
 
-      {/* 3-Pin Female DuPont Header Housing */}
+      {/* 3-Pin Female DuPont Header Housing at Z = 2.0, Y = -0.8 (world Y = 0.4, matches pin positions) */}
       <group position={[0, -0.8, 2.0]}>
+        {/* Black DuPont Connector Shell */}
         <mesh material={materials.blackHousing} position={[0, 0, 0]}>
-          <boxGeometry args={[1.7, 0.55, 0.7]} />
+          <boxGeometry args={[1.7, 0.55, 0.55]} />
         </mesh>
-        {/* Terminal Pin Contacts inside connector */}
+        {/* Top Wire Strain Relief Collar */}
+        <mesh material={materials.blackHousing} position={[0, 0.3, 0]}>
+          <boxGeometry args={[1.65, 0.08, 0.52]} />
+        </mesh>
+        {/* Terminal Pin Holes inside connector matching exact pin positions */}
         {[-0.508, 0, 0.508].map((x, idx) => (
-          <mesh
-            key={idx}
-            material={materials.metalPin}
-            position={[x, 0.1, 0]}
-          >
-            <boxGeometry args={[0.16, 0.35, 0.16]} />
-          </mesh>
+          <group key={idx} position={[x, 0, 0]}>
+            {/* Square terminal hole */}
+            <mesh material={materials.metalPin} position={[0, 0.2, 0]}>
+              <boxGeometry args={[0.22, 0.2, 0.22]} />
+            </mesh>
+            {/* Gold leaf spring contact inside */}
+            <mesh
+              position={[0, 0.05, 0]}
+              material={new THREE.MeshStandardMaterial({ color: "#f59e0b", metalness: 0.9, roughness: 0.2 })}
+            >
+              <boxGeometry args={[0.12, 0.25, 0.12]} />
+            </mesh>
+          </group>
         ))}
       </group>
 
       {/* SG90 Silkscreen Label Decal on front casing */}
-      <mesh position={[0, 0, 1.21]}>
-        <planeGeometry args={[3.2, 1.2]} />
-        <meshStandardMaterial
-          color="#f1f5f9"
-          roughness={0.6}
-        />
-      </mesh>
+      <group position={[0, 0, 1.21]}>
+        <mesh>
+          <planeGeometry args={[3.4, 1.1]} />
+          <meshStandardMaterial color="#0284c7" roughness={0.4} />
+        </mesh>
+        <mesh position={[0, 0, 0.002]}>
+          <planeGeometry args={[3.2, 0.45]} />
+          <meshStandardMaterial color="#ffffff" roughness={0.3} />
+        </mesh>
+      </group>
     </group>
   );
 }

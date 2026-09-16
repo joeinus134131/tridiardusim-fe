@@ -570,27 +570,32 @@ export default function WorkspacePage() {
                     </button>
                   ))}
                 </details>
-                <strong>Contoh siap pakai</strong>
-                {[
-                  ["servo", "Micro Servo SG90 9g"],
-                  ["lcd1602", "LCD 16x2 Display I2C"],
-                  ["oled", "OLED Display 0.96\" SSD1306"],
-                  ["esp32_wifi", "ESP32 Wi-Fi + Internet Fetch"],
-                  ["esp32", "ESP32 DevKit + Breadboard"],
-                  ["blink", "Uno Blink + Resistor"],
-                  ["button", "Tombol INPUT_PULLUP"],
-                  ["pwm", "Potensiometer → PWM"],
-                  ["breadboard", "Breadboard + Jumper"],
-                  ["serial", "Serial Echo Monitor"],
-                ].map(([id, label]) => (
-                  <button
-                    key={id}
-                    className="small-button"
-                    onClick={() => guard(() => replace(example(id)))}
-                  >
-                    {label}
-                  </button>
-                ))}
+                <div className="flex items-center justify-between mt-1 mb-1">
+                  <strong>Contoh siap pakai</strong>
+                  <span className="text-[10px] opacity-60 font-mono">10 Presets</span>
+                </div>
+                <div className="examples-scroll-container">
+                  {[
+                    ["servo", "Micro Servo SG90 9g"],
+                    ["lcd1602", "LCD 16x2 Display I2C"],
+                    ["oled", "OLED Display 0.96\" SSD1306"],
+                    ["esp32_wifi", "ESP32 Wi-Fi + Internet Fetch"],
+                    ["esp32", "ESP32 DevKit + Breadboard"],
+                    ["blink", "Uno Blink + Resistor"],
+                    ["button", "Tombol INPUT_PULLUP"],
+                    ["pwm", "Potensiometer → PWM"],
+                    ["breadboard", "Breadboard + Jumper"],
+                    ["serial", "Serial Echo Monitor"],
+                  ].map(([id, label]) => (
+                    <button
+                      key={id}
+                      className="small-button text-left truncate"
+                      onClick={() => guard(() => replace(example(id)))}
+                    >
+                      {label}
+                    </button>
+                  ))}
+                </div>
               </div>
             </>
           ) : (

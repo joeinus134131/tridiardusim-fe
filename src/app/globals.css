@@ -573,7 +573,21 @@ body {
   font-size: 10px;
   text-transform: uppercase;
   letter-spacing: 1px;
-  margin-bottom: 4px;
+}
+.examples-scroll-container {
+  display: flex;
+  flex-direction: column;
+  gap: 4px;
+  max-height: 175px;
+  overflow-y: auto;
+  padding-right: 4px;
+}
+.examples-scroll-container::-webkit-scrollbar {
+  width: 4px;
+}
+.examples-scroll-container::-webkit-scrollbar-thumb {
+  background: rgba(148, 163, 184, 0.35);
+  border-radius: 4px;
 }
 .scene-panel {
   flex: 1;

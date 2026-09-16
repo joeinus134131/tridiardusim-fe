@@ -1,9 +1,8 @@
-"use client";
-
 import React, { useMemo, useRef } from "react";
 import * as THREE from "three";
 import { useFrame } from "@react-three/fiber";
 import { useSimulatorStore } from "@/store/useSimulatorStore";
+import { PinHighlight } from "@/components/canvas/PinHighlight";
 
 interface LCDProps {
   id: string;
@@ -102,10 +101,6 @@ export function LCD1602Display({ id }: LCDProps) {
         ctx.fillStyle = cellBgColor;
         ctx.fillRect(xStart - 1, yStart - 1, charWidth, charHeight);
 
-        // Draw 5x8 matrix dots inside character cell
-        const dotSize = 4;
-        const dotGap = 1;
-
         // Render character text in bitmap style
         ctx.font = "bold 44px monospace";
         ctx.textBaseline = "top";
@@ -118,8 +113,8 @@ export function LCD1602Display({ id }: LCDProps) {
           for (let dx = 0; dx < 5; dx++) {
             if (Math.random() < 0.05 && !isPowered) continue;
             ctx.fillRect(
-              xStart + dx * (dotSize + dotGap) + 2,
-              yStart + dy * (dotSize + dotGap) + 3,
+              xStart + dx * (4 + 1) + 2,
+              yStart + dy * (4 + 1) + 3,
               1.2,
               1.2
             );
@@ -165,11 +160,6 @@ export function LCD1602Display({ id }: LCDProps) {
         color: "#111827",
         roughness: 0.5,
       }),
-      metalPin: new THREE.MeshStandardMaterial({
-        color: "#e2e8f0",
-        metalness: 0.9,
-        roughness: 0.1,
-      }),
       goldPin: new THREE.MeshStandardMaterial({
         color: "#f59e0b",
         metalness: 0.9,
@@ -180,7 +170,7 @@ export function LCD1602Display({ id }: LCDProps) {
   );
 
   return (
-    <group position={[0, 0.8, 0]}>
+    <group position={[0, 0, 0]}>
       {/* ─── 1. MAIN LCD PCB (Dark Green 80 × 36 mm) ─── */}
       <mesh material={materials.pcbGreen} position={[0, 0, 0]}>
         <boxGeometry args={[16.0, 0.3, 7.2]} />
@@ -198,8 +188,8 @@ export function LCD1602Display({ id }: LCDProps) {
         </mesh>
       ))}
 
-      {/* 16-Pin Header along the top of LCD */}
-      <group position={[-6.8, 0.2, -3.1]}>
+      {/* 16-Pin Header along the TOP RIGHT of LCD */}
+      <group position={[0.5, 0.2, -3.1]}>
         {Array.from({ length: 16 }).map((_, i) => (
           <mesh
             key={i}
@@ -249,8 +239,8 @@ export function LCD1602Display({ id }: LCDProps) {
         />
       </mesh>
 
-      {/* ─── 4. PCF8574 I2C BACKPACK MODULE (Attached to bottom/back) ─── */}
-      <group position={[3.2, -0.4, -1.8]}>
+      {/* ─── 4. PCF8574 I2C BACKPACK MODULE (Attached directly under the 16 pins at TOP RIGHT) ─── */}
+      <group position={[4.3, -0.35, -2.0]}>
         {/* Backpack PCB */}
         <mesh material={materials.backpackPCB}>
           <boxGeometry args={[8.4, 0.25, 3.2]} />
@@ -278,8 +268,8 @@ export function LCD1602Display({ id }: LCDProps) {
         </mesh>
       </group>
 
-      {/* ─── 5. 4-PIN I2C MALE HEADER (GND, VCC, SDA, SCL) ─── */}
-      <group position={[0, 0.2, -2.8]}>
+      {/* ─── 5. 4-PIN I2C MALE HEADER (GND, VCC, SDA, SCL) at TOP RIGHT ─── */}
+      <group position={[4.3, 0.2, -3.2]}>
         {/* Black Plastic Header Collar */}
         <mesh material={materials.blackPlastic} position={[0, 0, 0]}>
           <boxGeometry args={[2.2, 0.4, 0.6]} />
@@ -289,12 +279,17 @@ export function LCD1602Display({ id }: LCDProps) {
           <mesh
             key={i}
             material={materials.goldPin}
-            position={[x, 0.35, 0]}
+            position={[x, 0.2, 0]}
           >
-            <cylinderGeometry args={[0.07, 0.07, 0.6, 8]} />
+            <cylinderGeometry args={[0.07, 0.07, 0.5, 8]} />
           </mesh>
         ))}
       </group>
+
+      {/* ─── 6. INTERACTIVE PIN HIGHLIGHTS (Available Pins for Wiring) ─── */}
+      {component?.pins.map((p) => (
+        <PinHighlight key={p.id} componentId={id} pin={p} />
+      ))}
     </group>
   );
 }

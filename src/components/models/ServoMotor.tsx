@@ -4,6 +4,7 @@ import React, { useRef, useMemo } from "react";
 import * as THREE from "three";
 import { useFrame } from "@react-three/fiber";
 import { useSimulatorStore } from "@/store/useSimulatorStore";
+import { PinHighlight } from "@/components/canvas/PinHighlight";
 
 interface ServoProps {
   id: string;
@@ -99,9 +100,16 @@ export function ServoMotor({ id }: ServoProps) {
   );
 
   return (
-    <group position={[0, 1.2, 0]}>
-      {/* ─── MAIN SERVO BODY (SG90 translucent blue casing) ─── */}
-      {/* Lower motor & gear box */}
+    <group>
+      {/* ─── INTERACTIVE PIN HIGHLIGHTS (Wiring Terminals) ─── */}
+      {component?.pins.map((p) => (
+        <PinHighlight key={p.id} componentId={id} pin={p} />
+      ))}
+
+      {/* ─── PHYSICAL SERVO ASSEMBLY ─── */}
+      <group position={[0, 1.2, 0]}>
+        {/* ─── MAIN SERVO BODY (SG90 translucent blue casing) ─── */}
+        {/* Lower motor & gear box */}
       <mesh material={materials.casing} position={[0, 0, 0]}>
         <boxGeometry args={[4.5, 2.4, 2.4]} />
       </mesh>
@@ -293,6 +301,7 @@ export function ServoMotor({ id }: ServoProps) {
           <planeGeometry args={[3.2, 0.45]} />
           <meshStandardMaterial color="#ffffff" roughness={0.3} />
         </mesh>
+      </group>
       </group>
     </group>
   );

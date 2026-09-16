@@ -564,10 +564,13 @@ body {
   opacity: 0.6;
 }
 .examples {
-  display: grid;
-  gap: 5px;
+  display: flex;
+  flex-direction: column;
+  gap: 6px;
   padding: 10px;
   border-top: 1px solid var(--border);
+  flex-shrink: 0;
+  background: var(--bg-surface);
 }
 .examples strong {
   font-size: 10px;
@@ -577,17 +580,55 @@ body {
 .examples-scroll-container {
   display: flex;
   flex-direction: column;
-  gap: 4px;
-  max-height: 175px;
+  gap: 5px;
+  max-height: 160px;
+  min-height: 90px;
   overflow-y: auto;
+  overflow-x: hidden;
   padding-right: 4px;
+  scrollbar-width: thin;
+}
+.examples-scroll-container button,
+.examples-scroll-container .small-button {
+  flex-shrink: 0 !important;
+  min-height: 32px !important;
+  height: 32px !important;
+  display: flex !important;
+  align-items: center !important;
+  font-size: 11.5px !important;
+  font-weight: 500 !important;
+  padding: 0 10px !important;
+  box-sizing: border-box !important;
+  border-radius: 6px !important;
+  background: var(--bg-elevated) !important;
+  border: 1px solid var(--border) !important;
+  color: var(--text-primary) !important;
+  cursor: pointer !important;
+  white-space: nowrap !important;
+  overflow: hidden !important;
+  text-overflow: ellipsis !important;
+  transition: all 0.15s ease !important;
+}
+.examples-scroll-container button:hover,
+.examples-scroll-container .small-button:hover {
+  border-color: var(--accent) !important;
+  background: rgba(59, 130, 246, 0.12) !important;
+  color: var(--accent) !important;
+  transform: translateX(2px);
 }
 .examples-scroll-container::-webkit-scrollbar {
-  width: 4px;
+  width: 5px;
+}
+.examples-scroll-container::-webkit-scrollbar-track {
+  background: rgba(0, 0, 0, 0.05);
+  border-radius: 4px;
 }
 .examples-scroll-container::-webkit-scrollbar-thumb {
-  background: rgba(148, 163, 184, 0.35);
+  background: rgba(148, 163, 184, 0.5);
   border-radius: 4px;
+}
+.examples-scroll-container::-webkit-scrollbar-thumb:hover {
+  background: rgba(100, 116, 139, 0.8);
 }
 .scene-panel {
   flex: 1;
@@ -844,10 +885,38 @@ body {
   top: 10px;
   left: 10px;
   display: flex;
+  align-items: center;
   gap: 4px;
+  background: var(--bg-surface);
+  border: 1px solid var(--border);
+  padding: 4px 6px;
+  border-radius: 8px;
+  box-shadow: 0 4px 12px rgba(0, 0, 0, 0.15);
+  backdrop-filter: blur(8px);
+  z-index: 10;
+}
+.camera-tools .small-button {
+  font-size: 11px;
+  font-weight: 500;
+  padding: 4px 8px;
+  border-radius: 5px;
+  transition: all 0.15s ease;
+}
+.camera-tools .small-button.active {
+  background: var(--accent);
+  color: #ffffff;
+  border-color: var(--accent);
+  font-weight: 600;
+  box-shadow: 0 0 10px rgba(59, 130, 246, 0.35);
+}
+.camera-tools .divider {
+  width: 1px;
+  height: 16px;
+  background: var(--border);
+  margin: 0 2px;
 }
 .diagnostics {
-  top: 46px;
+  top: 50px;
 }
 .property-body details {
   font-size: 10px;

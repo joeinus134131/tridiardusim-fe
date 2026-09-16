@@ -101,6 +101,9 @@ export default function WorkspacePage() {
   );
   const updateComponentState = useSimulatorStore((s) => s.updateComponentState);
   const diagnostics = useSimulatorStore((s) => s.diagnostics);
+  const cameraView = useSimulatorStore((s) => s.cameraView);
+  const cameraMode = useSimulatorStore((s) => s.cameraMode);
+  const setCameraMode = useSimulatorStore((s) => s.setCameraMode);
 
   const [query, setQuery] = useState("");
   const [name, setName] = useState("Rangkaian saya");
@@ -203,6 +206,13 @@ export default function WorkspacePage() {
             0,
           ]);
         }
+      }
+
+      if (e.key === "h" || e.key === "H") {
+        setCameraMode("pan");
+      }
+      if (e.key === "o" || e.key === "O") {
+        setCameraMode("orbit");
       }
     };
     window.addEventListener("keydown", handler);
@@ -590,6 +600,7 @@ export default function WorkspacePage() {
                     <button
                       key={id}
                       className="small-button text-left truncate"
+                      style={{ flexShrink: 0, minHeight: 32 }}
                       onClick={() => guard(() => replace(example(id)))}
                     >
                       {label}
@@ -681,21 +692,53 @@ export default function WorkspacePage() {
         <section className="scene-panel">
           <SimulatorCanvas />
           <div className="camera-tools">
+            <button
+              className={`small-button ${cameraMode === "orbit" ? "active" : ""}`}
+              onClick={() => setCameraMode("orbit")}
+              title="Mode Putar / Orbit 3D [O] (Klik-kiri drag untuk memutar)"
+            >
+              🔄 Putar
+            </button>
+            <button
+              className={`small-button ${cameraMode === "pan" ? "active" : ""}`}
+              onClick={() => setCameraMode("pan")}
+              title="Mode Geser / Pan Bebas [H] (Klik-kiri drag untuk menggeser bebas)"
+            >
+              ✋ Geser
+            </button>
+            <div className="divider" />
             {(
               [
-                ["perspective", "Perspektif 3D"],
-                ["top", "Tampak Atas"],
-                ["front", "Tampak Depan"],
+                ["perspective", "3D"],
+                ["top", "Atas"],
+                ["front", "Depan"],
               ] as const
             ).map(([view, label]) => (
               <button
                 key={view}
-                className="small-button"
+                className={`small-button ${cameraView === view ? "active" : ""}`}
                 onClick={() => useSimulatorStore.setState({ cameraView: view })}
               >
                 {label}
               </button>
             ))}
+            <div className="divider" />
+            <button
+              className="small-button"
+              onClick={() => {
+                const current = useSimulatorStore.getState().cameraView;
+                useSimulatorStore.setState({
+                  cameraView: current === "perspective" ? "front" : "perspective",
+                });
+                setTimeout(
+                  () => useSimulatorStore.setState({ cameraView: current }),
+                  20,
+                );
+              }}
+              title="Pusatkan kembali tampilan ke seluruh komponen (Fit View)"
+            >
+              🎯 Fit
+            </button>
           </div>
           <div className="scene-instruction">
             {isWiringActive ? (
@@ -705,7 +748,11 @@ export default function WorkspacePage() {
               </>
             ) : (
               <span>
-                {components.length} komponen · {wires.length} kabel · Drag kiri untuk putar 3D · Klik pin untuk menyambung
+                {cameraMode === "pan"
+                  ? "✋ Mode Geser Aktif: Drag kiri untuk geser kanvas bebas · Tahan Spasi / Klik Kanan juga bisa geser"
+                  : "🔄 Mode Putar Aktif: Drag kiri untuk putar 3D · Tahan Spasi / Klik Kanan untuk geser bebas"}
+                {" · "}
+                Klik pin untuk menyambung kabel
               </span>
             )}
           </div>

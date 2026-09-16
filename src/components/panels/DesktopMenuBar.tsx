@@ -53,6 +53,8 @@ export function DesktopMenuBar({
     (s) => s.updateComponentRotation,
   );
   const cancelWiring = useSimulatorStore((s) => s.cancelWiring);
+  const cameraMode = useSimulatorStore((s) => s.cameraMode);
+  const setCameraMode = useSimulatorStore((s) => s.setCameraMode);
 
   // Close menus when clicking outside
   useEffect(() => {
@@ -249,6 +251,21 @@ export function DesktopMenuBar({
                 onClick={() => actionAndClose(() => setCameraView("front"))}
               >
                 <span>Tampak Depan (Front View)</span>
+              </button>
+              <div className="dropdown-divider" />
+              <button
+                className="dropdown-item"
+                onClick={() => actionAndClose(() => setCameraMode("orbit"))}
+              >
+                <span>{cameraMode === "orbit" ? "✓ " : "  "}Mode Putar (Orbit 3D)</span>
+                <span className="shortcut">O</span>
+              </button>
+              <button
+                className="dropdown-item"
+                onClick={() => actionAndClose(() => setCameraMode("pan"))}
+              >
+                <span>{cameraMode === "pan" ? "✓ " : "  "}Mode Geser Bebas (Pan)</span>
+                <span className="shortcut">H</span>
               </button>
               <div className="dropdown-divider" />
               <button

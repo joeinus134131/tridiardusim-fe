@@ -90,11 +90,12 @@ export const servoPins: PinDefinition[] = [
   pin("PWM", 1 * PITCH, 2.0, "pwm", 0.4),
 ];
 
+const LCD_I2C_X = 4.3;
 export const lcd1602Pins: PinDefinition[] = [
-  pin("GND", -1.5 * PITCH, -2.8, "ground", 0.4),
-  pin("VCC", -0.5 * PITCH, -2.8, "power", 0.4),
-  pin("SDA", 0.5 * PITCH, -2.8, "digital", 0.4),
-  pin("SCL", 1.5 * PITCH, -2.8, "digital", 0.4),
+  pin("GND", LCD_I2C_X - 1.5 * PITCH, -3.2, "ground", 0.4),
+  pin("VCC", LCD_I2C_X - 0.5 * PITCH, -3.2, "power", 0.4),
+  pin("SDA", LCD_I2C_X + 0.5 * PITCH, -3.2, "digital", 0.4),
+  pin("SCL", LCD_I2C_X + 1.5 * PITCH, -3.2, "digital", 0.4),
 ];
 
 export const physicalInfo: Record<string, ComponentDatasheet> = {

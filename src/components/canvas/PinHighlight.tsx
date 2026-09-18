@@ -42,8 +42,8 @@ export const PinHighlight = memo(function PinHighlight({
   );
 
   const opacity =
-    isSource || hover ? 0.9 : isSelected || isWiringActive ? 0.28 : 0;
-  const color = isSource ? "#fbbf24" : hover ? "#5eead4" : "#94c8ff";
+    isSource || hover ? 0.9 : isWiringActive ? 0.4 : 0;
+  const color = isSource ? "#fbbf24" : hover ? "#38bdf8" : "#94c8ff";
 
   return (
     <group position={pin.position}>
@@ -61,7 +61,7 @@ export const PinHighlight = memo(function PinHighlight({
           color={color}
           transparent
           opacity={opacity}
-          depthTest={false}
+          depthTest={!isSource && !hover}
         />
       </mesh>
       {hover && (

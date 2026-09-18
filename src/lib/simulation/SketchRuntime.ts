@@ -163,6 +163,10 @@ export class SketchParser {
               params.push(this.name());
             } while (this.eat(","));
           this.need(")");
+          if (this.eat(";")) {
+            // Function prototype or forward declaration (common in .h files)
+            continue;
+          }
           if (this.functions.has(name)) this.fail("Fungsi duplikat");
           this.functions.set(name, { params, body: this.block() });
         } else {

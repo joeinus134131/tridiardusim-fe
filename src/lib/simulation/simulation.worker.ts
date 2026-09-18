@@ -107,6 +107,13 @@ const api: Record<string, (...args: Value[]) => Value | Promise<Value>> = {
     return 0;
   },
   delayMicroseconds: () => 0,
+  pulseIn: (pin: number | string, val: number | string = 1, timeout = 1000000) => {
+    const hcsr = components.find((c) => c.typeId === "hcsr04");
+    if (!hcsr || hcsr.state?.isPowered === false) return 0;
+    const d = typeof hcsr.state?.distance === "number" ? hcsr.state.distance : hcsr04State.distance;
+    // Microseconds duration for speed of sound (343 m/s = 0.0343 cm/us round-trip)
+    return Math.round(d * 58.3);
+  },
   millis: () =>
     Math.floor((paused ? pauseAt : performance.now()) - started - pausedMs),
   micros: () =>
@@ -351,6 +358,65 @@ const api: Record<string, (...args: Value[]) => Value | Promise<Value>> = {
   },
   "lcd.print": (v = "") => api["*.print"](v),
   "lcd.println": (v = "") => api["*.println"](v),
+
+  // ─── HC-SR04 Ultrasonic Distance Sensor Emulation ───
+  "*.ping_cm": () => {
+    const hcsr = components.find((c) => c.typeId === "hcsr04");
+    if (!hcsr || hcsr.state?.isPowered === false) return 0;
+    return typeof hcsr.state?.distance === "number" ? hcsr.state.distance : hcsr04State.distance;
+  },
+  "*.ping_in": () => {
+    const hcsr = components.find((c) => c.typeId === "hcsr04");
+    if (!hcsr || hcsr.state?.isPowered === false) return 0;
+    const d = typeof hcsr.state?.distance === "number" ? hcsr.state.distance : hcsr04State.distance;
+    return Math.round(d / 2.54);
+  },
+  "*.dist": () => {
+    const hcsr = components.find((c) => c.typeId === "hcsr04");
+    if (!hcsr || hcsr.state?.isPowered === false) return 0;
+    return typeof hcsr.state?.distance === "number" ? hcsr.state.distance : hcsr04State.distance;
+  },
+
+  // ─── DHT11 Temperature & Humidity Sensor Emulation ───
+  "*.readTemperature": (isFahrenheit: any = 0) => {
+    const dht = components.find((c) => c.typeId === "dht11");
+    if (!dht || dht.state?.isPowered === false) return NaN;
+    const t = typeof dht.state?.temperature === "number" ? dht.state.temperature : dhtState.temperature;
+    return Boolean(isFahrenheit) ? Math.round((t * 1.8 + 32) * 10) / 10 : t;
+  },
+  "*.readHumidity": () => {
+    const dht = components.find((c) => c.typeId === "dht11");
+    if (!dht || dht.state?.isPowered === false) return NaN;
+    return typeof dht.state?.humidity === "number" ? dht.state.humidity : dhtState.humidity;
+  },
+  "*.computeHeatIndex": (temp: any = 24, hum: any = 50, isFahrenheit: any = 0) => {
+    const t = Number(temp);
+    const h = Number(hum);
+    const tf = Boolean(isFahrenheit) ? t : t * 1.8 + 32;
+    const hiF =
+      -42.379 +
+      2.04901523 * tf +
+      10.14333127 * h -
+      0.22475541 * tf * h -
+      0.00683783 * tf * tf -
+      0.05481717 * h * h +
+      0.00122874 * tf * tf * h +
+      0.00085282 * tf * h * h -
+      0.00000199 * tf * tf * h * h;
+    return Boolean(isFahrenheit)
+      ? Math.round(hiF * 10) / 10
+      : Math.round(((hiF - 32) / 1.8) * 10) / 10;
+  },
+  "*.read11": () => 0,
+};
+
+let dhtState = {
+  temperature: 24,
+  humidity: 50,
+};
+
+let hcsr04State = {
+  distance: 25,
 };
 
 let oledState = {
@@ -448,6 +514,18 @@ onmessage = async (e: MessageEvent) => {
       if (typeof lcd.state.backlight === "boolean")
         lcdState.backlight = lcd.state.backlight;
     }
+    const dht = components.find((c) => c.typeId === "dht11");
+    if (dht && dht.state) {
+      if (typeof dht.state.temperature === "number")
+        dhtState.temperature = dht.state.temperature;
+      if (typeof dht.state.humidity === "number")
+        dhtState.humidity = dht.state.humidity;
+    }
+    const hcsr = components.find((c) => c.typeId === "hcsr04");
+    if (hcsr && hcsr.state) {
+      if (typeof hcsr.state.distance === "number")
+        hcsr04State.distance = hcsr.state.distance;
+    }
     dirty = true;
     return;
   }
@@ -482,6 +560,18 @@ onmessage = async (e: MessageEvent) => {
     lcdState.backlight = lcd.state.backlight !== false;
     lcdState.cursorCol = 0;
     lcdState.cursorRow = 0;
+  }
+  const dht = components.find((c) => c.typeId === "dht11");
+  if (dht && dht.state) {
+    if (typeof dht.state.temperature === "number")
+      dhtState.temperature = dht.state.temperature;
+    if (typeof dht.state.humidity === "number")
+      dhtState.humidity = dht.state.humidity;
+  }
+  const hcsr = components.find((c) => c.typeId === "hcsr04");
+  if (hcsr && hcsr.state) {
+    if (typeof hcsr.state.distance === "number")
+      hcsr04State.distance = hcsr.state.distance;
   }
   io = {};
   dirty = true;

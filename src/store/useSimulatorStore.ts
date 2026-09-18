@@ -22,6 +22,11 @@ interface SimulatorState {
 
   // Editor & Simulation
   code: string;
+  files: Array<{ name: string; content: string }>;
+  activeFileName: string;
+  setActiveFile: (name: string) => void;
+  addFile: (name: string, content?: string) => void;
+  deleteFile: (name: string) => void;
   simulationState: "stopped" | "running" | "paused";
   serialOutput: SerialMessage[];
   baudRate: number;
@@ -97,6 +102,24 @@ void loop() {
   digitalWrite(13, LOW);
   delay(1000);
 }`,
+  files: [
+    {
+      name: "sketch.ino",
+      content: `void setup() {
+  // Put your setup code here, to run once:
+  pinMode(13, OUTPUT);
+}
+
+void loop() {
+  // Put your main code here, to run repeatedly:
+  digitalWrite(13, HIGH);
+  delay(1000);
+  digitalWrite(13, LOW);
+  delay(1000);
+}`,
+    },
+  ],
+  activeFileName: "sketch.ino",
   simulationState: "stopped",
   serialOutput: [],
   baudRate: 9600,
@@ -135,13 +158,48 @@ void loop() {
     set(error?{placementNotice:error}:{components:moved,placementNotice:contacts(candidate,moved).length?"Kaki terpasang; kontak breadboard tersambung otomatis.":""});
   },
   updateComponentRotation: (id, rotation) => {
-    const all=get().components, old=all.find(c=>c.id===id);
-    if(!old) return;
-    const candidate=snapToBreadboard({...old,rotation},all);
-    const delta=rotation.map((v,i)=>v-old.rotation[i]) as Vec;
-    const moved=all.map(c=>c.id===id?candidate:contacts(c,all).some(p=>p.boardId===id)?{...c,position:rotate(c.position.map((v,i)=>v-old.position[i]) as Vec,delta).map((v,i)=>v+old.position[i]) as Vec,rotation:c.rotation.map((v,i)=>v+delta[i]) as Vec}:c);
-    const error=moved.filter(c=>c!==all.find(x=>x.id===c.id)).map(c=>placementError(c,moved)).find(Boolean)||"";
-    set(error?{placementNotice:error}:{components:moved,placementNotice:""});
+    const all = get().components,
+      old = all.find((c) => c.id === id);
+    if (!old) return;
+    let candidate = snapToBreadboard({ ...old, rotation }, all);
+    if (!contacts(candidate, all).length) {
+      const b = worldBounds(candidate);
+      if (b.min[1] < 0) {
+        candidate = {
+          ...candidate,
+          position: [
+            candidate.position[0],
+            candidate.position[1] - b.min[1],
+            candidate.position[2],
+          ],
+        };
+      }
+    }
+    const delta = rotation.map((v, i) => v - old.rotation[i]) as Vec;
+    const moved = all.map((c) =>
+      c.id === id
+        ? candidate
+        : contacts(c, all).some((p) => p.boardId === id)
+          ? {
+              ...c,
+              position: rotate(
+                c.position.map((v, i) => v - old.position[i]) as Vec,
+                delta
+              ).map((v, i) => v + old.position[i]) as Vec,
+              rotation: c.rotation.map((v, i) => v + delta[i]) as Vec,
+            }
+          : c
+    );
+    const error =
+      moved
+        .filter((c) => c !== all.find((x) => x.id === c.id))
+        .map((c) => placementError(c, moved))
+        .find(Boolean) || "";
+    set(
+      error
+        ? { placementNotice: error }
+        : { components: moved, placementNotice: "" }
+    );
   },
   updateWire: (id, patch) => set(s=>({wires:s.wires.map(w=>w.id===id?{...w,...patch}:w)})),
 
@@ -258,7 +316,46 @@ void loop() {
       },
     }),
 
-  setCode: (code) => set({ code }),
+  setCode: (code) =>
+    set((s) => ({
+      code,
+      files: s.files.map((f) =>
+        f.name === s.activeFileName ? { ...f, content: code } : f
+      ),
+    })),
+
+  setActiveFile: (name) =>
+    set((s) => {
+      const file = s.files.find((f) => f.name === name);
+      if (!file) return {};
+      return { activeFileName: name, code: file.content };
+    }),
+
+  addFile: (name, content = "") =>
+    set((s) => {
+      const trimmed = name.trim();
+      if (!trimmed || s.files.some((f) => f.name.toLowerCase() === trimmed.toLowerCase())) {
+        return {};
+      }
+      return {
+        files: [...s.files, { name: trimmed, content }],
+        activeFileName: trimmed,
+        code: content,
+      };
+    }),
+
+  deleteFile: (name) =>
+    set((s) => {
+      if (name === "sketch.ino") return {};
+      const nextFiles = s.files.filter((f) => f.name !== name);
+      const nextActive = s.activeFileName === name ? "sketch.ino" : s.activeFileName;
+      const activeFile = nextFiles.find((f) => f.name === nextActive) || nextFiles[0];
+      return {
+        files: nextFiles,
+        activeFileName: activeFile.name,
+        code: activeFile.content,
+      };
+    }),
 
   startSimulation: () => {
     arduinoEngine.start();

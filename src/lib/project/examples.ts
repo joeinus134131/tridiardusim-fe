@@ -140,5 +140,30 @@ export function example(kind: string): Project {
     code =
       '#include <Wire.h>\n#include <LiquidCrystal_I2C.h>\n\nLiquidCrystal_I2C lcd(0x27, 16, 2);\n\nint detik = 0;\n\nvoid setup() {\n  Serial.begin(9600);\n  lcd.init();\n  lcd.backlight();\n  lcd.setCursor(0, 0);\n  lcd.print("Nexflux Lab 3D");\n  lcd.setCursor(0, 1);\n  lcd.print("LCD 16x2 I2C OK");\n  delay(1500);\n}\n\nvoid loop() {\n  detik++;\n  lcd.setCursor(0, 0);\n  lcd.print("Nexflux Lab 3D  ");\n  lcd.setCursor(0, 1);\n  lcd.print("Detik: ");\n  lcd.print(detik);\n  lcd.print(" detik   ");\n  Serial.print("Waktu LCD: ");\n  Serial.println(detik);\n  delay(1000);\n}';
   }
+  if (kind === "dht11") {
+    components.length = 0;
+    components.push(
+      instance("arduino_uno", "uno", [-7, 0, 0]),
+      instance("dht11", "dht", [5, 0.6, 0]),
+    );
+    link("uno", "5V", "dht", "VCC", "#ef4444");
+    link("uno", "GND1", "dht", "GND", "#1e293b");
+    link("uno", "D2", "dht", "DATA", "#3b82f6");
+    code =
+      '#include <DHT.h>\n\n#define DHTPIN 2\n#define DHTTYPE DHT11\n\nDHT dht(DHTPIN, DHTTYPE);\n\nvoid setup() {\n  Serial.begin(9600);\n  Serial.println("Menginisialisasi Sensor DHT11...");\n  dht.begin();\n}\n\nvoid loop() {\n  float h = dht.readHumidity();\n  float t = dht.readTemperature();\n\n  if (isnan(h) || isnan(t)) {\n    Serial.println("Gagal membaca dari sensor DHT11! Cek kabel.");\n    delay(1000);\n    return;\n  }\n\n  Serial.print("Suhu: ");\n  Serial.print(t);\n  Serial.print(" *C | Kelembaban: ");\n  Serial.print(h);\n  Serial.println(" %");\n  delay(1000);\n}';
+  }
+  if (kind === "hcsr04") {
+    components.length = 0;
+    components.push(
+      instance("arduino_uno", "uno", [-7, 0, 0]),
+      instance("hcsr04", "sonar", [6, 0.6, 0]),
+    );
+    link("uno", "5V", "sonar", "VCC", "#ef4444");
+    link("uno", "GND1", "sonar", "GND", "#1e293b");
+    link("uno", "D9", "sonar", "TRIG", "#eab308");
+    link("uno", "D10", "sonar", "ECHO", "#3b82f6");
+    code =
+      'const int trigPin = 9;\nconst int echoPin = 10;\n\nvoid setup() {\n  Serial.begin(9600);\n  pinMode(trigPin, OUTPUT);\n  pinMode(echoPin, INPUT);\n  Serial.println("Ultrasonik HC-SR04 Siap!");\n}\n\nvoid loop() {\n  digitalWrite(trigPin, LOW);\n  delayMicroseconds(2);\n  digitalWrite(trigPin, HIGH);\n  delayMicroseconds(10);\n  digitalWrite(trigPin, LOW);\n\n  long durasi = pulseIn(echoPin, HIGH);\n  long jarak = durasi * 0.034 / 2;\n\n  Serial.print("Jarak Terdeteksi: ");\n  Serial.print(jarak);\n  Serial.print(" cm (Waktu: ");\n  Serial.print(durasi);\n  Serial.println(" us)");\n  delay(800);\n}';
+  }
   return { version: 1, name: kind, code, components, wires };
 }

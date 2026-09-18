@@ -98,6 +98,19 @@ export const lcd1602Pins: PinDefinition[] = [
   pin("SCL", LCD_I2C_X + 1.5 * PITCH, -3.2, "digital", 0.4),
 ];
 
+export const dht11Pins: PinDefinition[] = [
+  pin("VCC", -1 * PITCH, 0, "power", -0.6),
+  pin("DATA", 0, 0, "digital", -0.6),
+  pin("GND", 1 * PITCH, 0, "ground", -0.6),
+];
+
+export const hcsr04Pins: PinDefinition[] = [
+  pin("VCC", -1.5 * PITCH, 0, "power", -0.6),
+  pin("TRIG", -0.5 * PITCH, 0, "digital", -0.6),
+  pin("ECHO", 0.5 * PITCH, 0, "digital", -0.6),
+  pin("GND", 1.5 * PITCH, 0, "ground", -0.6),
+];
+
 export const physicalInfo: Record<string, ComponentDatasheet> = {
   esp32_wroom: {
     variant: "Espressif ESP32-DevKitC V4 / ESP32-WROOM-32",
@@ -294,5 +307,42 @@ export const physicalInfo: Record<string, ComponentDatasheet> = {
     limits:
       "Membutuhkan tegangan minimal 4.2V agar karakter dot matrix dan lampu latar backlight menyala optimal.",
     source: "https://www.nxp.com/docs/en/data-sheet/PCF8574_PCF8574A.pdf",
+  },
+  dht11: {
+    variant: "Aosong DHT11 Humidity & Temperature Digital Sensor Module",
+    manufacturer: "Aosong Electronics",
+    dimensions: "Bodi 15.5 × 12.0 × 5.5 mm; Modul 32.0 × 14.0 × 8.0 mm; Pitch 2.54 mm",
+    operatingVoltage: "3.3V hingga 5.5V DC (Kompatibel 3.3V ESP32 & 5V Arduino)",
+    currentRating: "Arus Pengukuran 0.5 - 2.5 mA; Standby 100 - 150 µA",
+    specs: [
+      "Pengukuran Suhu: 0°C hingga 50°C (Akurasi ±2°C, Resolusi 1°C)",
+      "Pengukuran Kelembaban: 20% hingga 90% RH (Akurasi ±5% RH, Resolusi 1% RH)",
+      "Protokol Data: 1-Wire Single-bus bi-directional digital signal",
+      "Waktu Sampling: 1 detik (Frekuensi maksimum pembacaan 1 Hz)",
+      "Komponen Sensor: NTC Thermistor dan Resistive Humidity Component",
+    ],
+    pinoutSummary: "3 Pin: VCC (3.3V-5V), DATA (Sinyal Digital I/O dengan internal pull-up), GND (Ground).",
+    limits:
+      "Memerlukan jeda minimal 1 detik di antara pembacaan agar nilai sensor stabil dan tidak mengalami self-heating.",
+    source: "https://www.mouser.com/datasheet/2/758/DHT11-Technical-Data-Sheet-Translated-Version-1143054.pdf",
+  },
+  hcsr04: {
+    variant: "HC-SR04 Ultrasonic Distance Sensor Ranging Module",
+    manufacturer: "ElecFreaks / Cytron",
+    dimensions: "Modul 45.0 × 20.0 × 15.0 mm; Diameter Transduser 16.0 mm; Pitch 2.54 mm",
+    operatingVoltage: "4.5V hingga 5.5V DC (Standar 5.0V)",
+    currentRating: "Arus Kerja ~15 mA; Arus Diam < 2 mA",
+    specs: [
+      "Rentang Jarak Ukur: 2 cm hingga 400 cm (Akurasi ±3 mm)",
+      "Sudut Deteksi Efektif: 15 derajat",
+      "Frekuensi Ultrasonik: 40 kHz gelombang akustik",
+      "Sinyal Pemicu (TRIG): Pulsa logika HIGH minimal 10 µs",
+      "Sinyal Balik (ECHO): Lebar pulsa HIGH sebanding dengan waktu tempuh gelombang bolak-balik",
+      "Rumus Jarak: Jarak (cm) = Durasi Pulsa (µs) / 58.2 (atau Durasi × 0.034 / 2)",
+    ],
+    pinoutSummary: "4 Pin: VCC (5V), TRIG (Trigger Input), ECHO (Echo Output Pulse), GND (Ground).",
+    limits:
+      "Membutuhkan tegangan minimal 4.5V agar osilator transduser 40 kHz memancarkan daya akustik ultrasonik penuh.",
+    source: "https://www.sparkfun.com/datasheets/Sensors/Proximity/HCSR04.pdf",
   },
 };

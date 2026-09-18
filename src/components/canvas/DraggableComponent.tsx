@@ -1,7 +1,7 @@
 "use client";
 import { localBounds } from "@/lib/components/placement";
 import { ThreeEvent } from "@react-three/fiber";
-import { useRef, useState, memo } from "react";
+import { useRef, useState, useMemo, memo } from "react";
 import * as THREE from "three";
 import { useSimulatorStore } from "@/store/useSimulatorStore";
 
@@ -32,6 +32,19 @@ export const DraggableComponent = memo(function DraggableComponent({
   const component = useSimulatorStore((s) => s.components.find((c) => c.id === id));
   const bounds = component ? localBounds(component) : null;
   const selected = useSimulatorStore((s) => s.selectedComponentId === id);
+
+  const edgesGeometry = useMemo(() => {
+    if (!bounds) return null;
+    const size = bounds.min.map((v, i) => Math.max(0.1, bounds.max[i] - v)) as [
+      number,
+      number,
+      number,
+    ];
+    const box = new THREE.BoxGeometry(...size);
+    const edges = new THREE.EdgesGeometry(box);
+    box.dispose();
+    return edges;
+  }, [bounds]);
 
   const getIntersect = (e: ThreeEvent<PointerEvent>) => {
     groundPlane.constant = -dragPlaneY.current;
@@ -108,9 +121,10 @@ export const DraggableComponent = memo(function DraggableComponent({
       onPointerUp={end}
       onPointerCancel={end}
     >
-      {selected && bounds && (
-        <mesh
+      {selected && bounds && edgesGeometry && (
+        <lineSegments
           raycast={() => null}
+          geometry={edgesGeometry}
           position={
             bounds.min.map((v, i) => (v + bounds.max[i]) / 2) as [
               number,
@@ -119,23 +133,13 @@ export const DraggableComponent = memo(function DraggableComponent({
             ]
           }
         >
-          <boxGeometry
-            args={
-              bounds.min.map((v, i) => bounds.max[i] - v) as [
-                number,
-                number,
-                number,
-              ]
-            }
-          />
-          <meshBasicMaterial
+          <lineBasicMaterial
             color={dragging ? "#fbbf24" : "#38bdf8"}
-            wireframe
+            linewidth={2}
             transparent
-            opacity={0.75}
-            depthWrite={false}
+            opacity={0.85}
           />
-        </mesh>
+        </lineSegments>
       )}
       {children}
     </group>

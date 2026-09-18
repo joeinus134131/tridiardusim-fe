@@ -15,6 +15,8 @@ const Connection = memo(function Connection({
   targetRotation,
   sp,
   tp,
+  sDir,
+  tDir,
   selected,
 }: {
   wire: Wire;
@@ -24,6 +26,8 @@ const Connection = memo(function Connection({
   targetRotation: Vec;
   sp: Vec;
   tp: Vec;
+  sDir?: Vec;
+  tDir?: Vec;
   selected: boolean;
 }) {
   const { curve, start, end, sNorm, tNorm } = useMemo(() => {
@@ -34,10 +38,13 @@ const Connection = memo(function Connection({
       .applyEuler(new THREE.Euler(...targetRotation))
       .add(new THREE.Vector3(...target));
 
-    const sN = new THREE.Vector3(0, 1, 0)
+    const sDefaultDir: Vec = sDir ?? (sp[1] < 0 ? [0, -1, 0] : [0, 1, 0]);
+    const tDefaultDir: Vec = tDir ?? (tp[1] < 0 ? [0, -1, 0] : [0, 1, 0]);
+
+    const sN = new THREE.Vector3(...sDefaultDir)
       .applyEuler(new THREE.Euler(...rotation))
       .normalize();
-    const tN = new THREE.Vector3(0, 1, 0)
+    const tN = new THREE.Vector3(...tDefaultDir)
       .applyEuler(new THREE.Euler(...targetRotation))
       .normalize();
 
@@ -62,17 +69,57 @@ const Connection = memo(function Connection({
 
     const up = new THREE.Vector3(0, 1, 0);
 
-    // Boot exit points (sleeve length 0.65)
-    const sBase = s.clone().addScaledVector(sN, 0.15);
-    const sExit = s.clone().addScaledVector(sN, 0.65);
-    // Smooth flexible transition bending gracefully upward towards midpoint
-    const sEase1 = sExit.clone().addScaledVector(sN, 0.25).addScaledVector(up, 0.35).lerp(mid, 0.12);
-    const sEase2 = sEase1.clone().lerp(mid, 0.48).addScaledVector(up, archLift * 0.15);
+    // Source exit & ease calculation
+    let sBase: THREE.Vector3;
+    let sExit: THREE.Vector3;
+    let sEase1: THREE.Vector3;
+    let sEase2: THREE.Vector3;
 
-    const eBase = e.clone().addScaledVector(tN, 0.15);
-    const eExit = e.clone().addScaledVector(tN, 0.65);
-    const eEase1 = eExit.clone().addScaledVector(tN, 0.25).addScaledVector(up, 0.35).lerp(mid, 0.12);
-    const eEase2 = eEase1.clone().lerp(mid, 0.48).addScaledVector(up, archLift * 0.15);
+    if (sN.y < -0.2) {
+      // Pin points downwards (e.g. DHT11, HC-SR04): route cleanly from below ("lewat bawah")
+      sBase = s.clone().addScaledVector(sN, 0.15);
+      sExit = s.clone().addScaledVector(sN, 0.55);
+      const sToMidH = new THREE.Vector3(mid.x - sExit.x, 0, mid.z - sExit.z);
+      const sDirH = sToMidH.lengthSq() > 0.001 ? sToMidH.normalize() : new THREE.Vector3(0, 0, 1);
+
+      sEase1 = sExit.clone().addScaledVector(sDirH, 0.85);
+      sEase1.y = Math.max(0.12, Math.min(sExit.y, s.y - 0.15));
+
+      sEase2 = sEase1.clone().addScaledVector(sDirH, 1.25).lerp(mid, 0.22);
+      sEase2.y = Math.max(sEase1.y + 0.35, sEase2.y);
+    } else {
+      // Standard upward / angled header pin
+      sBase = s.clone().addScaledVector(sN, 0.15);
+      sExit = s.clone().addScaledVector(sN, 0.65);
+      sEase1 = sExit.clone().addScaledVector(sN, 0.25).addScaledVector(up, 0.35).lerp(mid, 0.12);
+      sEase2 = sEase1.clone().lerp(mid, 0.48).addScaledVector(up, archLift * 0.15);
+    }
+
+    // Target exit & ease calculation
+    let eBase: THREE.Vector3;
+    let eExit: THREE.Vector3;
+    let eEase1: THREE.Vector3;
+    let eEase2: THREE.Vector3;
+
+    if (tN.y < -0.2) {
+      // Pin points downwards (e.g. DHT11, HC-SR04): route cleanly from below ("lewat bawah")
+      eBase = e.clone().addScaledVector(tN, 0.15);
+      eExit = e.clone().addScaledVector(tN, 0.55);
+      const eToMidH = new THREE.Vector3(mid.x - eExit.x, 0, mid.z - eExit.z);
+      const eDirH = eToMidH.lengthSq() > 0.001 ? eToMidH.normalize() : new THREE.Vector3(0, 0, 1);
+
+      eEase1 = eExit.clone().addScaledVector(eDirH, 0.85);
+      eEase1.y = Math.max(0.12, Math.min(eExit.y, e.y - 0.15));
+
+      eEase2 = eEase1.clone().addScaledVector(eDirH, 1.25).lerp(mid, 0.22);
+      eEase2.y = Math.max(eEase1.y + 0.35, eEase2.y);
+    } else {
+      // Standard upward / angled header pin
+      eBase = e.clone().addScaledVector(tN, 0.15);
+      eExit = e.clone().addScaledVector(tN, 0.65);
+      eEase1 = eExit.clone().addScaledVector(tN, 0.25).addScaledVector(up, 0.35).lerp(mid, 0.12);
+      eEase2 = eEase1.clone().lerp(mid, 0.48).addScaledVector(up, archLift * 0.15);
+    }
 
     const naturalCurve = new THREE.CatmullRomCurve3(
       [sBase, sExit, sEase1, sEase2, mid, eEase2, eEase1, eExit, eBase],
@@ -89,6 +136,8 @@ const Connection = memo(function Connection({
     targetRotation[0], targetRotation[1], targetRotation[2],
     sp[0], sp[1], sp[2],
     tp[0], tp[1], tp[2],
+    sDir?.[0], sDir?.[1], sDir?.[2],
+    tDir?.[0], tDir?.[1], tDir?.[2],
     wire.path
   ]);
 
@@ -102,14 +151,23 @@ const Connection = memo(function Connection({
     [tNorm]
   );
 
-  const sBootPos = useMemo(
-    () => start.clone().addScaledVector(sNorm, 0.325),
-    [start, sNorm]
-  );
-  const tBootPos = useMemo(
-    () => end.clone().addScaledVector(tNorm, 0.325),
-    [end, tNorm]
-  );
+  const sBootPos = useMemo(() => {
+    if (sNorm.y < -0.2) {
+      const pos = start.clone().addScaledVector(sNorm, 0.325);
+      if (pos.y < 0.35) pos.y = Math.max(start.y + 0.25, 0.35);
+      return pos;
+    }
+    return start.clone().addScaledVector(sNorm, 0.325);
+  }, [start, sNorm]);
+
+  const tBootPos = useMemo(() => {
+    if (tNorm.y < -0.2) {
+      const pos = end.clone().addScaledVector(tNorm, 0.325);
+      if (pos.y < 0.35) pos.y = Math.max(end.y + 0.25, 0.35);
+      return pos;
+    }
+    return end.clone().addScaledVector(tNorm, 0.325);
+  }, [end, tNorm]);
 
   return (
     <group>
@@ -237,6 +295,8 @@ export function WireRenderer() {
             targetRotation={b.rotation}
             sp={sp.position}
             tp={tp.position}
+            sDir={sp.direction}
+            tDir={tp.direction}
             selected={selected === w.id}
           />
         );

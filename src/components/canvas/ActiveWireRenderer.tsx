@@ -12,8 +12,8 @@ export function ActiveWireRenderer() {
   const { active, sourceComponentId, sourcePinId, currentTargetPos } =
     wiringState;
 
-  // Calculate start position dynamically
-  const startPos = useMemo(() => {
+  // Calculate start position and direction dynamically
+  const pinData = useMemo(() => {
     if (!active || !sourceComponentId || !sourcePinId) return null;
 
     const comp = components.find((c) => c.id === sourceComponentId);
@@ -28,24 +28,46 @@ export function ActiveWireRenderer() {
     const euler = new THREE.Euler(...comp.rotation);
 
     localPos.applyEuler(euler);
-    return localPos.add(compPos);
+    const pos = localPos.add(compPos);
+
+    const dirLocal = pinDef.direction ?? (pinDef.position[1] < 0 ? [0, -1, 0] : [0, 1, 0]);
+    const norm = new THREE.Vector3(...dirLocal).applyEuler(euler).normalize();
+
+    return { pos, norm };
   }, [active, sourceComponentId, sourcePinId, components]);
 
+  const startPos = pinData?.pos ?? null;
+  const startNorm = pinData?.norm ?? null;
+
   const { curve, endPos } = useMemo(() => {
-    if (!active || !startPos || !currentTargetPos) return { curve: null, endPos: null };
+    if (!active || !startPos || !startNorm || !currentTargetPos) return { curve: null, endPos: null };
 
     const end = new THREE.Vector3(...currentTargetPos);
     const dist = startPos.distanceTo(end);
-
-    // Vertical rigid clearance: sBase -> sTop -> sRigid ensures 100% straight vertical wire exiting boot
-    const sBase = startPos.clone().add(new THREE.Vector3(0, 0.2, 0));
-    const sTop = startPos.clone().add(new THREE.Vector3(0, 0.65, 0));
-    const sRigid = startPos.clone().add(new THREE.Vector3(0, 1.25, 0));
 
     const mid = startPos.clone().lerp(end, 0.5);
     const maxPinY = Math.max(startPos.y, end.y);
     const archLift = Math.max(1.0, Math.min(dist * 0.25, 4.0));
     mid.y = Math.max(mid.y, maxPinY) + archLift;
+
+    let sBase: THREE.Vector3;
+    let sTop: THREE.Vector3;
+    let sRigid: THREE.Vector3;
+
+    if (startNorm.y < -0.2) {
+      // Downward pin
+      sBase = startPos.clone().addScaledVector(startNorm, 0.15);
+      sTop = startPos.clone().addScaledVector(startNorm, 0.55);
+      const toEndH = new THREE.Vector3(end.x - sTop.x, 0, end.z - sTop.z);
+      const dirH = toEndH.lengthSq() > 0.001 ? toEndH.normalize() : new THREE.Vector3(0, 0, 1);
+      sRigid = sTop.clone().addScaledVector(dirH, 0.85);
+      sRigid.y = Math.max(0.12, Math.min(sTop.y, startPos.y - 0.15));
+    } else {
+      // Upward pin
+      sBase = startPos.clone().add(new THREE.Vector3(0, 0.2, 0));
+      sTop = startPos.clone().add(new THREE.Vector3(0, 0.65, 0));
+      sRigid = startPos.clone().add(new THREE.Vector3(0, 1.25, 0));
+    }
 
     const p3 = end.clone().add(new THREE.Vector3(0, 0.6, 0));
 
@@ -57,7 +79,22 @@ export function ActiveWireRenderer() {
     );
 
     return { curve: naturalCurve, endPos: end };
-  }, [active, startPos, currentTargetPos]);
+  }, [active, startPos, startNorm, currentTargetPos]);
+
+  const bootQuat = useMemo(() => {
+    if (!startNorm) return new THREE.Quaternion();
+    return new THREE.Quaternion().setFromUnitVectors(new THREE.Vector3(0, 1, 0), startNorm);
+  }, [startNorm]);
+
+  const bootPos = useMemo(() => {
+    if (!startPos || !startNorm) return new THREE.Vector3();
+    if (startNorm.y < -0.2) {
+      const pos = startPos.clone().addScaledVector(startNorm, 0.325);
+      if (pos.y < 0.35) pos.y = Math.max(startPos.y + 0.25, 0.35);
+      return pos;
+    }
+    return startPos.clone().addScaledVector(startNorm, 0.325);
+  }, [startPos, startNorm]);
 
   if (!active || !startPos || !endPos || !curve) return null;
 
@@ -77,7 +114,7 @@ export function ActiveWireRenderer() {
       </mesh>
 
       {/* Rigid Terminal Boot at starting pin */}
-      <group position={[startPos.x, startPos.y + 0.325, startPos.z]}>
+      <group position={bootPos} quaternion={bootQuat}>
         <mesh>
           <cylinderGeometry args={[0.13, 0.13, 0.65, 16]} />
           <meshStandardMaterial color="#0f172a" roughness={0.65} metalness={0.1} />

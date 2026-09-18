@@ -490,6 +490,24 @@ void loop() {
       assert.ok(lcdLines.line1.includes("Lembap: 50.0%"), `Line 1 must include Lembap: 50.0%, got: "${lcdLines.line1}"`);
     });
 
+    test("DHT11 and HC-SR04 pin definitions declare downward direction [0, -1, 0] for under-body wire routing", () => {
+      const dhtProj = example("dht11");
+      const dht = dhtProj.components.find((c) => c.typeId === "dht11");
+      assert.ok(dht);
+      for (const p of dht.pins) {
+        assert.ok(p.position[1] < 0, `Pin ${p.id} Y position must be below PCB (<0), got ${p.position[1]}`);
+        assert.deepEqual(p.direction, [0, -1, 0], `Pin ${p.id} direction must be [0, -1, 0] for routing from below`);
+      }
+
+      const sonarProj = example("hcsr04");
+      const sonar = sonarProj.components.find((c) => c.typeId === "hcsr04");
+      assert.ok(sonar);
+      for (const p of sonar.pins) {
+        assert.ok(p.position[1] < 0, `Pin ${p.id} Y position must be below PCB (<0), got ${p.position[1]}`);
+        assert.deepEqual(p.direction, [0, -1, 0], `Pin ${p.id} direction must be [0, -1, 0] for routing from below`);
+      }
+    });
+
     const bench = example("breadboard");
     const t = performance.now();
     for (let i = 0; i < 200; i++)

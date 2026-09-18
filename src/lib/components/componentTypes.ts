@@ -8,6 +8,7 @@ export interface PinDefinition {
   name: string; // Display name
   type: PinType;
   position: [number, number, number]; // Local 3D coordinate relative to component center
+  direction?: [number, number, number]; // Normal vector indicating terminal exit direction
 }
 
 export interface CircuitComponent {

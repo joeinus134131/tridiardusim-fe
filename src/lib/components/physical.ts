@@ -7,7 +7,14 @@ const pin = (
   z: number,
   type: PinDefinition["type"] = "digital",
   y = 2.02,
-): PinDefinition => ({ id, name: id, type, position: [x, y, z] });
+  direction?: [number, number, number],
+): PinDefinition => ({
+  id,
+  name: id,
+  type,
+  position: [x, y, z],
+  ...(direction ? { direction } : {}),
+});
 // Header positions follow the UNO R3 A000066 mechanical/pinout reference.
 // Physically, with USB on left: Digital pins (D0-D13) are along the top (-Z),
 // and Power/Analog pins (NC..VIN, A0-A5) are along the bottom (+Z).
@@ -99,16 +106,16 @@ export const lcd1602Pins: PinDefinition[] = [
 ];
 
 export const dht11Pins: PinDefinition[] = [
-  pin("VCC", -1 * PITCH, 0, "power", -0.6),
-  pin("DATA", 0, 0, "digital", -0.6),
-  pin("GND", 1 * PITCH, 0, "ground", -0.6),
+  pin("VCC", -1 * PITCH, 0, "power", -0.6, [0, -1, 0]),
+  pin("DATA", 0, 0, "digital", -0.6, [0, -1, 0]),
+  pin("GND", 1 * PITCH, 0, "ground", -0.6, [0, -1, 0]),
 ];
 
 export const hcsr04Pins: PinDefinition[] = [
-  pin("VCC", -1.5 * PITCH, 0, "power", -0.6),
-  pin("TRIG", -0.5 * PITCH, 0, "digital", -0.6),
-  pin("ECHO", 0.5 * PITCH, 0, "digital", -0.6),
-  pin("GND", 1.5 * PITCH, 0, "ground", -0.6),
+  pin("VCC", -1.5 * PITCH, 0, "power", -0.6, [0, -1, 0]),
+  pin("TRIG", -0.5 * PITCH, 0, "digital", -0.6, [0, -1, 0]),
+  pin("ECHO", 0.5 * PITCH, 0, "digital", -0.6, [0, -1, 0]),
+  pin("GND", 1.5 * PITCH, 0, "ground", -0.6, [0, -1, 0]),
 ];
 
 export const physicalInfo: Record<string, ComponentDatasheet> = {

@@ -1,5 +1,12 @@
 import { esp32Pins } from "./esp32";
-import { lcd1602Pins, oledPins, servoPins, unoPins } from "./physical";
+import {
+  dht11Pins,
+  hcsr04Pins,
+  lcd1602Pins,
+  oledPins,
+  servoPins,
+  unoPins,
+} from "./physical";
 import { ComponentType, PinDefinition } from "./componentTypes";
 
 export interface ComponentRegistration {
@@ -202,6 +209,34 @@ ComponentRegistry.register({
     hornType: "single",
   },
   pins: servoPins,
+});
+
+ComponentRegistry.register({
+  typeId: "dht11",
+  name: "Sensor DHT11 (Suhu & Kelembaban)",
+  type: "sensor",
+  description: "Sensor digital suhu (0-50°C) & kelembaban (20-90% RH) · 3 pin: VCC, DATA, GND.",
+  category: "Sensors",
+  defaultState: {
+    temperature: 24,
+    humidity: 50,
+    isPowered: false,
+  },
+  pins: dht11Pins,
+});
+
+ComponentRegistry.register({
+  typeId: "hcsr04",
+  name: "Sensor Ultrasonik HC-SR04",
+  type: "sensor",
+  description: "Sensor jarak ultrasonik 2-400 cm akurasi 3 mm · 4 pin: VCC, TRIG, ECHO, GND.",
+  category: "Sensors",
+  defaultState: {
+    distance: 25,
+    isPowered: false,
+    isTriggered: false,
+  },
+  pins: hcsr04Pins,
 });
 
 ComponentRegistry.register({

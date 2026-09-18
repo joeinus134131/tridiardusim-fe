@@ -16,6 +16,8 @@ export function localBounds(c: CircuitComponent): Bounds {
     oled_ssd1306: [[-2.7, -0.6, -2.7], [2.7, 1.0, 2.7]],
     servo_sg90: [[-2.5, -0.6, -1.5], [2.5, 3.2, 2.5]],
     lcd1602_i2c: [[-8.0, -0.6, -3.8], [8.0, 2.2, 3.8]],
+    dht11: [[-1.6, -0.6, -1.0], [1.6, 3.2, 1.0]],
+    hcsr04: [[-4.5, -0.6, -1.5], [4.5, 2.5, 1.5]],
   };
   const b = c.typeId.startsWith('jumper_')
     ? ([[-3.7, 0, -Number(c.state.depth || 8) - 0.2], [3.7, Number(c.state.bendHeight || 0.3) + 0.2, 0.1]] as [Vec, Vec])
@@ -50,7 +52,7 @@ export function worldBounds(c: CircuitComponent): Bounds {
 }
 
 export const mountable = (c: CircuitComponent) =>
-  ['resistor_220', 'led_red', 'potentiometer', 'push_button', 'esp32_wroom', 'oled_ssd1306', 'lcd1602_i2c'].includes(c.typeId);
+  ['resistor_220', 'led_red', 'potentiometer', 'push_button', 'esp32_wroom', 'oled_ssd1306', 'lcd1602_i2c', 'dht11', 'hcsr04'].includes(c.typeId);
 
 export type Contact = { componentId: string; pinId: string; boardId: string; holeId: string };
 
@@ -77,68 +79,71 @@ export function contacts(c: CircuitComponent, all: CircuitComponent[]): Contact[
 }
 
 export function snapToBreadboard(c: CircuitComponent, all: CircuitComponent[]): CircuitComponent {
-  if (!mountable(c) || c.rotation[0] !== 0 || c.rotation[2] !== 0) return c;
-  const breadboards = all.filter(
-    (x) => x.typeId === 'breadboard' && x.rotation[0] === 0 && x.rotation[2] === 0
-  );
-  if (!breadboards.length) return c;
+  const canMount = mountable(c) && c.rotation[0] === 0 && c.rotation[2] === 0;
+  const breadboards = canMount
+    ? all.filter((x) => x.typeId === 'breadboard' && x.rotation[0] === 0 && x.rotation[2] === 0)
+    : [];
 
-  const minPinY = Math.min(...c.pins.map((p) => p.position[1]));
+  if (breadboards.length) {
+    const minPinY = Math.min(...c.pins.map((p) => p.position[1]));
 
-  for (const b of breadboards) {
-    const bb = worldBounds(b);
-    // Cek apakah posisi X-Z komponen berada di area breadboard (+ sedikit margin)
-    if (
-      c.position[0] < bb.min[0] - 0.4 ||
-      c.position[0] > bb.max[0] + 0.4 ||
-      c.position[2] < bb.min[2] - 0.4 ||
-      c.position[2] > bb.max[2] + 0.4
-    ) {
-      continue;
-    }
-
-    const firstPin = world(c, c.pins[0].position);
-    // Sort lubang breadboard terdekat dari pin pertama
-    const holes = b.pins
-      .map((p) => ({ id: p.id, pos: world(b, p.position) }))
-      .sort(
-        (p1, p2) =>
-          Math.hypot(p1.pos[0] - firstPin[0], p1.pos[2] - firstPin[2]) -
-          Math.hypot(p2.pos[0] - firstPin[0], p2.pos[2] - firstPin[2])
-      );
-
-    // Ketinggian permukaan breadboard = 1.71
-    // Letakkan komponen sehingga ujung kaki masuk ke lubang (~0.35 unit di bawah permukaan Y=1.71)
-    const targetY = 1.71 - minPinY - 0.35;
-
-    for (const hole of holes.slice(0, 16)) {
-      const dist = Math.hypot(hole.pos[0] - firstPin[0], hole.pos[2] - firstPin[2]);
-      if (dist > 1.2) continue;
-
-      const candidate: CircuitComponent = {
-        ...c,
-        position: [
-          c.position[0] + (hole.pos[0] - firstPin[0]),
-          targetY,
-          c.position[2] + (hole.pos[2] - firstPin[2]),
-        ],
-      };
-
-      if (contacts(candidate, [b]).length) {
-        return candidate;
+    for (const b of breadboards) {
+      const bb = worldBounds(b);
+      // Cek apakah posisi X-Z komponen berada di area breadboard (+ sedikit margin)
+      if (
+        c.position[0] < bb.min[0] - 0.4 ||
+        c.position[0] > bb.max[0] + 0.4 ||
+        c.position[2] < bb.min[2] - 0.4 ||
+        c.position[2] > bb.max[2] + 0.4
+      ) {
+        continue;
       }
-    }
 
-    // Jika pin belum persis align dengan lubang tapi komponen berada di atas breadboard,
-    // dudukkan komponen tepat di permukaan breadboard (jangan tembus)
-    const surfaceY = 1.71 - minPinY - 0.1;
-    return { ...c, position: [c.position[0], surfaceY, c.position[2]] };
+      const firstPin = world(c, c.pins[0].position);
+      // Sort lubang breadboard terdekat dari pin pertama
+      const holes = b.pins
+        .map((p) => ({ id: p.id, pos: world(b, p.position) }))
+        .sort(
+          (p1, p2) =>
+            Math.hypot(p1.pos[0] - firstPin[0], p1.pos[2] - firstPin[2]) -
+            Math.hypot(p2.pos[0] - firstPin[0], p2.pos[2] - firstPin[2])
+        );
+
+      // Ketinggian permukaan breadboard = 1.71
+      // Letakkan komponen sehingga ujung kaki masuk ke lubang (~0.35 unit di bawah permukaan Y=1.71)
+      const targetY = 1.71 - minPinY - 0.35;
+
+      for (const hole of holes.slice(0, 32)) {
+        const dist = Math.hypot(hole.pos[0] - firstPin[0], hole.pos[2] - firstPin[2]);
+        if (dist > 1.5) continue;
+
+        const candidate: CircuitComponent = {
+          ...c,
+          position: [
+            c.position[0] + (hole.pos[0] - firstPin[0]),
+            targetY,
+            c.position[2] + (hole.pos[2] - firstPin[2]),
+          ],
+        };
+
+        if (contacts(candidate, [b]).length) {
+          return candidate;
+        }
+      }
+
+      // Jika pin belum persis align dengan lubang tapi komponen berada di atas breadboard,
+      // dudukkan komponen tepat di permukaan breadboard (jangan tembus)
+      const surfaceY = 1.71 - minPinY - 0.1;
+      return { ...c, position: [c.position[0], surfaceY, c.position[2]] };
+    }
   }
 
-  // Jika berada di luar breadboard dan sebelumnya melayang tinggi, dudukkan di atas meja (Y=0)
-  const tableY = Math.max(0, -minPinY);
-  if (c.position[1] > 1.2) {
-    return { ...c, position: [c.position[0], tableY, c.position[2]] };
+  // Jika berada di luar breadboard dan tidak tertancap pada lubang:
+  // Pastikan komponen tidak menembus permukaan meja (Y = 0) dengan auto-grounding
+  const b = worldBounds(c);
+  if (b.min[1] < 0 && !contacts(c, all).length) {
+    const lift = -b.min[1];
+    return { ...c, position: [c.position[0], c.position[1] + lift, c.position[2]] };
   }
 
   return c;

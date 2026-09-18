@@ -11,6 +11,7 @@ execFileSync(
     "node_modules/typescript/bin/tsc",
     "src/lib/simulation/CircuitSolver.ts",
     "src/lib/simulation/SketchRuntime.ts",
+    "src/lib/sketch/bundler.ts",
     "src/lib/project/examples.ts",
     "src/lib/project/project.ts",
     "--outDir",
@@ -31,6 +32,9 @@ const { solveCircuit, terminal } = require(
 );
 const { SketchParser, SketchRuntime } = require(
   path.join(out, "simulation/SketchRuntime.js"),
+);
+const { bundleSketchFiles } = require(
+  path.join(out, "sketch/bundler.js"),
 );
 const { example, instance } = require(path.join(out, "project/examples.js"));
 const { parseProject } = require(path.join(out, "project/project.js"));
@@ -305,6 +309,97 @@ function test(name, fn) {
       assert.equal(r.states.lcd.isPowered, true);
       assert.ok(r.states.lcd.vDiff >= 4.5);
       assert.doesNotThrow(() => new SketchParser(lcdProj.code));
+    });
+
+    test("DHT11 sensor example circuit powers sensor and supports DHT.h library", () => {
+      const dhtProj = example("dht11");
+      assert.ok(dhtProj.components.some((c) => c.typeId === "dht11"));
+      const r = solveCircuit(dhtProj.components, dhtProj.wires, {});
+      assert.equal(r.states.dht.isPowered, true);
+      assert.ok(r.states.dht.vDiff >= 3.0);
+      assert.doesNotThrow(() => new SketchParser(dhtProj.code));
+    });
+
+    test("HC-SR04 ultrasonic example circuit powers module and supports pulseIn sketch", () => {
+      const sonarProj = example("hcsr04");
+      assert.ok(sonarProj.components.some((c) => c.typeId === "hcsr04"));
+      const r = solveCircuit(sonarProj.components, sonarProj.wires, {});
+      assert.equal(r.states.sonar.isPowered, true);
+      assert.ok(r.states.sonar.vDiff >= 4.5);
+      assert.doesNotThrow(() => new SketchParser(sonarProj.code));
+    });
+
+    test("bundleSketchFiles inlines custom .h headers and appends .cpp implementations", () => {
+      const files = [
+        {
+          name: "sketch.ino",
+          content: `#include "my_sensor.h"\nvoid setup() { int val = getSensorVal(); }\nvoid loop() {}`,
+        },
+        {
+          name: "my_sensor.h",
+          content: `int getSensorVal();`,
+        },
+        {
+          name: "my_sensor.cpp",
+          content: `int getSensorVal() { return 42; }`,
+        },
+      ];
+      const bundled = bundleSketchFiles(files);
+      assert.ok(bundled.includes("int getSensorVal();"));
+      assert.ok(bundled.includes("int getSensorVal() { return 42; }"));
+      assert.doesNotThrow(() => new SketchParser(bundled));
+    });
+
+    test("Auto-grounding lifts tilted/horizontal component so lowest point rests on table Y>=0", () => {
+      const dhtProj = example("dht11");
+      const dht = dhtProj.components.find((c) => c.typeId === "dht11");
+      assert.ok(dht);
+
+      // Rotate DHT11 to horizontal (-90 deg pitch)
+      const tilted = { ...dht, rotation: [-Math.PI / 2, 0, 0] };
+      const grounded = snapToBreadboard(tilted, dhtProj.components);
+
+      const b = worldBounds(grounded);
+      assert.ok(b.min[1] >= -0.05, `Lowest point must be on or above table, got ${b.min[1]}`);
+      const err = placementError(grounded, dhtProj.components);
+      assert.equal(err, "", `Placement error should be empty, got: ${err}`);
+    });
+
+    test("DHT11 and HC-SR04 snap onto breadboard holes without sinking and conduct power via columns", () => {
+      const bb = instance("breadboard", "bb", [0, 0, 0]);
+      // DHT11 positioned roughly over breadboard top terminal area
+      const dhtRaw = instance("dht11", "dht", [-2.0, 1.71, -1.0]);
+      const dhtSnapped = snapToBreadboard(dhtRaw, [bb]);
+
+      assert.equal(contacts(dhtSnapped, [bb]).length, 3, "DHT11 must seat all 3 pins into breadboard holes");
+      assert.ok(dhtSnapped.position[1] >= 1.95, `DHT11 body must rest on/above breadboard surface (Y>=1.95), got ${dhtSnapped.position[1]}`);
+      assert.equal(placementError(dhtSnapped, [bb]), "");
+
+      // HC-SR04 positioned roughly over breadboard bottom terminal area
+      const sonarRaw = instance("hcsr04", "sonar", [2.0, 1.71, 1.0]);
+      const sonarSnapped = snapToBreadboard(sonarRaw, [bb]);
+
+      assert.equal(contacts(sonarSnapped, [bb]).length, 4, "HC-SR04 must seat all 4 pins into breadboard holes");
+      assert.ok(sonarSnapped.position[1] >= 1.95, `HC-SR04 body must rest on/above breadboard surface (Y>=1.95), got ${sonarSnapped.position[1]}`);
+      assert.equal(placementError(sonarSnapped, [bb]), "");
+
+      // Verify electrical flow synchronization through breadboard columns:
+      // DHT11 pins are in 3 consecutive columns. Connecting 5V and GND to those breadboard columns powers DHT11.
+      const dhtContacts = contacts(dhtSnapped, [bb]);
+      const vccContact = dhtContacts.find(c => c.pinId === "VCC");
+      const gndContact = dhtContacts.find(c => c.pinId === "GND");
+      assert.ok(vccContact && gndContact);
+
+      // Connect 5V to VCC column and 0V to GND column via Uno
+      const uno = instance("arduino_uno", "uno", [-7, 0, 0]);
+      const wires = [
+        { id: "w1", sourceComponentId: "uno", sourcePinId: "5V", targetComponentId: "bb", targetPinId: vccContact.holeId },
+        { id: "w2", sourceComponentId: "uno", sourcePinId: "GND1", targetComponentId: "bb", targetPinId: gndContact.holeId },
+      ];
+
+      const r = solveCircuit([uno, bb, dhtSnapped], wires, {});
+      assert.equal(r.states.dht.isPowered, true, "DHT11 must be powered through breadboard column continuity");
+      assert.ok(r.states.dht.vDiff >= 4.5);
     });
 
     const bench = example("breadboard");

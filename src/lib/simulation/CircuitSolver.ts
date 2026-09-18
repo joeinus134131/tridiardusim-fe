@@ -153,6 +153,20 @@ export function solveCircuit(
         r: 160,
         vf: 0,
       });
+    if (c.typeId === "dht11")
+      edges.push({
+        a: node(c, "VCC"),
+        b: node(c, "GND"),
+        r: 2500,
+        vf: 0,
+      });
+    if (c.typeId === "hcsr04")
+      edges.push({
+        a: node(c, "VCC"),
+        b: node(c, "GND"),
+        r: 330,
+        vf: 0,
+      });
   }
   // Only solve electrically active nets; unused breadboard holes cost no matrix rows.
   const active = new Set([
@@ -285,6 +299,28 @@ export function solveCircuit(
       };
     }
     if (c.typeId === "lcd1602_i2c") {
+      const vcc = voltage.get(node(c, "VCC")) || 0;
+      const gnd = voltage.get(node(c, "GND")) || 0;
+      const vDiff = vcc - gnd;
+      const isPowered = vDiff >= 4.2;
+      states[c.id] = {
+        ...c.state,
+        isPowered,
+        vDiff,
+      };
+    }
+    if (c.typeId === "dht11") {
+      const vcc = voltage.get(node(c, "VCC")) || 0;
+      const gnd = voltage.get(node(c, "GND")) || 0;
+      const vDiff = vcc - gnd;
+      const isPowered = vDiff >= 2.8;
+      states[c.id] = {
+        ...c.state,
+        isPowered,
+        vDiff,
+      };
+    }
+    if (c.typeId === "hcsr04") {
       const vcc = voltage.get(node(c, "VCC")) || 0;
       const gnd = voltage.get(node(c, "GND")) || 0;
       const vDiff = vcc - gnd;

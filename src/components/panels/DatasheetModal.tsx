@@ -17,6 +17,11 @@ const componentLabels: Record<string, string> = {
   resistor_220: "Resistor 220Ω (CFR-25)",
   potentiometer: "Potensiometer 10kΩ (RK09K)",
   push_button: "Push Button 6x6mm (Omron B3F)",
+  oled_ssd1306: "OLED Display 0.96\" (SSD1306)",
+  servo_sg90: "Micro Servo SG90 (9g)",
+  lcd1602_i2c: "LCD 16x2 Display (I2C)",
+  dht11: "Sensor DHT11 (Suhu & RH)",
+  hcsr04: "Sensor Ultrasonik HC-SR04",
   jumper: "Jumper Wire (ZW-MM-10)",
 };
 

@@ -20,6 +20,8 @@ import { Resistor } from "@/components/models/Resistor";
 import { OLEDDisplay } from "@/components/models/OLEDDisplay";
 import { ServoMotor } from "@/components/models/ServoMotor";
 import { LCD1602Display } from "@/components/models/LCD1602Display";
+import { DHT11Sensor } from "@/components/models/DHT11Sensor";
+import { HCSR04Sensor } from "@/components/models/HCSR04Sensor";
 import { WireRenderer } from "@/components/canvas/WireRenderer";
 import { ActiveWireRenderer } from "@/components/canvas/ActiveWireRenderer";
 
@@ -42,6 +44,10 @@ const ComponentRenderer = memo(function ComponentRenderer({
       return <LCD1602Display id={id} />;
     case "servo_sg90":
       return <ServoMotor id={id} />;
+    case "dht11":
+      return <DHT11Sensor id={id} />;
+    case "hcsr04":
+      return <HCSR04Sensor id={id} />;
     case "led_red":
       return <LED id={id} />;
     case "push_button":

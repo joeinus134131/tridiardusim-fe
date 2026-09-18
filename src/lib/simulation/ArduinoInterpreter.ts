@@ -1,4 +1,6 @@
 import { useSimulatorStore } from "@/store/useSimulatorStore";
+import { bundleSketchFiles } from "@/lib/sketch/bundler";
+
 export class ArduinoInterpreter {
   private worker: Worker | null = null;
   private unsubscribe: (() => void) | null = null;
@@ -65,9 +67,14 @@ export class ArduinoInterpreter {
         });
         store.addSerialMessage({ type: "error", message: e.message + "\n" });
       };
+      const codeToRun = bundleSketchFiles(
+        store.files && store.files.length > 0
+          ? store.files
+          : [{ name: "sketch.ino", content: store.code }]
+      );
       worker.postMessage({
         type: "start",
-        code: store.code,
+        code: codeToRun,
         components: store.components,
         wires: store.wires,
       });

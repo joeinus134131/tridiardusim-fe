@@ -26,13 +26,20 @@ const Connection = memo(function Connection({
   tp: Vec;
   selected: boolean;
 }) {
-  const { curve, start, end } = useMemo(() => {
+  const { curve, start, end, sNorm, tNorm } = useMemo(() => {
     const s = new THREE.Vector3(...sp)
       .applyEuler(new THREE.Euler(...rotation))
       .add(new THREE.Vector3(...source));
     const e = new THREE.Vector3(...tp)
       .applyEuler(new THREE.Euler(...targetRotation))
       .add(new THREE.Vector3(...target));
+
+    const sN = new THREE.Vector3(0, 1, 0)
+      .applyEuler(new THREE.Euler(...rotation))
+      .normalize();
+    const tN = new THREE.Vector3(0, 1, 0)
+      .applyEuler(new THREE.Euler(...targetRotation))
+      .normalize();
 
     if (wire.path?.length) {
       return {
@@ -43,58 +50,77 @@ const Connection = memo(function Connection({
         ),
         start: s,
         end: e,
+        sNorm: sN,
+        tNorm: tN,
       };
     }
 
-    const sBase = s.clone().add(new THREE.Vector3(0, 0.2, 0));
-    const sTop = s.clone().add(new THREE.Vector3(0, 0.65, 0));
-    const sRigid = s.clone().add(new THREE.Vector3(0, 1.25, 0));
-
-    const eRigid = e.clone().add(new THREE.Vector3(0, 1.25, 0));
-    const eTop = e.clone().add(new THREE.Vector3(0, 0.65, 0));
-    const eBase = e.clone().add(new THREE.Vector3(0, 0.2, 0));
-
-    if (wire.path?.length) {
-      return {
-        curve: new THREE.CatmullRomCurve3(
-          [sBase, sTop, sRigid, ...wire.path.map((p) => new THREE.Vector3(...p)), eRigid, eTop, eBase],
-          false,
-          "centripetal"
-        ),
-        start: s,
-        end: e,
-      };
-    }
-
-    // Physical wire routing calculation
     const dist = s.distanceTo(e);
-    // Natural catenary arch above highest component surface
-    const maxPinY = Math.max(s.y, e.y);
     const mid = s.clone().lerp(e, 0.5);
-    const archLift = Math.max(1.2, Math.min(dist * 0.28, 4.5));
-    mid.y = Math.max(mid.y, maxPinY) + archLift;
+    const archLift = Math.max(2.2, Math.min(dist * 0.36, 6.0));
+    mid.y = Math.max(s.y, e.y, mid.y) + archLift;
 
-    // Rigid vertical exit at both ends: sBase -> sTop -> sRigid ensures 100% straight vertical wire inside & exiting the boot
+    const up = new THREE.Vector3(0, 1, 0);
+
+    // Boot exit points (sleeve length 0.65)
+    const sBase = s.clone().addScaledVector(sN, 0.15);
+    const sExit = s.clone().addScaledVector(sN, 0.65);
+    // Smooth flexible transition bending gracefully upward towards midpoint
+    const sEase1 = sExit.clone().addScaledVector(sN, 0.25).addScaledVector(up, 0.35).lerp(mid, 0.12);
+    const sEase2 = sEase1.clone().lerp(mid, 0.48).addScaledVector(up, archLift * 0.15);
+
+    const eBase = e.clone().addScaledVector(tN, 0.15);
+    const eExit = e.clone().addScaledVector(tN, 0.65);
+    const eEase1 = eExit.clone().addScaledVector(tN, 0.25).addScaledVector(up, 0.35).lerp(mid, 0.12);
+    const eEase2 = eEase1.clone().lerp(mid, 0.48).addScaledVector(up, archLift * 0.15);
+
     const naturalCurve = new THREE.CatmullRomCurve3(
-      [sBase, sTop, sRigid, mid, eRigid, eTop, eBase],
+      [sBase, sExit, sEase1, sEase2, mid, eEase2, eEase1, eExit, eBase],
       false,
-      "catmullrom",
-      0.35
+      "centripetal",
+      0.5
     );
 
-    return { curve: naturalCurve, start: s, end: e };
-  }, [source, rotation, target, targetRotation, sp, tp, wire.path]);
+    return { curve: naturalCurve, start: s, end: e, sNorm: sN, tNorm: tN };
+  }, [
+    source[0], source[1], source[2],
+    rotation[0], rotation[1], rotation[2],
+    target[0], target[1], target[2],
+    targetRotation[0], targetRotation[1], targetRotation[2],
+    sp[0], sp[1], sp[2],
+    tp[0], tp[1], tp[2],
+    wire.path
+  ]);
+
+  // Quaternions for terminal boot alignment with pin normals
+  const sQuat = useMemo(
+    () => new THREE.Quaternion().setFromUnitVectors(new THREE.Vector3(0, 1, 0), sNorm),
+    [sNorm]
+  );
+  const tQuat = useMemo(
+    () => new THREE.Quaternion().setFromUnitVectors(new THREE.Vector3(0, 1, 0), tNorm),
+    [tNorm]
+  );
+
+  const sBootPos = useMemo(
+    () => start.clone().addScaledVector(sNorm, 0.325),
+    [start, sNorm]
+  );
+  const tBootPos = useMemo(
+    () => end.clone().addScaledVector(tNorm, 0.325),
+    [end, tNorm]
+  );
 
   return (
     <group>
-      {/* 1. Main Flexible Insulated Wire */}
+      {/* 1. Main Flexible Insulated Wire (96 segments for silky smooth curves) */}
       <mesh
         onClick={(ev) => {
           ev.stopPropagation();
           useSimulatorStore.getState().selectWire(wire.id);
         }}
       >
-        <tubeGeometry args={[curve, 54, 0.08, 8, false]} />
+        <tubeGeometry args={[curve, 96, 0.082, 16, false]} />
         <meshStandardMaterial
           color={wire.color}
           emissive={selected ? wire.color : "#000000"}
@@ -104,9 +130,9 @@ const Connection = memo(function Connection({
         />
       </mesh>
 
-      {/* 2. Plastic DuPont Terminal Boots (Rigid sleeves) at each pin terminal */}
+      {/* 2. Plastic DuPont Terminal Boots (Rigid sleeves, oriented with pin direction) */}
       {/* Source terminal sleeve */}
-      <group position={[start.x, start.y + 0.325, start.z]}>
+      <group position={sBootPos} quaternion={sQuat}>
         <mesh>
           <cylinderGeometry args={[0.13, 0.13, 0.65, 16]} />
           <meshStandardMaterial color="#0f172a" roughness={0.65} metalness={0.1} />
@@ -119,7 +145,7 @@ const Connection = memo(function Connection({
       </group>
 
       {/* Target terminal sleeve */}
-      <group position={[end.x, end.y + 0.325, end.z]}>
+      <group position={tBootPos} quaternion={tQuat}>
         <mesh>
           <cylinderGeometry args={[0.13, 0.13, 0.65, 16]} />
           <meshStandardMaterial color="#0f172a" roughness={0.65} metalness={0.1} />

@@ -155,6 +155,8 @@ export default function WorkspacePage() {
       components: p.components,
       wires: p.wires,
       code: p.code,
+      files: [{ name: "sketch.ino", content: p.code }],
+      activeFileName: "sketch.ino",
       selectedComponentId: null,
       selectedWireId: null,
       diagnostics: [],
@@ -605,10 +607,12 @@ export default function WorkspacePage() {
                 </details>
                 <div className="flex items-center justify-between mt-1 mb-1">
                   <strong>Contoh siap pakai</strong>
-                  <span className="text-[10px] opacity-60 font-mono">10 Presets</span>
+                  <span className="text-[10px] opacity-60 font-mono">12 Presets</span>
                 </div>
                 <div className="examples-scroll-container">
                   {[
+                    ["dht11", "Sensor DHT11 Suhu & RH"],
+                    ["hcsr04", "Ultrasonik HC-SR04 Jarak"],
                     ["servo", "Micro Servo SG90 9g"],
                     ["lcd1602", "LCD 16x2 Display I2C"],
                     ["oled", "OLED Display 0.96\" SSD1306"],

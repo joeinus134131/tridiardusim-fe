@@ -96,6 +96,7 @@ export function LCD1602Display({ id }: LCDProps) {
       for (let c = 0; c < 16; c++) {
         const xStart = padX + c * 29;
         const char = text[c] || " ";
+        const displayChar = char.charCodeAt(0) === 223 ? "°" : char;
 
         // Cell background box with border
         ctx.fillStyle = cellBg;
@@ -110,12 +111,12 @@ export function LCD1602Display({ id }: LCDProps) {
         }
 
         // Draw character text
-        if (char !== " ") {
+        if (displayChar !== " ") {
           ctx.fillStyle = textColor;
           ctx.font = "900 36px 'Courier New', monospace";
           ctx.textAlign = "center";
           ctx.textBaseline = "middle";
-          ctx.fillText(char, xStart + colWidth / 2, yStart + rowHeight / 2 + 1);
+          ctx.fillText(displayChar, xStart + colWidth / 2, yStart + rowHeight / 2 + 1);
         }
       }
     }

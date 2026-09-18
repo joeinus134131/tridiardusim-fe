@@ -38,13 +38,19 @@ const voltage = (id: string) => {
   return v ?? 0;
 };
 let serialBuffer = "";
-function print(v: Value = "", format: Value = 10) {
+function print(v: Value = "", format?: Value) {
   if (!baud) throw new Error("Panggil Serial.begin sebelum Serial.print/read.");
-  const f = Number(format);
-  const str =
-    typeof v === "number" && [2, 8, 16].includes(f)
-      ? Math.trunc(v).toString(f).toUpperCase()
-      : String(v);
+  const f = typeof format === "number" ? format : Number(format);
+  let str: string;
+  if (typeof v === "number" && !Number.isNaN(f) && format !== undefined) {
+    if ([2, 8, 16].includes(f)) {
+      str = Math.trunc(v).toString(f).toUpperCase();
+    } else {
+      str = v.toFixed(f);
+    }
+  } else {
+    str = String(v);
+  }
   serialBuffer = (serialBuffer + str).slice(-16000);
   return 0;
 }
@@ -138,6 +144,31 @@ const api: Record<string, (...args: Value[]) => Value | Promise<Value>> = {
     return Math.floor(Number(a) + Math.random() * (Number(b) - Number(a)));
   },
   randomSeed: () => 0,
+  isnan: (v: any) => Number(Number.isNaN(Number(v))),
+  isinf: (v: any) => Number(!Number.isFinite(Number(v)) && !Number.isNaN(Number(v))),
+  isfinite: (v: any) => Number(Number.isFinite(Number(v))),
+  char: (v: any) =>
+    Number(v) === 223
+      ? "°"
+      : typeof v === "number"
+        ? String.fromCharCode(Number(v) & 255)
+        : String(v),
+  byte: (v: any) => Number(v) & 255,
+  int: (v: any) => Math.trunc(Number(v)),
+  word: (v: any) => Number(v) & 0xffff,
+  long: (v: any) => Math.trunc(Number(v)),
+  float: (v: any) => Number(v),
+  double: (v: any) => Number(v),
+  boolean: (v: any) => Number(Boolean(v)),
+  bool: (v: any) => Number(Boolean(v)),
+  String: (v: any, f?: any) => {
+    if (typeof v === "number" && typeof f === "number") {
+      return [2, 8, 16].includes(f)
+        ? Math.trunc(v).toString(f).toUpperCase()
+        : v.toFixed(f);
+    }
+    return String(v);
+  },
   analogReadResolution: () => 0,
   "Serial.begin": (b) => {
     baud = Number(b);
@@ -285,7 +316,7 @@ const api: Record<string, (...args: Value[]) => Value | Promise<Value>> = {
   },
 
   // ─── LiquidCrystal_I2C (LCD 16x2) Emulation ───
-  "*.init": () => {
+  "lcd.init": () => {
     lcdState.line0 = "                ";
     lcdState.line1 = "                ";
     lcdState.cursorCol = 0;
@@ -293,14 +324,10 @@ const api: Record<string, (...args: Value[]) => Value | Promise<Value>> = {
     updateLcdComponents();
     return 0;
   },
-  "*.begin": () => {
-    lcdState.line0 = "                ";
-    lcdState.line1 = "                ";
-    lcdState.cursorCol = 0;
-    lcdState.cursorRow = 0;
-    updateLcdComponents();
-    return 0;
-  },
+  "lcd.begin": () => api["lcd.init"](),
+  "*.init": () => api["lcd.init"](),
+  "*.begin": () => 0,
+  "dht.begin": () => 0,
   "*.backlight": () => {
     lcdState.backlight = true;
     updateLcdComponents();
@@ -333,8 +360,17 @@ const api: Record<string, (...args: Value[]) => Value | Promise<Value>> = {
   "*.noCursor": () => 0,
   "*.blink": () => 0,
   "*.noBlink": () => 0,
-  "*.print": (v = "") => {
-    const s = String(v);
+  "*.print": (v: Value = "", format?: Value) => {
+    let s: string;
+    if (typeof v === "number" && typeof format === "number") {
+      if ([2, 8, 16].includes(format)) {
+        s = Math.trunc(v).toString(format).toUpperCase();
+      } else {
+        s = v.toFixed(format);
+      }
+    } else {
+      s = String(v);
+    }
     const rowKey = lcdState.cursorRow === 0 ? "line0" : "line1";
     let cur = lcdState[rowKey].padEnd(16, " ");
     const col = lcdState.cursorCol;
@@ -344,8 +380,17 @@ const api: Record<string, (...args: Value[]) => Value | Promise<Value>> = {
     updateLcdComponents();
     return s.length;
   },
-  "*.println": (v = "") => {
-    const s = String(v);
+  "*.println": (v: Value = "", format?: Value) => {
+    let s: string;
+    if (typeof v === "number" && typeof format === "number") {
+      if ([2, 8, 16].includes(format)) {
+        s = Math.trunc(v).toString(format).toUpperCase();
+      } else {
+        s = v.toFixed(format);
+      }
+    } else {
+      s = String(v);
+    }
     const rowKey = lcdState.cursorRow === 0 ? "line0" : "line1";
     let cur = lcdState[rowKey].padEnd(16, " ");
     const col = lcdState.cursorCol;
@@ -356,8 +401,18 @@ const api: Record<string, (...args: Value[]) => Value | Promise<Value>> = {
     updateLcdComponents();
     return s.length;
   },
-  "lcd.print": (v = "") => api["*.print"](v),
-  "lcd.println": (v = "") => api["*.println"](v),
+  "lcd.write": (v: any) =>
+    api["*.print"](
+      typeof v === "number"
+        ? Number(v) === 223
+          ? "°"
+          : String.fromCharCode(Number(v) & 255)
+        : String(v),
+    ),
+  "lcd.print": (v: Value = "", format?: Value) =>
+    format !== undefined ? api["*.print"](v, format) : api["*.print"](v),
+  "lcd.println": (v: Value = "", format?: Value) =>
+    format !== undefined ? api["*.println"](v, format) : api["*.println"](v),
 
   // ─── HC-SR04 Ultrasonic Distance Sensor Emulation ───
   "*.ping_cm": () => {

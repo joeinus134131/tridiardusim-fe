@@ -402,6 +402,94 @@ function test(name, fn) {
       assert.ok(r.states.dht.vDiff >= 4.5);
     });
 
+    test("SketchParser and Runtime support isnan, C-style cast (char)223, and DHT11+LCD user sketch", async () => {
+      const userSketch = `
+#include <Wire.h>
+#include <LiquidCrystal_I2C.h>
+#include <DHT.h>
+
+#define DHTPIN 2
+#define DHTTYPE DHT11
+
+DHT dht(DHTPIN, DHTTYPE);
+LiquidCrystal_I2C lcd(0x27, 16, 2);
+
+void setup() {
+  dht.begin();
+  lcd.init();
+  lcd.backlight();
+  lcd.setCursor(0, 0);
+  lcd.print("Inisialisasi...");
+  delay(10);
+  lcd.clear();
+}
+
+void loop() {
+  delay(10);
+  float kelembapan = dht.readHumidity();
+  float suhu = dht.readTemperature();
+
+  if (isnan(kelembapan) || isnan(suhu)) {
+    lcd.setCursor(0, 0);
+    lcd.print("Sensor Error!   ");
+    return;
+  }
+
+  lcd.setCursor(0, 0);
+  lcd.print("Suhu: ");
+  lcd.print(suhu, 1);
+  lcd.print((char)223);
+  lcd.print("C   ");
+
+  lcd.setCursor(0, 1);
+  lcd.print("Lembap: ");
+  lcd.print(kelembapan, 1);
+  lcd.print("%   ");
+}
+`;
+      assert.doesNotThrow(() => new SketchParser(userSketch));
+
+      const lcdLines = { line0: "", line1: "", cursorCol: 0, cursorRow: 0 };
+      const testApi = {
+        isnan: (v) => Number(Number.isNaN(Number(v))),
+        char: (v) => (Number(v) === 223 ? "°" : String.fromCharCode(Number(v) & 255)),
+        delay: () => 0,
+        "dht.begin": () => 0,
+        "*.readHumidity": () => 50,
+        "*.readTemperature": () => 24,
+        "lcd.init": () => {
+          lcdLines.line0 = "                ";
+          lcdLines.line1 = "                ";
+          return 0;
+        },
+        "lcd.backlight": () => 0,
+        "lcd.clear": () => {
+          lcdLines.line0 = "                ";
+          lcdLines.line1 = "                ";
+          return 0;
+        },
+        "lcd.setCursor": (col, row) => {
+          lcdLines.cursorCol = Number(col);
+          lcdLines.cursorRow = Number(row);
+          return 0;
+        },
+        "*.print": (v, f) => {
+          const s = typeof v === "number" && typeof f === "number" ? v.toFixed(f) : String(v);
+          const k = lcdLines.cursorRow === 0 ? "line0" : "line1";
+          lcdLines[k] = (lcdLines[k].slice(0, lcdLines.cursorCol) + s + lcdLines[k].slice(lcdLines.cursorCol + s.length)).slice(0, 16);
+          lcdLines.cursorCol += s.length;
+          return s.length;
+        },
+      };
+
+      const rt = new SketchRuntime(new SketchParser(userSketch), testApi);
+      await rt.start();
+      await rt.loop();
+
+      assert.ok(lcdLines.line0.includes("Suhu: 24.0°C"), `Line 0 must include Suhu: 24.0°C, got: "${lcdLines.line0}"`);
+      assert.ok(lcdLines.line1.includes("Lembap: 50.0%"), `Line 1 must include Lembap: 50.0%, got: "${lcdLines.line1}"`);
+    });
+
     const bench = example("breadboard");
     const t = performance.now();
     for (let i = 0; i < 200; i++)

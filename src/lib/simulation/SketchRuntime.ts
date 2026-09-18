@@ -318,8 +318,24 @@ export class SketchParser {
     if (["!", "-", "+", "~", "&", "*"].includes(t))
       left = { kind: "unary", op: t, value: this.expr(12) };
     else if (t === "(") {
-      left = this.expr();
-      this.need(")");
+      if (types.has(this.peek()) && this.tokens[this.i + 1]?.text === ")") {
+        const castType = this.peek();
+        this.i += 2;
+        const val = this.expr(12);
+        left = { kind: "call", name: castType, args: [val] };
+      } else if (
+        types.has(this.peek()) &&
+        types.has(this.tokens[this.i + 1]?.text) &&
+        this.tokens[this.i + 2]?.text === ")"
+      ) {
+        const castType = this.tokens[this.i + 1]?.text;
+        this.i += 3;
+        const val = this.expr(12);
+        left = { kind: "call", name: castType, args: [val] };
+      } else {
+        left = this.expr();
+        this.need(")");
+      }
     } else if (/^\d/.test(t)) left = { kind: "literal", value: Number(t) };
     else if (t.startsWith('"') || t.startsWith("'")) {
       const s = t

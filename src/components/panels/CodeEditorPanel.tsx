@@ -5,6 +5,8 @@ import dynamic from "next/dynamic";
 import { useSimulatorStore } from "@/store/useSimulatorStore";
 import { download } from "@/lib/project/project";
 import { useTheme } from "next-themes";
+import { useHardwareStore } from "@/store/useHardwareStore";
+import { bundleSketchFiles } from "@/lib/sketch/bundler";
 import {
   FileCode2,
   Hash,
@@ -19,6 +21,14 @@ import {
   Code2,
   Search,
   Sparkles,
+  Cpu,
+  Usb,
+  CheckCircle2,
+  AlertCircle,
+  RefreshCw,
+  Loader2,
+  ArrowUpCircle,
+  Terminal,
 } from "lucide-react";
 
 // Dynamic import of Monaco Editor with SSR disabled
@@ -464,6 +474,28 @@ export function CodeEditorPanel() {
     setTimeout(() => setToastMessage(""), 3200);
   };
 
+  // Hardware Store Hooks
+  const targetMode = useHardwareStore((s) => s.targetMode);
+  const setTargetMode = useHardwareStore((s) => s.setTargetMode);
+  const selectedBoard = useHardwareStore((s) => s.selectedBoard);
+  const setSelectedBoard = useHardwareStore((s) => s.setSelectedBoard);
+  const selectedPort = useHardwareStore((s) => s.selectedPort);
+  const setSelectedPort = useHardwareStore((s) => s.setSelectedPort);
+  const detectedPorts = useHardwareStore((s) => s.detectedPorts);
+  const isScanningPorts = useHardwareStore((s) => s.isScanningPorts);
+  const scanPorts = useHardwareStore((s) => s.scanPorts);
+  const isCompiling = useHardwareStore((s) => s.isCompiling);
+  const compileResult = useHardwareStore((s) => s.compileResult);
+  const compileCode = useHardwareStore((s) => s.compileCode);
+  const isUploading = useHardwareStore((s) => s.isUploading);
+  const uploadResult = useHardwareStore((s) => s.uploadResult);
+  const uploadCode = useHardwareStore((s) => s.uploadCode);
+  const [showBuildOutput, setShowBuildOutput] = useState(false);
+
+  useEffect(() => {
+    scanPorts();
+  }, [scanPorts]);
+
   const handleCreateFile = () => {
     let name = newFileName.trim();
     if (!name) return;
@@ -542,7 +574,7 @@ export function CodeEditorPanel() {
   };
 
   return (
-    <section className="code-panel flex flex-col h-full bg-slate-900/50 relative">
+    <section className="code-panel flex flex-col h-full bg-slate-50 dark:bg-slate-950 text-slate-800 dark:text-slate-200 border-b border-slate-200 dark:border-slate-800 relative">
       {/* ─── TOAST NOTIFICATION ─── */}
       {toastMessage && (
         <div className="absolute top-12 left-1/2 -translate-x-1/2 z-50 px-3 py-1.5 rounded-md bg-sky-600 text-white text-xs shadow-lg flex items-center gap-2 border border-sky-400/50 animate-fade-in font-medium">
@@ -551,113 +583,27 @@ export function CodeEditorPanel() {
         </div>
       )}
 
-      {/* ─── TOOLBAR ─── */}
-      <div className="panel-heading flex flex-wrap items-center justify-between gap-2 px-3 py-2 border-b border-slate-700/50 bg-slate-900/80">
-        {/* Left: Library Import Button & Info */}
-        <div className="flex items-center gap-2">
+      {/* ─── TOOLBAR (ROW 1: EDITOR CONTROLS) ─── */}
+      <div className="flex items-center justify-between gap-1.5 px-2.5 py-1.5 border-b border-slate-200 dark:border-slate-800 bg-white dark:bg-slate-900/90 text-xs shrink-0 select-none">
+        {/* Left: Library Catalog & File I/O */}
+        <div className="flex items-center gap-1.5 shrink-0">
           <button
             type="button"
-            className="flex items-center gap-1.5 px-2.5 py-1 rounded bg-sky-500/15 hover:bg-sky-500/25 border border-sky-500/40 text-sky-300 text-xs font-medium transition cursor-pointer"
+            className="flex items-center gap-1 px-2 py-1 rounded bg-sky-50 dark:bg-sky-500/15 hover:bg-sky-100 dark:hover:bg-sky-500/25 border border-sky-300 dark:border-sky-500/40 text-sky-700 dark:text-sky-300 text-[11px] font-semibold transition cursor-pointer shadow-2xs"
             onClick={() => setShowLibraryModal(true)}
-            title="Katalog Library & Sensor"
+            title="Katalog Pustaka & Sensor C++"
           >
-            <BookOpen size={13} className="text-sky-400" />
-            <span>Import Library</span>
+            <BookOpen size={12} className="text-sky-600 dark:text-sky-400 shrink-0" />
+            <span>Library</span>
           </button>
-          <span className="text-[11px] text-slate-400 hidden sm:inline">
-            C++ / Arduino IDE
-          </span>
-        </div>
-
-        {/* Right: Controls & Actions */}
-        <div className="flex items-center gap-1.5 flex-wrap text-xs">
-          {/* Toggle Line Numbers */}
-          <button
-            type="button"
-            className={`flex items-center gap-1 px-2 py-1 rounded text-[11px] font-medium border transition-colors ${
-              showLineNumbers
-                ? "bg-slate-800 text-sky-300 border-sky-500/40"
-                : "bg-slate-800/40 text-slate-400 border-slate-700 hover:border-slate-600"
-            }`}
-            onClick={() => setShowLineNumbers(!showLineNumbers)}
-            title={showLineNumbers ? "Sembunyikan Nomor Baris" : "Tampilkan Nomor Baris"}
-          >
-            <Hash size={12} />
-            <span>{showLineNumbers ? "Baris: ON" : "Baris: OFF"}</span>
-          </button>
-
-          {/* Theme Selector */}
-          <div
-            suppressHydrationWarning
-            className="flex items-center rounded border border-slate-700 bg-slate-800/60 p-0.5"
-          >
-            <button
-              type="button"
-              className={`px-1.5 py-0.5 rounded text-[10px] font-mono transition-colors ${
-                activeTheme === "vs-dark"
-                  ? "bg-sky-600 text-white font-bold"
-                  : "text-slate-400 hover:text-slate-200"
-              }`}
-              onClick={() => setEditorTheme("vs-dark")}
-              title="Tema Gelap (VS Code Dark)"
-            >
-              Dark
-            </button>
-            <button
-              type="button"
-              className={`px-1.5 py-0.5 rounded text-[10px] font-mono transition-colors ${
-                activeTheme === "vs"
-                  ? "bg-sky-600 text-white font-bold"
-                  : "text-slate-400 hover:text-slate-200"
-              }`}
-              onClick={() => setEditorTheme("vs")}
-              title="Tema Terang (VS Code Light)"
-            >
-              Light
-            </button>
-            <button
-              type="button"
-              className={`px-1.5 py-0.5 rounded text-[10px] font-mono transition-colors ${
-                activeTheme === "hc-black"
-                  ? "bg-sky-600 text-white font-bold"
-                  : "text-slate-400 hover:text-slate-200"
-              }`}
-              onClick={() => setEditorTheme("hc-black")}
-              title="Tema High Contrast"
-            >
-              HC
-            </button>
-          </div>
-
-          {/* Font Size Zoom Controls */}
-          <div className="flex items-center gap-0.5 bg-slate-800/60 rounded border border-slate-700 px-1 py-0.5">
-            <button
-              type="button"
-              className="p-1 text-slate-400 hover:text-slate-200 disabled:opacity-30"
-              disabled={fontSize <= 11}
-              onClick={() => setFontSize(Math.max(11, fontSize - 1))}
-              title="Kecilkan Font"
-            >
-              <ZoomOut size={12} />
-            </button>
-            <span className="text-[10px] font-mono text-slate-300 px-0.5">
-              {fontSize}px
-            </span>
-            <button
-              type="button"
-              className="p-1 text-slate-400 hover:text-slate-200 disabled:opacity-30"
-              disabled={fontSize >= 18}
-              onClick={() => setFontSize(Math.min(18, fontSize + 1))}
-              title="Besarkan Font"
-            >
-              <ZoomIn size={12} />
-            </button>
-          </div>
 
           {/* Open .ino / .h / .cpp File */}
-          <label className="flex items-center gap-1 px-2 py-1 rounded bg-slate-800 hover:bg-slate-700 border border-slate-700 text-slate-200 text-[11px] font-medium cursor-pointer transition-colors">
-            <Upload size={12} />
-            <span>Buka</span>
+          <label
+            className="flex items-center gap-1 px-1.5 py-1 rounded bg-slate-100 hover:bg-slate-200 dark:bg-slate-800 dark:hover:bg-slate-700 border border-slate-300 dark:border-slate-700 text-slate-700 dark:text-slate-200 text-[11px] font-medium cursor-pointer transition-colors shadow-2xs"
+            title="Buka file sketch (.ino, .h, .cpp)"
+          >
+            <Upload size={12} className="shrink-0" />
+            <span className="hidden sm:inline">Buka</span>
             <input
               hidden
               type="file"
@@ -680,18 +626,234 @@ export function CodeEditorPanel() {
           {/* Download File */}
           <button
             type="button"
-            className="flex items-center gap-1 px-2 py-1 rounded bg-slate-800 hover:bg-slate-700 border border-slate-700 text-slate-200 text-[11px] font-medium transition-colors"
+            className="flex items-center gap-1 px-1.5 py-1 rounded bg-slate-100 hover:bg-slate-200 dark:bg-slate-800 dark:hover:bg-slate-700 border border-slate-300 dark:border-slate-700 text-slate-700 dark:text-slate-200 text-[11px] font-medium transition-colors shadow-2xs cursor-pointer"
             onClick={() => download(activeFileName, code)}
             title={`Download ${activeFileName}`}
           >
-            <Download size={12} />
-            <span>Unduh</span>
+            <Download size={12} className="shrink-0" />
+            <span className="hidden sm:inline">Unduh</span>
+          </button>
+        </div>
+
+        {/* Right: Line Numbers, Theme & Zoom */}
+        <div className="flex items-center gap-1 shrink-0 text-xs">
+          {/* Toggle Line Numbers */}
+          <button
+            type="button"
+            className={`p-1 rounded text-[11px] font-medium border transition-colors cursor-pointer shadow-2xs ${
+              showLineNumbers
+                ? "bg-sky-50 dark:bg-sky-950/60 text-sky-700 dark:text-sky-300 border-sky-300 dark:border-sky-600"
+                : "bg-slate-100 dark:bg-slate-800 text-slate-500 dark:text-slate-400 border-slate-300 dark:border-slate-700"
+            }`}
+            onClick={() => setShowLineNumbers(!showLineNumbers)}
+            title={showLineNumbers ? "Nomor Baris: Aktif (Klik untuk sembunyikan)" : "Nomor Baris: Nonaktif (Klik untuk tampilkan)"}
+          >
+            <Hash size={12} />
+          </button>
+
+          {/* Theme Selector */}
+          <div
+            suppressHydrationWarning
+            className="flex items-center rounded border border-slate-300 dark:border-slate-700 bg-slate-100 dark:bg-slate-800/80 p-0.5 shadow-2xs"
+          >
+            <button
+              type="button"
+              className={`px-1.5 py-0.5 rounded text-[10px] font-mono transition-colors cursor-pointer ${
+                activeTheme === "vs-dark"
+                  ? "bg-sky-600 text-white font-bold shadow-xs"
+                  : "text-slate-600 dark:text-slate-400 hover:text-slate-900 dark:hover:text-slate-200"
+              }`}
+              onClick={() => setEditorTheme("vs-dark")}
+              title="Tema Gelap (VS Code Dark)"
+            >
+              Dark
+            </button>
+            <button
+              type="button"
+              className={`px-1.5 py-0.5 rounded text-[10px] font-mono transition-colors cursor-pointer ${
+                activeTheme === "vs"
+                  ? "bg-sky-600 text-white font-bold shadow-xs"
+                  : "text-slate-600 dark:text-slate-400 hover:text-slate-900 dark:hover:text-slate-200"
+              }`}
+              onClick={() => setEditorTheme("vs")}
+              title="Tema Terang (VS Code Light)"
+            >
+              Light
+            </button>
+            <button
+              type="button"
+              className={`px-1.5 py-0.5 rounded text-[10px] font-mono transition-colors cursor-pointer ${
+                activeTheme === "hc-black"
+                  ? "bg-sky-600 text-white font-bold shadow-xs"
+                  : "text-slate-600 dark:text-slate-400 hover:text-slate-900 dark:hover:text-slate-200"
+              }`}
+              onClick={() => setEditorTheme("hc-black")}
+              title="Tema High Contrast"
+            >
+              HC
+            </button>
+          </div>
+
+          {/* Font Size Zoom Controls */}
+          <div className="flex items-center gap-0.5 bg-slate-100 dark:bg-slate-800/80 rounded border border-slate-300 dark:border-slate-700 px-0.5 py-0.5 shadow-2xs">
+            <button
+              type="button"
+              className="p-1 text-slate-600 dark:text-slate-400 hover:text-slate-900 dark:hover:text-slate-200 disabled:opacity-30 cursor-pointer"
+              disabled={fontSize <= 11}
+              onClick={() => setFontSize(Math.max(11, fontSize - 1))}
+              title="Kecilkan Font"
+            >
+              <ZoomOut size={11} />
+            </button>
+            <span className="text-[10px] font-mono font-medium text-slate-700 dark:text-slate-300 px-0.5">
+              {fontSize}
+            </span>
+            <button
+              type="button"
+              className="p-1 text-slate-600 dark:text-slate-400 hover:text-slate-900 dark:hover:text-slate-200 disabled:opacity-30 cursor-pointer"
+              disabled={fontSize >= 18}
+              onClick={() => setFontSize(Math.min(18, fontSize + 1))}
+              title="Besarkan Font"
+            >
+              <ZoomIn size={11} />
+            </button>
+          </div>
+        </div>
+      </div>
+
+      {/* ─── HARDWARE & TARGET CONTROL RIBBON (ROW 2) ─── */}
+      <div className="flex items-center justify-between gap-1.5 px-2.5 py-1.5 border-b border-slate-200 dark:border-slate-800 bg-slate-50 dark:bg-slate-950/90 text-xs shrink-0 select-none">
+        <div className="flex items-center gap-1.5 min-w-0">
+          {/* Target Selector */}
+          <div className="flex items-center rounded border border-slate-300 dark:border-slate-700 bg-white dark:bg-slate-900 p-0.5 shrink-0 shadow-2xs">
+            <button
+              type="button"
+              className={`px-1.5 py-0.5 rounded text-[11px] font-semibold flex items-center gap-1 transition-all cursor-pointer ${
+                targetMode === "simulation"
+                  ? "bg-sky-600 text-white shadow-xs font-bold"
+                  : "text-slate-600 dark:text-slate-400 hover:text-slate-900 dark:hover:text-slate-200"
+              }`}
+              onClick={() => setTargetMode("simulation")}
+              title="Target: Simulasi Virtual"
+            >
+              <Cpu size={12} className="shrink-0" />
+              <span>Simulasi</span>
+            </button>
+            <button
+              type="button"
+              className={`px-1.5 py-0.5 rounded text-[11px] font-semibold flex items-center gap-1 transition-all cursor-pointer ${
+                targetMode === "hardware"
+                  ? "bg-emerald-600 text-white shadow-xs font-bold"
+                  : "text-slate-600 dark:text-slate-400 hover:text-slate-900 dark:hover:text-slate-200"
+              }`}
+              onClick={() => {
+                setTargetMode("hardware");
+                scanPorts();
+              }}
+              title="Target: Board Fisik USB Asli"
+            >
+              <Usb size={12} className="shrink-0" />
+              <span>Fisik</span>
+            </button>
+          </div>
+
+          {/* Board Selector */}
+          <select
+            className="text-[11px] font-semibold px-1.5 py-1 rounded border border-slate-300 dark:border-slate-700 bg-white dark:bg-slate-900 text-slate-800 dark:text-slate-200 max-w-[125px] truncate cursor-pointer shadow-2xs"
+            value={selectedBoard}
+            onChange={(e) => setSelectedBoard(e.target.value as any)}
+            title="Pilih jenis board mikrokontroler target"
+          >
+            <option value="arduino_uno">Uno R3 (AVR)</option>
+            <option value="esp32_wroom">ESP32 DevKit</option>
+          </select>
+
+          {/* Port Selector (visible when in hardware mode) */}
+          {targetMode === "hardware" && (
+            <div className="flex items-center gap-1 min-w-0">
+              <select
+                className="text-[11px] font-mono px-1.5 py-1 rounded border border-slate-300 dark:border-slate-700 bg-white dark:bg-slate-900 text-slate-800 dark:text-slate-200 max-w-[100px] truncate shadow-2xs"
+                value={selectedPort}
+                onChange={(e) => setSelectedPort(e.target.value)}
+                title="Pilih port serial USB board Anda"
+              >
+                {detectedPorts.length > 0 ? (
+                  detectedPorts.map((p) => (
+                    <option key={p.address} value={p.address}>
+                      {p.label || p.address}
+                    </option>
+                  ))
+                ) : (
+                  <option value="">(Belum ada port)</option>
+                )}
+              </select>
+              <button
+                type="button"
+                className="p-1 rounded bg-white hover:bg-slate-100 dark:bg-slate-800 dark:hover:bg-slate-700 border border-slate-300 dark:border-slate-700 text-slate-700 dark:text-slate-300 transition cursor-pointer shadow-2xs shrink-0"
+                onClick={() => scanPorts()}
+                title="Pindai Ulang Port Serial"
+              >
+                <RefreshCw size={11} className={isScanningPorts ? "animate-spin" : ""} />
+              </button>
+            </div>
+          )}
+        </div>
+
+        {/* Right Action Buttons: Compile & Upload */}
+        <div className="flex items-center gap-1.5 shrink-0">
+          {/* Verify / Compile Button */}
+          <button
+            type="button"
+            disabled={isCompiling || isUploading}
+            className="px-2 py-1 rounded bg-sky-50 dark:bg-sky-500/15 hover:bg-sky-100 dark:hover:bg-sky-500/25 border border-sky-300 dark:border-sky-500/40 text-sky-700 dark:text-sky-300 font-semibold flex items-center gap-1 text-[11px] transition disabled:opacity-40 cursor-pointer shadow-2xs shrink-0"
+            onClick={async () => {
+              const bundled = bundleSketchFiles(files);
+              setShowBuildOutput(true);
+              const res = await compileCode(bundled);
+              if (res.success) {
+                showToast("Kompilasi C++ Berhasil!");
+              } else {
+                showToast("Kompilasi Gagal! Buka console log.");
+              }
+            }}
+            title="Kompilasi sketch menggunakan arduino-cli"
+          >
+            {isCompiling ? <Loader2 size={11} className="animate-spin text-sky-500" /> : <Check size={11} />}
+            <span>Verify</span>
+          </button>
+
+          {/* Upload ke Board Button */}
+          <button
+            type="button"
+            disabled={isCompiling || isUploading}
+            className="px-2 py-1 rounded bg-emerald-600 hover:bg-emerald-500 text-white font-semibold flex items-center gap-1 text-[11px] transition shadow-xs disabled:opacity-40 cursor-pointer shrink-0"
+            onClick={async () => {
+              if (!selectedPort) {
+                await scanPorts();
+                if (!useHardwareStore.getState().selectedPort) {
+                  showToast("Colokkan board & pilih port serial!");
+                  return;
+                }
+              }
+              const bundled = bundleSketchFiles(files);
+              setShowBuildOutput(true);
+              const res = await uploadCode(bundled);
+              if (res.success) {
+                showToast("Upload Firmware ke Board Berhasil!");
+              } else {
+                showToast("Upload Gagal! Periksa kabel & port.");
+              }
+            }}
+            title="Unggah firmware langsung ke mikrokontroler fisik"
+          >
+            {isUploading ? <Loader2 size={11} className="animate-spin" /> : <ArrowUpCircle size={11} />}
+            <span>Upload</span>
           </button>
         </div>
       </div>
 
       {/* ─── MULTI-FILE TABS BAR ─── */}
-      <div className="flex items-center gap-1 px-3 py-1 bg-slate-950/90 border-b border-slate-800 text-xs overflow-x-auto select-none">
+      <div className="flex items-center gap-1 px-2.5 py-1 bg-slate-100 dark:bg-slate-950/90 border-b border-slate-200 dark:border-slate-800 text-xs overflow-x-auto select-none">
         {files.map((file) => {
           const isActive = file.name === activeFileName;
           const isMain = file.name === "sketch.ino";
@@ -700,17 +862,17 @@ export function CodeEditorPanel() {
               key={file.name}
               className={`flex items-center gap-1.5 px-2.5 py-1 rounded-t border-t border-x transition cursor-pointer text-[11px] font-mono shrink-0 ${
                 isActive
-                  ? "bg-slate-900 border-slate-700 text-sky-400 font-semibold"
-                  : "bg-slate-950/60 border-transparent text-slate-400 hover:text-slate-200 hover:bg-slate-900/50"
+                  ? "bg-white dark:bg-slate-900 border-slate-300 dark:border-slate-700 text-sky-600 dark:text-sky-400 font-semibold shadow-2xs"
+                  : "bg-transparent border-transparent text-slate-600 dark:text-slate-400 hover:text-slate-900 dark:hover:text-slate-200 hover:bg-slate-200/60 dark:hover:bg-slate-900/50"
               }`}
               onClick={() => setActiveFile(file.name)}
             >
-              <FileCode2 size={12} className={isActive ? "text-sky-400" : "text-slate-500"} />
+              <FileCode2 size={12} className={isActive ? "text-sky-600 dark:text-sky-400" : "text-slate-400"} />
               <span>{file.name}</span>
               {!isMain && (
                 <button
                   type="button"
-                  className="p-0.5 rounded hover:bg-slate-800 text-slate-400 hover:text-rose-400 ml-1 transition"
+                  className="p-0.5 rounded hover:bg-slate-200 dark:hover:bg-slate-800 text-slate-400 hover:text-rose-500 ml-1 transition cursor-pointer"
                   onClick={(e) => {
                     e.stopPropagation();
                     deleteFile(file.name);
@@ -726,11 +888,11 @@ export function CodeEditorPanel() {
 
         {/* Add File Trigger */}
         {showNewFileInput ? (
-          <div className="flex items-center gap-1 bg-slate-900 px-2 py-0.5 rounded border border-slate-700 ml-1">
+          <div className="flex items-center gap-1 bg-white dark:bg-slate-900 px-2 py-0.5 rounded border border-slate-300 dark:border-slate-700 ml-1 shadow-2xs">
             <input
               type="text"
               autoFocus
-              className="bg-transparent text-[11px] font-mono text-slate-100 outline-none w-28"
+              className="bg-transparent text-[11px] font-mono text-slate-800 dark:text-slate-100 outline-none w-24"
               placeholder="sensor.h"
               value={newFileName}
               onChange={(e) => setNewFileName(e.target.value)}
@@ -741,23 +903,23 @@ export function CodeEditorPanel() {
             />
             <button
               type="button"
-              className="text-[10px] text-sky-400 font-bold px-1 hover:underline"
+              className="text-[10px] text-sky-600 dark:text-sky-400 font-bold px-1 hover:underline cursor-pointer"
               onClick={handleCreateFile}
             >
               OK
             </button>
             <button
               type="button"
-              className="text-[10px] text-slate-400 px-0.5 hover:text-rose-400"
+              className="text-[10px] text-slate-400 p-0.5 hover:text-rose-500 cursor-pointer"
               onClick={() => setShowNewFileInput(false)}
             >
-              ✕
+              <X size={11} />
             </button>
           </div>
         ) : (
           <button
             type="button"
-            className="flex items-center gap-1 px-2 py-1 rounded text-[11px] text-slate-400 hover:text-slate-200 hover:bg-slate-800/60 transition ml-1 shrink-0"
+            className="flex items-center gap-1 px-2 py-1 rounded text-[11px] text-slate-500 dark:text-slate-400 hover:text-slate-800 dark:hover:text-slate-200 hover:bg-slate-200/60 dark:hover:bg-slate-800/60 transition ml-1 shrink-0 cursor-pointer"
             onClick={() => {
               setNewFileName("");
               setShowNewFileInput(true);
@@ -799,19 +961,86 @@ export function CodeEditorPanel() {
           }}
         />
       </div>
+      {/* ─── BUILD OUTPUT / HARDWARE LOG DRAWER ─── */}
+      {showBuildOutput && (compileResult || uploadResult || isCompiling || isUploading) && (
+        <div className="border-t border-slate-800 bg-slate-950 flex flex-col max-h-[220px] shrink-0 z-20">
+          <div className="flex items-center justify-between px-3 py-1.5 bg-slate-900 border-b border-slate-800 text-xs">
+            <div className="flex items-center gap-2 font-semibold">
+              <Terminal size={13} className="text-sky-400" />
+              <span>Console Build & Upload</span>
+              {isCompiling && (
+                <span className="text-[10px] text-sky-400 flex items-center gap-1 font-mono">
+                  <Loader2 size={10} className="animate-spin" /> Mengompilasi...
+                </span>
+              )}
+              {isUploading && (
+                <span className="text-[10px] text-emerald-400 flex items-center gap-1 font-mono">
+                  <Loader2 size={10} className="animate-spin" /> Mengunggah ke board...
+                </span>
+              )}
+              {!isCompiling && !isUploading && compileResult && (
+                <span
+                  className={`text-[10px] font-mono font-bold px-1.5 py-0.5 rounded flex items-center gap-1 ${
+                    compileResult.success
+                      ? "bg-emerald-500/20 text-emerald-400 border border-emerald-500/30"
+                      : "bg-rose-500/20 text-rose-400 border border-rose-500/30"
+                  }`}
+                >
+                  {compileResult.success ? (
+                    <>
+                      <CheckCircle2 size={11} className="shrink-0" />
+                      <span>BUILD SUCCESS</span>
+                    </>
+                  ) : (
+                    <>
+                      <AlertCircle size={11} className="shrink-0" />
+                      <span>BUILD FAILED</span>
+                    </>
+                  )}
+                </span>
+              )}
+            </div>
+
+            <div className="flex items-center gap-3">
+              {compileResult?.flashPercent !== undefined && compileResult.flashPercent > 0 && (
+                <span className="text-[10px] font-mono text-slate-400 hidden sm:inline">
+                  Flash: {compileResult.flashBytes} B ({compileResult.flashPercent}%)
+                </span>
+              )}
+              {compileResult?.sramPercent !== undefined && compileResult.sramPercent > 0 && (
+                <span className="text-[10px] font-mono text-slate-400 hidden sm:inline">
+                  SRAM: {compileResult.sramBytes} B ({compileResult.sramPercent}%)
+                </span>
+              )}
+              <button
+                type="button"
+                className="text-slate-400 hover:text-slate-200 text-xs p-1 rounded hover:bg-slate-800 transition cursor-pointer"
+                onClick={() => setShowBuildOutput(false)}
+                title="Tutup Console"
+              >
+                <X size={13} />
+              </button>
+            </div>
+          </div>
+
+          <div className="p-3 font-mono text-[11px] overflow-y-auto whitespace-pre-wrap flex-1 text-slate-300 select-text leading-relaxed">
+            {uploadResult ? uploadResult.log : compileResult ? compileResult.log : "Menjalankan proses..."}
+          </div>
+        </div>
+      )}
 
       {/* ─── INTEGRATED MICRO STATUS BAR ─── */}
-      <div className="flex items-center justify-between px-2.5 py-1 border-t border-slate-800/80 bg-slate-950/90 text-[10px] text-slate-400 font-mono select-none shrink-0 z-10">
+      <div className="flex items-center justify-between px-2.5 py-1 border-t border-slate-200 dark:border-slate-800/80 bg-slate-100 dark:bg-slate-950/90 text-[10px] text-slate-500 dark:text-slate-400 font-mono select-none shrink-0 z-10">
         <div className="flex items-center gap-2 truncate">
-          <span className="text-slate-300">{lineCount} baris</span>
-          <span className="text-slate-600">·</span>
+          <span className="text-slate-700 dark:text-slate-300">{lineCount} baris</span>
+          <span className="text-slate-400 dark:text-slate-600">·</span>
           <span>{charCount} kar</span>
-          <span className="text-slate-600">·</span>
-          <span className="text-sky-400 font-semibold truncate max-w-[110px] sm:max-w-[160px]">{activeFileName}</span>
+          <span className="text-slate-400 dark:text-slate-600">·</span>
+          <span className="text-sky-600 dark:text-sky-400 font-semibold truncate max-w-[110px] sm:max-w-[160px]">{activeFileName}</span>
         </div>
         <div className="flex items-center gap-2 shrink-0">
           <span
-            className="text-[9px] px-1.5 py-0.5 rounded bg-slate-800/70 text-slate-300 border border-slate-700/50 hover:text-sky-300 hover:border-sky-500/40 transition cursor-help hidden xs:inline-block"
+            className="text-[9px] px-1.5 py-0.5 rounded bg-slate-200 dark:bg-slate-800/70 text-slate-700 dark:text-slate-300 border border-slate-300 dark:border-slate-700/50 hover:text-sky-600 dark:hover:text-sky-300 hover:border-sky-500/40 transition cursor-help hidden xs:inline-block"
             title="Pustaka C++ Bawaan: DHT.h, NewPing.h, LiquidCrystal_I2C.h, Servo.h, Adafruit_SSD1306.h, WiFi.h"
           >
             C++ (Arduino)
@@ -819,7 +1048,7 @@ export function CodeEditorPanel() {
           <button
             type="button"
             onClick={() => setShowLibraryModal(true)}
-            className="flex items-center gap-1 text-[9px] text-sky-400 hover:text-sky-300 hover:underline transition px-1 py-0.5 rounded hover:bg-slate-800/50"
+            className="flex items-center gap-1 text-[9px] text-sky-600 dark:text-sky-400 hover:text-sky-700 dark:hover:text-sky-300 hover:underline transition px-1 py-0.5 rounded hover:bg-slate-200 dark:hover:bg-slate-800/50 cursor-pointer"
             title="Kelola & Import Pustaka"
           >
             <BookOpen size={10} />
@@ -831,25 +1060,25 @@ export function CodeEditorPanel() {
       {/* ─── MODAL IMPORT LIBRARY & SENSOR ─── */}
       {showLibraryModal && (
         <div className="fixed inset-0 z-50 flex items-center justify-center p-4 bg-black/60 backdrop-blur-sm animate-fade-in">
-          <div className="bg-slate-900 border border-slate-700 rounded-xl shadow-2xl max-w-2xl w-full flex flex-col max-h-[85vh] overflow-hidden">
+          <div className="bg-white dark:bg-slate-900 border border-slate-300 dark:border-slate-700 rounded-xl shadow-2xl max-w-2xl w-full flex flex-col max-h-[85vh] overflow-hidden text-slate-900 dark:text-slate-100">
             {/* Modal Header */}
-            <div className="flex items-center justify-between px-4 py-3 border-b border-slate-800 bg-slate-900/90">
+            <div className="flex items-center justify-between px-4 py-3 border-b border-slate-200 dark:border-slate-800 bg-slate-50 dark:bg-slate-900/90">
               <div className="flex items-center gap-2">
-                <div className="p-1.5 rounded-lg bg-sky-500/20 text-sky-400">
+                <div className="p-1.5 rounded-lg bg-sky-500/15 dark:bg-sky-500/20 text-sky-600 dark:text-sky-400">
                   <BookOpen size={16} />
                 </div>
                 <div>
-                  <h3 className="text-sm font-semibold text-slate-100">
+                  <h3 className="text-sm font-semibold text-slate-900 dark:text-slate-100">
                     Katalog Library & Sensor Bawaan
                   </h3>
-                  <p className="text-[11px] text-slate-400">
+                  <p className="text-[11px] text-slate-500 dark:text-slate-400">
                     Impor header, boilerplate, atau buat wrapper file .h langsung ke sketch
                   </p>
                 </div>
               </div>
               <button
                 type="button"
-                className="p-1 text-slate-400 hover:text-slate-200 rounded-md hover:bg-slate-800 transition"
+                className="p-1 text-slate-400 hover:text-slate-600 dark:hover:text-slate-200 rounded-md hover:bg-slate-100 dark:hover:bg-slate-800 transition cursor-pointer"
                 onClick={() => setShowLibraryModal(false)}
               >
                 <X size={16} />
@@ -857,13 +1086,13 @@ export function CodeEditorPanel() {
             </div>
 
             {/* Search Filter */}
-            <div className="px-4 py-2 border-b border-slate-800/80 bg-slate-950/40">
-              <div className="flex items-center gap-2 px-2.5 py-1.5 rounded-lg bg-slate-800/80 border border-slate-700/60 text-xs">
+            <div className="px-4 py-2 border-b border-slate-200 dark:border-slate-800/80 bg-slate-100/50 dark:bg-slate-950/40">
+              <div className="flex items-center gap-2 px-2.5 py-1.5 rounded-lg bg-white dark:bg-slate-800/80 border border-slate-300 dark:border-slate-700/60 text-xs">
                 <Search size={14} className="text-slate-400" />
                 <input
                   type="text"
                   placeholder="Cari library (DHT11, Ultrasonik, LCD 16x2, Servo, OLED, I2C)..."
-                  className="bg-transparent text-xs text-slate-200 outline-none w-full"
+                  className="bg-transparent text-xs text-slate-900 dark:text-slate-200 outline-none w-full"
                   value={librarySearch}
                   onChange={(e) => setLibrarySearch(e.target.value)}
                 />
@@ -871,9 +1100,9 @@ export function CodeEditorPanel() {
                   <button
                     type="button"
                     onClick={() => setLibrarySearch("")}
-                    className="text-slate-400 hover:text-slate-200 text-xs"
+                    className="text-slate-400 hover:text-slate-600 dark:hover:text-slate-200 p-0.5 cursor-pointer"
                   >
-                    ✕
+                    <X size={12} />
                   </button>
                 )}
               </div>
@@ -884,23 +1113,23 @@ export function CodeEditorPanel() {
               {filteredLibraries.map((lib) => (
                 <div
                   key={lib.id}
-                  className="p-3 rounded-lg border border-slate-800 hover:border-slate-700 bg-slate-950/60 flex flex-col gap-2 transition"
+                  className="p-3 rounded-lg border border-slate-200 hover:border-slate-300 dark:border-slate-800 dark:hover:border-slate-700 bg-slate-50 dark:bg-slate-950/60 flex flex-col gap-2 transition"
                 >
                   <div className="flex items-start justify-between gap-2">
                     <div>
                       <div className="flex items-center gap-2">
-                        <span className="text-xs font-bold text-slate-100">{lib.name}</span>
-                        <span className="text-[9px] px-1.5 py-0.2 rounded bg-sky-500/10 text-sky-400 border border-sky-500/30">
+                        <span className="text-xs font-bold text-slate-900 dark:text-slate-100">{lib.name}</span>
+                        <span className="text-[9px] px-1.5 py-0.2 rounded bg-sky-500/10 text-sky-600 dark:text-sky-400 border border-sky-500/30">
                           {lib.category}
                         </span>
                       </div>
-                      <p className="text-[11px] text-slate-400 mt-0.5 leading-snug">
+                      <p className="text-[11px] text-slate-500 dark:text-slate-400 mt-0.5 leading-snug">
                         {lib.description}
                       </p>
                     </div>
                   </div>
 
-                  <div className="bg-slate-900 px-2 py-1 rounded font-mono text-[10px] text-sky-300 border border-slate-800 overflow-x-auto">
+                  <div className="bg-white dark:bg-slate-900 px-2 py-1 rounded font-mono text-[10px] text-sky-700 dark:text-sky-300 border border-slate-200 dark:border-slate-800 overflow-x-auto">
                     {lib.header}
                   </div>
 
@@ -908,7 +1137,7 @@ export function CodeEditorPanel() {
                   <div className="flex items-center gap-2 pt-1 flex-wrap">
                     <button
                       type="button"
-                      className="px-2.5 py-1 rounded bg-sky-600 hover:bg-sky-500 text-white text-[11px] font-medium flex items-center gap-1.5 transition shadow-sm"
+                      className="px-2.5 py-1 rounded bg-sky-600 hover:bg-sky-500 text-white text-[11px] font-medium flex items-center gap-1.5 transition shadow-xs cursor-pointer"
                       onClick={() => insertHeaderToSketch(lib.header)}
                     >
                       <Plus size={11} />
@@ -917,20 +1146,20 @@ export function CodeEditorPanel() {
 
                     <button
                       type="button"
-                      className="px-2.5 py-1 rounded bg-slate-800 hover:bg-slate-700 border border-slate-700 text-slate-200 text-[11px] font-medium flex items-center gap-1.5 transition"
+                      className="px-2.5 py-1 rounded bg-white hover:bg-slate-100 dark:bg-slate-800 dark:hover:bg-slate-700 border border-slate-300 dark:border-slate-700 text-slate-700 dark:text-slate-200 text-[11px] font-medium flex items-center gap-1.5 transition cursor-pointer shadow-2xs"
                       onClick={() => insertTemplateToSketch(lib.templateCode)}
                     >
-                      <Code2 size={11} className="text-indigo-400" />
+                      <Code2 size={11} className="text-indigo-600 dark:text-indigo-400" />
                       <span>Pakai Template Lengkap</span>
                     </button>
 
                     <button
                       type="button"
-                      className="px-2.5 py-1 rounded bg-slate-800/80 hover:bg-slate-700 border border-slate-700 text-slate-300 text-[11px] font-medium flex items-center gap-1.5 transition"
+                      className="px-2.5 py-1 rounded bg-white hover:bg-slate-100 dark:bg-slate-800/80 dark:hover:bg-slate-700 border border-slate-300 dark:border-slate-700 text-slate-700 dark:text-slate-300 text-[11px] font-medium flex items-center gap-1.5 transition cursor-pointer shadow-2xs"
                       onClick={() => createWrapperHeader(lib.wrapperHeaderName, lib.wrapperHeaderCode)}
                       title={`Buat file header ${lib.wrapperHeaderName} di tab baru`}
                     >
-                      <Sparkles size={11} className="text-amber-400" />
+                      <Sparkles size={11} className="text-amber-500 dark:text-amber-400" />
                       <span>Buat Header Modular ({lib.wrapperHeaderName})</span>
                     </button>
                   </div>
@@ -945,11 +1174,11 @@ export function CodeEditorPanel() {
             </div>
 
             {/* Modal Footer */}
-            <div className="px-4 py-2.5 border-t border-slate-800 bg-slate-900 flex justify-between items-center text-[11px] text-slate-400">
+            <div className="px-4 py-2.5 border-t border-slate-200 dark:border-slate-800 bg-slate-50 dark:bg-slate-900 flex justify-between items-center text-[11px] text-slate-500 dark:text-slate-400">
               <span>{filteredLibraries.length} library siap pakai</span>
               <button
                 type="button"
-                className="px-3 py-1 rounded bg-slate-800 hover:bg-slate-700 text-slate-200 text-xs transition"
+                className="px-3 py-1 rounded bg-white hover:bg-slate-100 dark:bg-slate-800 dark:hover:bg-slate-700 text-slate-700 dark:text-slate-200 border border-slate-300 dark:border-slate-700 text-xs transition cursor-pointer shadow-2xs"
                 onClick={() => setShowLibraryModal(false)}
               >
                 Tutup

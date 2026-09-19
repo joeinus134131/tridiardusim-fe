@@ -1,7 +1,7 @@
 'use client';
 import { WireColors } from './WireColors';
 import { useState } from 'react';
-import { ExternalLink, RotateCcw, RotateCw, Compass } from 'lucide-react';
+import { ExternalLink, RotateCcw, RotateCw, Compass, Zap, Disc, ShieldCheck, AlertTriangle, Activity } from 'lucide-react';
 import { useSimulatorStore } from '@/store/useSimulatorStore';
 import { contacts, world, type Vec } from '@/lib/components/placement';
 import type { CircuitComponent } from '@/lib/components/componentTypes';
@@ -77,7 +77,7 @@ export function PhysicalProperties({
             className={`px-2 py-1.5 rounded-md text-[11px] font-medium border transition-all flex flex-col items-center gap-0.5 cursor-pointer ${
               pitchDeg === 0
                 ? 'border-sky-500 bg-sky-100/90 dark:bg-sky-500/20 text-sky-900 dark:text-sky-100 font-bold shadow-xs'
-                : 'border-slate-300 dark:border-slate-700/80 bg-slate-100 hover:bg-slate-200 dark:bg-slate-800/80 dark:hover:bg-slate-700/80 text-slate-700 dark:text-slate-300'
+                : 'border-slate-300 dark:border-slate-700/80 bg-white hover:bg-slate-100 dark:bg-slate-800/80 dark:hover:bg-slate-700/80 text-slate-700 dark:text-slate-300'
             }`}
             onClick={() => {
               state().updateComponentRotation(c.id, [0, c.rotation[1], 0]);
@@ -91,7 +91,7 @@ export function PhysicalProperties({
             className={`px-2 py-1.5 rounded-md text-[11px] font-medium border transition-all flex flex-col items-center gap-0.5 cursor-pointer ${
               pitchDeg === -90
                 ? 'border-amber-500 bg-amber-100/90 dark:bg-amber-500/20 text-amber-900 dark:text-amber-100 font-bold shadow-xs'
-                : 'border-slate-300 dark:border-slate-700/80 bg-slate-100 hover:bg-slate-200 dark:bg-slate-800/80 dark:hover:bg-slate-700/80 text-slate-700 dark:text-slate-300'
+                : 'border-slate-300 dark:border-slate-700/80 bg-white hover:bg-slate-100 dark:bg-slate-800/80 dark:hover:bg-slate-700/80 text-slate-700 dark:text-slate-300'
             }`}
             onClick={() => {
               state().updateComponentRotation(c.id, [-Math.PI / 2, c.rotation[1], 0]);
@@ -105,7 +105,7 @@ export function PhysicalProperties({
             className={`px-2 py-1.5 rounded-md text-[11px] font-medium border transition-all flex flex-col items-center gap-0.5 cursor-pointer ${
               pitchDeg === -45
                 ? 'border-emerald-500 bg-emerald-100/90 dark:bg-emerald-500/20 text-emerald-900 dark:text-emerald-100 font-bold shadow-xs'
-                : 'border-slate-300 dark:border-slate-700/80 bg-slate-100 hover:bg-slate-200 dark:bg-slate-800/80 dark:hover:bg-slate-700/80 text-slate-700 dark:text-slate-300'
+                : 'border-slate-300 dark:border-slate-700/80 bg-white hover:bg-slate-100 dark:bg-slate-800/80 dark:hover:bg-slate-700/80 text-slate-700 dark:text-slate-300'
             }`}
             onClick={() => {
               state().updateComponentRotation(c.id, [-Math.PI / 4, c.rotation[1], 0]);
@@ -120,7 +120,7 @@ export function PhysicalProperties({
         <div className="grid grid-cols-2 gap-1.5 mb-2.5">
           <button
             type="button"
-            className="px-2 py-1.5 rounded-md text-[11px] font-medium border border-slate-300 dark:border-slate-700/80 bg-slate-100 hover:bg-slate-200 dark:bg-slate-800/60 dark:hover:bg-slate-700 text-slate-800 dark:text-slate-200 flex items-center justify-center gap-1.5 transition-colors cursor-pointer shadow-2xs"
+            className="px-2 py-1.5 rounded-md text-[11px] font-medium border border-slate-300 dark:border-slate-700/80 bg-white hover:bg-slate-100 dark:bg-slate-800/60 dark:hover:bg-slate-700 text-slate-800 dark:text-slate-200 flex items-center justify-center gap-1.5 transition-colors cursor-pointer shadow-2xs"
             onClick={() => {
               state().updateComponentRotation(c.id, [c.rotation[0], c.rotation[1] + Math.PI / 2, c.rotation[2]]);
             }}
@@ -130,7 +130,7 @@ export function PhysicalProperties({
           </button>
           <button
             type="button"
-            className="px-2 py-1.5 rounded-md text-[11px] font-medium border border-slate-300 dark:border-slate-700/80 bg-slate-100 hover:bg-slate-200 dark:bg-slate-800/60 dark:hover:bg-slate-700 text-slate-800 dark:text-slate-200 flex items-center justify-center gap-1.5 transition-colors cursor-pointer shadow-2xs"
+            className="px-2 py-1.5 rounded-md text-[11px] font-medium border border-slate-300 dark:border-slate-700/80 bg-white hover:bg-slate-100 dark:bg-slate-800/60 dark:hover:bg-slate-700 text-slate-800 dark:text-slate-200 flex items-center justify-center gap-1.5 transition-colors cursor-pointer shadow-2xs"
             onClick={() => {
               state().updateComponentRotation(c.id, [c.rotation[0], c.rotation[1] + Math.PI, c.rotation[2]]);
             }}
@@ -185,7 +185,7 @@ export function PhysicalProperties({
         </label>
       </details>
 
-      {['resistor_220', 'led_red', 'potentiometer', 'push_button', 'esp32_wroom', 'oled_ssd1306', 'lcd1602_i2c', 'dht11', 'hcsr04'].includes(c.typeId) && (
+      {['resistor_220', 'led_red', 'potentiometer', 'push_button', 'esp32_wroom', 'oled_ssd1306', 'lcd1602_i2c', 'dht11', 'hcsr04', 'capacitor_universal'].includes(c.typeId) && (
         <details open className="inspector-details">
           <summary>
             Koneksi Breadboard ({mounted.length ? `${mounted.length} Pin Tersambung` : 'Belum Tertancap'})
@@ -198,38 +198,32 @@ export function PhysicalProperties({
           {board && (
             <div className="flex flex-col gap-1.5">
               <select
-                aria-label="Breadboard pemasangan"
-                value={board.id}
-                onChange={(e) => setBoardId(e.target.value)}
-                className="inspector-select"
-              >
-                {boards.map((b) => (
-                  <option key={b.id} value={b.id}>
-                    {b.name} · [{b.id.slice(0, 4)}]
-                  </option>
-                ))}
-              </select>
-              <select
-                aria-label="Lubang kaki pertama"
+                aria-label="Target lubang breadboard"
                 value={holeId}
                 onChange={(e) => setHoleId(e.target.value)}
-                className="inspector-select"
+                className="w-full text-xs font-mono px-2 py-1 rounded border border-slate-300 dark:border-slate-700 bg-white dark:bg-slate-800"
               >
                 {board.pins.map((p) => (
                   <option key={p.id} value={p.id}>
-                    {p.name}
+                    {p.name} ({p.id})
                   </option>
                 ))}
               </select>
               <button
                 type="button"
-                className="small-button text-xs py-1 mt-0.5"
+                className="small-button text-xs py-1"
                 onClick={() => {
-                  const hole = board.pins.find((p) => p.id === holeId)!;
-                  const target = world(board, hole.position);
-                  const first = world(c, c.pins[0].position);
-                  const position = c.position.map((v, i) => v + target[i] - first[i]) as Vec;
-                  state().updateComponentPosition(c.id, position);
+                  const targetHole = board.pins.find((p) => p.id === holeId);
+                  if (!targetHole) return;
+                  const holePos = world(board, targetHole.position);
+                  const firstPinPos = world(c, c.pins[0].position);
+                  const minPinY = Math.min(...c.pins.map((p) => p.position[1]));
+                  const targetY = 1.71 - minPinY - 0.35;
+                  state().updateComponentPosition(c.id, [
+                    c.position[0] + (holePos[0] - firstPinPos[0]),
+                    targetY,
+                    c.position[2] + (holePos[2] - firstPinPos[2]),
+                  ]);
                 }}
               >
                 Tancapkan ke Lubang Ini
@@ -241,12 +235,305 @@ export function PhysicalProperties({
               Kaki resistor presisi pitch 10.16 mm (4 lubang). Geser ke luar breadboard untuk melepas.
             </p>
           )}
+          {c.typeId === 'capacitor_universal' && (
+            <p className="text-[10px] opacity-70 mt-1">
+              Kaki kapasitor pitch 2.54 mm (1 baris lubang berdampingan). Anoda (+) di pin A, Katoda (-) di pin C.
+            </p>
+          )}
           {c.typeId === 'oled_ssd1306' && (
             <p className="text-[10px] opacity-70 mt-1">
               Header 4-pin (GND, VCC, SCL, SDA) presisi pitch 2.54 mm. Dapat langsung ditancapkan ke 4 kolom breadboard berdampingan.
             </p>
           )}
         </details>
+      )}
+
+      {c.typeId === 'capacitor_universal' && (
+        <div className="inspector-card flex flex-col gap-3">
+          <div className="flex justify-between items-center border-b border-slate-200 dark:border-slate-800 pb-2">
+            <div className="flex items-center gap-1.5">
+              <Zap size={15} className="text-amber-500 shrink-0" />
+              <span className="text-xs font-bold text-slate-900 dark:text-slate-100">
+                Kapasitor Universal Adaptif
+              </span>
+            </div>
+            {c.state.status === 'overvoltage' ? (
+              <span className="text-[10px] font-bold px-2 py-0.5 rounded bg-rose-50 dark:bg-rose-950/40 text-rose-700 dark:text-rose-300 border border-rose-200 dark:border-rose-800 flex items-center gap-1 animate-pulse">
+                <AlertTriangle size={11} className="text-rose-600 dark:text-rose-400" />
+                Overvoltage!
+              </span>
+            ) : c.state.status === 'reversed' ? (
+              <span className="text-[10px] font-bold px-2 py-0.5 rounded bg-amber-50 dark:bg-amber-950/40 text-amber-700 dark:text-amber-300 border border-amber-200 dark:border-amber-800 flex items-center gap-1 animate-pulse">
+                <AlertTriangle size={11} className="text-amber-600 dark:text-amber-400" />
+                Polaritas Terbalik
+              </span>
+            ) : (
+              <span className="text-[10px] font-semibold px-2 py-0.5 rounded bg-emerald-50 dark:bg-emerald-950/40 text-emerald-700 dark:text-emerald-300 border border-emerald-200 dark:border-emerald-800 flex items-center gap-1">
+                <ShieldCheck size={12} className="text-emerald-600 dark:text-emerald-400" />
+                Aman (Normal)
+              </span>
+            )}
+          </div>
+
+          {/* Subtype Selector */}
+          <div>
+            <label className="text-[11px] font-semibold text-slate-800 dark:text-slate-200 mb-1 block">
+              Tipe Dielektrik & Konstruksi Fisik
+            </label>
+            <div className="grid grid-cols-2 gap-1.5">
+              <button
+                type="button"
+                className={`px-2.5 py-2 rounded-md text-[11px] border text-left transition-all cursor-pointer ${
+                  (c.state.subType || 'electrolytic') === 'electrolytic'
+                    ? 'border-sky-500 bg-sky-50 dark:bg-sky-950/50 text-sky-900 dark:text-sky-100 font-bold shadow-xs'
+                    : 'border-slate-300 dark:border-slate-700 bg-white hover:bg-slate-50 dark:bg-slate-800 dark:hover:bg-slate-700 text-slate-800 dark:text-slate-200'
+                }`}
+                onClick={() => {
+                  state().updateComponentState(c.id, { subType: 'electrolytic' });
+                }}
+              >
+                <div className="font-bold flex items-center gap-1.5 text-xs">
+                  <Zap size={13} className="text-sky-600 dark:text-sky-400 shrink-0" />
+                  <span>Elektrolit (Elco)</span>
+                </div>
+                <div className="text-[10px] text-slate-600 dark:text-slate-400 mt-1 leading-tight">
+                  Berpolaritas (+/-), kaleng silinder berventilasi.
+                </div>
+              </button>
+
+              <button
+                type="button"
+                className={`px-2.5 py-2 rounded-md text-[11px] border text-left transition-all cursor-pointer ${
+                  c.state.subType === 'ceramic'
+                    ? 'border-amber-500 bg-amber-50 dark:bg-amber-950/50 text-amber-900 dark:text-amber-100 font-bold shadow-xs'
+                    : 'border-slate-300 dark:border-slate-700 bg-white hover:bg-slate-50 dark:bg-slate-800 dark:hover:bg-slate-700 text-slate-800 dark:text-slate-200'
+                }`}
+                onClick={() => {
+                  state().updateComponentState(c.id, { subType: 'ceramic' });
+                }}
+              >
+                <div className="font-bold flex items-center gap-1.5 text-xs">
+                  <Disc size={13} className="text-amber-600 dark:text-amber-400 shrink-0" />
+                  <span>Keramik (Disc)</span>
+                </div>
+                <div className="text-[10px] text-slate-600 dark:text-slate-400 mt-1 leading-tight">
+                  Non-polaritas, cakram pipih kode EIA 3-digit.
+                </div>
+              </button>
+            </div>
+          </div>
+
+          {/* Capacitance Value & Unit */}
+          <div>
+            <div className="flex justify-between items-center mb-1">
+              <label className="text-[11px] font-semibold text-slate-800 dark:text-slate-200">
+                Kapasitansi Nominal
+              </label>
+              <span className="text-xs font-mono font-bold text-sky-600 dark:text-sky-400">
+                {Number(c.state.displayValue ?? 470)} {String(c.state.unit || 'µF')}
+              </span>
+            </div>
+
+            <div className="flex gap-2">
+              <input
+                type="number"
+                min={0.1}
+                max={100000}
+                className="w-full text-xs font-mono px-2.5 py-1.5 rounded border border-slate-300 dark:border-slate-700 bg-white dark:bg-slate-800 text-slate-900 dark:text-slate-100 shadow-2xs"
+                value={Number(c.state.displayValue ?? 470)}
+                onChange={(e) => {
+                  const val = Math.max(0.01, Number(e.target.value) || 1);
+                  const unit = String(c.state.unit || 'µF');
+                  const mult = unit === 'pF' ? 1e-12 : unit === 'nF' ? 1e-9 : unit === 'mF' ? 1e-3 : 1e-6;
+                  state().updateComponentState(c.id, {
+                    displayValue: val,
+                    capacitance: val * mult,
+                  });
+                }}
+              />
+              <select
+                className="text-xs font-semibold px-2.5 py-1.5 rounded border border-slate-300 dark:border-slate-700 bg-white dark:bg-slate-800 text-slate-900 dark:text-slate-100 shadow-2xs"
+                value={String(c.state.unit || 'µF')}
+                onChange={(e) => {
+                  const unit = e.target.value;
+                  const val = Number(c.state.displayValue ?? 470);
+                  const mult = unit === 'pF' ? 1e-12 : unit === 'nF' ? 1e-9 : unit === 'mF' ? 1e-3 : 1e-6;
+                  state().updateComponentState(c.id, {
+                    unit,
+                    capacitance: val * mult,
+                  });
+                }}
+              >
+                <option value="pF">pF</option>
+                <option value="nF">nF</option>
+                <option value="µF">µF</option>
+                <option value="mF">mF</option>
+              </select>
+            </div>
+
+            {/* Quick Presets */}
+            <div className="flex flex-wrap gap-1 mt-1.5">
+              {[
+                { label: '100nF', val: 100, unit: 'nF', cap: 100e-9 },
+                { label: '1µF', val: 1, unit: 'µF', cap: 1e-6 },
+                { label: '10µF', val: 10, unit: 'µF', cap: 10e-6 },
+                { label: '47µF', val: 47, unit: 'µF', cap: 47e-6 },
+                { label: '100µF', val: 100, unit: 'µF', cap: 100e-6 },
+                { label: '220µF', val: 220, unit: 'µF', cap: 220e-6 },
+                { label: '470µF', val: 470, unit: 'µF', cap: 470e-6 },
+                { label: '1000µF', val: 1000, unit: 'µF', cap: 1000e-6 },
+                { label: '2200µF', val: 2200, unit: 'µF', cap: 2200e-6 },
+              ].map((p) => (
+                <button
+                  key={p.label}
+                  type="button"
+                  className={`text-[10px] px-1.5 py-0.5 rounded border transition-all cursor-pointer ${
+                    Number(c.state.displayValue) === p.val && c.state.unit === p.unit
+                      ? 'bg-sky-600 text-white font-bold border-sky-600 shadow-xs'
+                      : 'bg-white hover:bg-slate-100 dark:bg-slate-800 dark:hover:bg-slate-700 text-slate-700 dark:text-slate-200 border-slate-300 dark:border-slate-700'
+                  }`}
+                  onClick={() => {
+                    state().updateComponentState(c.id, {
+                      displayValue: p.val,
+                      unit: p.unit,
+                      capacitance: p.cap,
+                    });
+                  }}
+                >
+                  {p.label}
+                </button>
+              ))}
+            </div>
+          </div>
+
+          {/* Rated Working Voltage */}
+          <div>
+            <div className="flex justify-between items-center mb-1">
+              <label className="text-[11px] font-semibold text-slate-800 dark:text-slate-200">
+                Tegangan Kerja Maksimum (WV)
+              </label>
+              <span className="text-xs font-mono font-bold text-amber-600 dark:text-amber-400">
+                {Number(c.state.ratedVoltage || 25)} Volt
+              </span>
+            </div>
+            <div className="grid grid-cols-4 gap-1">
+              {[6.3, 10, 16, 25, 35, 50, 63, 100].map((v) => (
+                <button
+                  key={v}
+                  type="button"
+                  className={`text-[10px] py-1 rounded border font-mono font-semibold transition-all cursor-pointer ${
+                    Number(c.state.ratedVoltage || 25) === v
+                      ? 'bg-amber-600 text-white font-bold border-amber-600 shadow-xs'
+                      : 'bg-white hover:bg-slate-100 dark:bg-slate-800 dark:hover:bg-slate-700 text-slate-700 dark:text-slate-200 border-slate-300 dark:border-slate-700'
+                  }`}
+                  onClick={() => {
+                    state().updateComponentState(c.id, { ratedVoltage: v });
+                  }}
+                >
+                  {v}V
+                </button>
+              ))}
+            </div>
+            <p className="text-[9.5px] text-slate-600 dark:text-slate-400 mt-1">
+              Ukuran bodi kaleng 3D membesar proporsional mengikuti kapasitas dan tegangan kerja.
+            </p>
+          </div>
+
+          {/* ESR (Equivalent Series Resistance) */}
+          <div>
+            <div className="flex justify-between items-center mb-1">
+              <label className="text-[11px] font-semibold text-slate-800 dark:text-slate-200">
+                Resistansi Seri Ekivalen (ESR)
+              </label>
+              <span className="text-[11px] font-mono font-semibold text-slate-700 dark:text-slate-300">
+                {Number(c.state.esr || 0.1).toFixed(2)} Ω
+              </span>
+            </div>
+            <input
+              type="range"
+              min={0.01}
+              max={1.5}
+              step={0.01}
+              value={Number(c.state.esr || 0.1)}
+              className="w-full accent-sky-500 cursor-pointer"
+              onChange={(e) => {
+                state().updateComponentState(c.id, { esr: Number(e.target.value) });
+              }}
+            />
+          </div>
+
+          {/* Live Physical Telemetry */}
+          <div className="rounded-md border border-slate-200 dark:border-slate-800 bg-slate-50 dark:bg-slate-900/80 p-2.5 flex flex-col gap-1.5 shadow-2xs">
+            <div className="flex items-center justify-between text-[11px] font-bold border-b border-slate-200 dark:border-slate-800 pb-1.5">
+              <span className="flex items-center gap-1.5 text-slate-900 dark:text-slate-100">
+                <Activity size={13} className="text-emerald-600 dark:text-emerald-400 shrink-0" />
+                <span>Telemetri Fisika Rangkaian</span>
+              </span>
+              <span className="font-mono text-[10px] text-slate-600 dark:text-slate-400">Q = C·V</span>
+            </div>
+
+            <div className="grid grid-cols-2 gap-2 pt-1 text-[11px]">
+              <div>
+                <div className="text-[10px] text-slate-600 dark:text-slate-400 font-medium">Tegangan Plat (V_C)</div>
+                <div className="font-mono font-bold text-slate-900 dark:text-slate-100 text-xs">
+                  {Number(c.state.voltage || 0).toFixed(2)} V
+                </div>
+              </div>
+              <div>
+                <div className="text-[10px] text-slate-600 dark:text-slate-400 font-medium">Arus Aliran (I_C)</div>
+                <div className="font-mono font-bold text-slate-900 dark:text-slate-100 text-xs">
+                  {Number(c.state.currentMa || 0).toFixed(2)} mA
+                </div>
+              </div>
+              <div>
+                <div className="text-[10px] text-slate-600 dark:text-slate-400 font-medium">Muatan Tersimpan (Q)</div>
+                <div className="font-mono font-bold text-slate-900 dark:text-slate-100 text-xs">
+                  {Number(c.state.chargeU_C || 0).toFixed(1)} µC
+                </div>
+              </div>
+              <div>
+                <div className="text-[10px] text-slate-600 dark:text-slate-400 font-medium">Energi Kapasitor (E)</div>
+                <div className="font-mono font-bold text-slate-900 dark:text-slate-100 text-xs">
+                  {Number(c.state.energy_mJ || 0).toFixed(3)} mJ
+                </div>
+              </div>
+            </div>
+
+            {/* Meter Bar (% of rated voltage) */}
+            <div className="mt-1">
+              <div className="flex justify-between text-[9.5px] text-slate-600 dark:text-slate-400 mb-0.5 font-mono">
+                <span>Beban Dielektrik</span>
+                <span className="font-bold">
+                  {(
+                    (Math.abs(Number(c.state.voltage || 0)) /
+                      Math.max(1, Number(c.state.ratedVoltage || 25))) *
+                    100
+                  ).toFixed(0)}
+                  %
+                </span>
+              </div>
+              <div className="h-1.5 w-full bg-slate-200 dark:bg-slate-800 rounded-full overflow-hidden">
+                <div
+                  className={`h-full transition-all duration-300 ${
+                    c.state.status === 'overvoltage'
+                      ? 'bg-rose-500'
+                      : c.state.status === 'reversed'
+                        ? 'bg-amber-500'
+                        : 'bg-emerald-500'
+                  }`}
+                  style={{
+                    width: `${Math.min(
+                      100,
+                      (Math.abs(Number(c.state.voltage || 0)) /
+                        Math.max(1, Number(c.state.ratedVoltage || 25))) *
+                        100
+                    )}%`,
+                  }}
+                />
+              </div>
+            </div>
+          </div>
+        </div>
       )}
 
       {c.typeId === 'led_red' && (

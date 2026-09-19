@@ -1,5 +1,7 @@
 @import "tailwindcss";
 
+@custom-variant dark (&:where(.dark, .dark *));
+
 :root {
   /* ── Base Colors (Light) ── */
   --bg-primary: #f8fafc;
@@ -482,8 +484,10 @@ body {
   border: 1px solid var(--border);
   border-radius: 5px;
   background: var(--bg-elevated);
+  color: var(--text-primary);
   white-space: nowrap;
   cursor: pointer;
+  transition: all 0.15s ease;
 }
 .small-button:hover {
   border-color: var(--accent);

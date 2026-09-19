@@ -17,6 +17,7 @@ import { Potentiometer } from "@/components/models/Potentiometer";
 import { Breadboard } from "@/components/models/Breadboard";
 import { JumperWire } from "@/components/models/JumperWire";
 import { Resistor } from "@/components/models/Resistor";
+import { Capacitor } from "@/components/models/Capacitor";
 import { OLEDDisplay } from "@/components/models/OLEDDisplay";
 import { ServoMotor } from "@/components/models/ServoMotor";
 import { LCD1602Display } from "@/components/models/LCD1602Display";
@@ -58,6 +59,8 @@ const ComponentRenderer = memo(function ComponentRenderer({
       return <Breadboard id={id} />;
     case "resistor_220":
       return <Resistor id={id} />;
+    case "capacitor_universal":
+      return <Capacitor id={id} />;
     case "jumper_red":
     case "jumper_black":
     case "jumper_blue":

@@ -18,6 +18,7 @@ export function localBounds(c: CircuitComponent): Bounds {
     lcd1602_i2c: [[-8.0, -0.6, -3.8], [8.0, 2.2, 3.8]],
     dht11: [[-1.6, -0.6, -1.0], [1.6, 3.2, 1.0]],
     hcsr04: [[-4.5, -0.6, -1.5], [4.5, 2.5, 1.5]],
+    capacitor_universal: [[-0.6, -0.6, -0.6], [0.6, 2.0, 0.6]],
   };
   const b = c.typeId.startsWith('jumper_')
     ? ([[-3.7, 0, -Number(c.state.depth || 8) - 0.2], [3.7, Number(c.state.bendHeight || 0.3) + 0.2, 0.1]] as [Vec, Vec])
@@ -52,7 +53,7 @@ export function worldBounds(c: CircuitComponent): Bounds {
 }
 
 export const mountable = (c: CircuitComponent) =>
-  ['resistor_220', 'led_red', 'potentiometer', 'push_button', 'esp32_wroom', 'oled_ssd1306', 'lcd1602_i2c', 'dht11', 'hcsr04'].includes(c.typeId);
+  ['resistor_220', 'led_red', 'potentiometer', 'push_button', 'esp32_wroom', 'oled_ssd1306', 'lcd1602_i2c', 'dht11', 'hcsr04', 'capacitor_universal'].includes(c.typeId);
 
 export type Contact = { componentId: string; pinId: string; boardId: string; holeId: string };
 

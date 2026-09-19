@@ -576,7 +576,9 @@ export default function WorkspacePage() {
                                 ? 0.6
                                 : c.typeId === "resistor_220"
                                   ? 0.6
-                                  : 0,
+                                  : c.typeId === "capacitor_universal"
+                                    ? 0.6
+                                    : 0,
                           Math.floor(n / 4) * 6 - 4,
                         ]);
                         const id = addComponent(item);

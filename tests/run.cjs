@@ -508,6 +508,47 @@ void loop() {
       }
     });
 
+    test("Universal capacitor computes RC charge, stored energy, and flags overvoltage/reverse polarity", () => {
+      const cap = instance("capacitor_universal", "cap1", [0, 0, 0]);
+      cap.state = {
+        subType: "electrolytic",
+        capacitance: 100e-6, // 100 µF
+        ratedVoltage: 16,
+        voltage: 0,
+        esr: 0.1,
+      };
+
+      const uno = instance("arduino_uno", "uno", [-7, 0, 0]);
+      // Connect 5V to Anode (A) and GND to Cathode (C)
+      const wires = [
+        { id: "w1", sourceComponentId: "uno", sourcePinId: "5V", targetComponentId: "cap1", targetPinId: "A", color: "#ef4444" },
+        { id: "w2", sourceComponentId: "uno", sourcePinId: "GND1", targetComponentId: "cap1", targetPinId: "C", color: "#171717" },
+      ];
+
+      const res = solveCircuit([uno, cap], wires, {});
+      const st = res.states["cap1"];
+      assert.ok(st, "Capacitor state must be calculated");
+      assert.ok(st.voltage > 0, "Capacitor should charge positively");
+      assert.strictEqual(st.status, "normal", "Status should be normal under 5V on 16V rating");
+      assert.ok(st.charge > 0, "Charge Q should be > 0");
+      assert.ok(st.energy > 0, "Energy E should be > 0");
+
+      // Test reverse polarity on electrolytic
+      const revWires = [
+        { id: "w1", sourceComponentId: "uno", sourcePinId: "GND1", targetComponentId: "cap1", targetPinId: "A", color: "#171717" },
+        { id: "w2", sourceComponentId: "uno", sourcePinId: "5V", targetComponentId: "cap1", targetPinId: "C", color: "#ef4444" },
+      ];
+      const revRes = solveCircuit([uno, cap], revWires, {});
+      assert.strictEqual(revRes.states["cap1"].status, "reversed", "Reversed polarity on elco must flag reversed status");
+      assert.ok(revRes.warnings.some(w => w.includes("Polaritas Elco terbalik")), "Must emit reverse polarity warning");
+
+      // Test overvoltage
+      cap.state.ratedVoltage = 3.3; // rating below 5V supply
+      const ovRes = solveCircuit([uno, cap], wires, {});
+      assert.strictEqual(ovRes.states["cap1"].status, "overvoltage", "5V on 3.3V rating must flag overvoltage");
+      assert.ok(ovRes.warnings.some(w => w.includes("melebihi rating")), "Must emit overvoltage warning");
+    });
+
     const bench = example("breadboard");
     const t = performance.now();
     for (let i = 0; i < 200; i++)

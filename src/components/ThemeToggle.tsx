@@ -6,16 +6,16 @@ import { useTheme } from "next-themes";
 
 export function ThemeToggle() {
   const { theme, setTheme, resolvedTheme } = useTheme();
-  const mounted = React.useSyncExternalStore(
-    () => () => {},
-    () => true,
-    () => false,
-  );
+  const [mounted, setMounted] = React.useState(false);
+
+  React.useEffect(() => {
+    setMounted(true);
+  }, []);
 
   if (!mounted) {
     return (
       <button
-        className="btn-icon tooltip p-1.5 w-7 h-7"
+        className="btn-icon p-1.5 w-7 h-7 rounded-md border border-slate-300 dark:border-slate-700 bg-slate-100 dark:bg-slate-800 opacity-60"
         aria-label="Toggle Theme"
       >
         <div className="w-4 h-4" />
@@ -28,7 +28,7 @@ export function ThemeToggle() {
   return (
     <button
       onClick={() => setTheme(currentTheme === "dark" ? "light" : "dark")}
-      className="btn-icon tooltip p-1.5 relative overflow-hidden w-7 h-7 flex items-center justify-center"
+      className="btn-icon tooltip p-1.5 relative overflow-hidden w-7 h-7 flex items-center justify-center border border-slate-300 dark:border-slate-700 bg-slate-100 hover:bg-slate-200 dark:bg-slate-800 dark:hover:bg-slate-700 text-slate-700 dark:text-slate-200 rounded-md shrink-0 cursor-pointer shadow-2xs transition-colors"
       data-tooltip="Toggle Theme"
       aria-label="Toggle Theme"
     >

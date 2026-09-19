@@ -311,6 +311,32 @@ ComponentRegistry.register({
   ],
 });
 
+ComponentRegistry.register({
+  typeId: "capacitor_universal",
+  name: "Kapasitor Universal (Elco & Keramik)",
+  type: "passive",
+  description: "Kapasitor adaptif elektrolit (elco) & keramik. Bentuk visual dan ukuran menyesuaikan nilai kapasitansi dan tegangan kerja.",
+  category: "Basic",
+  defaultState: {
+    subType: "electrolytic",
+    capacitance: 470e-6,
+    displayValue: 470,
+    unit: "µF",
+    ratedVoltage: 25,
+    esr: 0.1,
+    color: "#1e3a8a",
+    voltage: 0,
+    charge: 0,
+    energy: 0,
+    currentMa: 0,
+    status: "normal",
+  },
+  pins: [
+    { id: "A", name: "Anode (+)", type: "digital", position: [-0.254, -0.6, 0] },
+    { id: "C", name: "Cathode (-)", type: "ground", position: [0.254, -0.6, 0] },
+  ],
+});
+
 // ═══════════════════════════════════════════════════
 // WIRING
 // ═══════════════════════════════════════════════════

@@ -12,7 +12,7 @@ export interface IO {
 }
 export interface CircuitResult {
   voltages: Record<string, number>;
-  states: Record<string, Record<string, number | boolean>>;
+  states: Record<string, Record<string, number | boolean | string>>;
   warnings: string[];
 }
 export const terminal = (id: string, pin: string) => `${id}:${pin}`;
@@ -167,6 +167,21 @@ export function solveCircuit(
         r: 330,
         vf: 0,
       });
+    if (c.typeId === "capacitor_universal") {
+      const cap = Math.max(1e-12, Number(c.state.capacitance) || 470e-6);
+      const dt = 0.005; // 5ms quasi-static integration step
+      const rCap = dt / cap;
+      const esr = Math.max(0.01, Number(c.state.esr) || 0.1);
+      const rTotal = esr + rCap;
+      const vPrev = Number(c.state.voltage) || 0;
+      const vf = vPrev * (rCap / rTotal);
+      edges.push({
+        a: node(c, "A"),
+        b: node(c, "C"),
+        r: Math.max(0.05, rTotal),
+        vf,
+      });
+    }
   }
   // Only solve electrically active nets; unused breadboard holes cost no matrix rows.
   const active = new Set([
@@ -329,6 +344,48 @@ export function solveCircuit(
         ...c.state,
         isPowered,
         vDiff,
+      };
+    }
+    if (c.typeId === "capacitor_universal") {
+      const vA = voltage.get(node(c, "A")) || 0;
+      const vC = voltage.get(node(c, "C")) || 0;
+      const vDiff = vA - vC;
+      const cap = Math.max(1e-12, Number(c.state.capacitance) || 470e-6);
+      const dt = 0.005;
+      const esr = Math.max(0.01, Number(c.state.esr) || 0.1);
+      const rCap = dt / cap;
+      const rTotal = esr + rCap;
+      const vPrev = Number(c.state.voltage) || 0;
+      const iCurrent = (vDiff - vPrev) / rTotal;
+      const vNew = vPrev + iCurrent * (dt / cap);
+      const charge = cap * Math.abs(vNew);
+      const energy = 0.5 * cap * vNew * vNew;
+      const ratedV = Number(c.state.ratedVoltage) || 25;
+      const subType = String(c.state.subType || "electrolytic");
+
+      let status = "normal";
+      if (Math.abs(vDiff) > ratedV * 1.05) {
+        status = "overvoltage";
+        warnings.add(
+          `${c.name}: Tegangan ${vDiff.toFixed(1)}V melebihi rating ${ratedV}V! Risiko breakdown dielektrik.`,
+        );
+      } else if (subType === "electrolytic" && vDiff < -0.3) {
+        status = "reversed";
+        warnings.add(
+          `${c.name}: Polaritas Elco terbalik! Katoda (-) terhubung ke potensial lebih positif daripada Anoda (+).`,
+        );
+      }
+
+      states[c.id] = {
+        ...c.state,
+        voltage: Number(vNew.toFixed(3)),
+        vDiff: Number(vDiff.toFixed(3)),
+        currentMa: Number((iCurrent * 1000).toFixed(2)),
+        charge: Number(charge.toFixed(8)),
+        chargeU_C: Number((charge * 1e6).toFixed(2)),
+        energy: Number(energy.toFixed(8)),
+        energy_mJ: Number((energy * 1000).toFixed(3)),
+        status,
       };
     }
   }

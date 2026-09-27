@@ -374,7 +374,7 @@ export default function WorkspacePage() {
       {/* 2. SUB-TOOLBAR */}
       <header className="workspace-toolbar">
         <div className="brand">
-          NEX<span>FLUX</span> <small>LAB 3D</small>
+          IDN <span>MAKERSPACE</span> <small>LAB 3D</small>
         </div>
 
         <input
@@ -479,7 +479,7 @@ export default function WorkspacePage() {
           >
             <div className="flex justify-between items-center mb-3">
               <h3 className="font-bold text-lg text-slate-100 flex items-center gap-2">
-                Panduan Penggunaan Nexflux Lab 3D
+                Panduan Penggunaan IDN MAKERSPACE Lab 3D
               </h3>
               <button className="datasheet-close-btn flex items-center justify-center" onClick={() => setHelp(false)}>
                 <X size={16} />

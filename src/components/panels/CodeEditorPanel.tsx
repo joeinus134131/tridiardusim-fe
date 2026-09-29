@@ -25,7 +25,6 @@ import {
   Usb,
   CheckCircle2,
   AlertCircle,
-  RefreshCw,
   Loader2,
   ArrowUpCircle,
   Terminal,
@@ -480,21 +479,15 @@ export function CodeEditorPanel() {
   const selectedBoard = useHardwareStore((s) => s.selectedBoard);
   const setSelectedBoard = useHardwareStore((s) => s.setSelectedBoard);
   const selectedPort = useHardwareStore((s) => s.selectedPort);
-  const setSelectedPort = useHardwareStore((s) => s.setSelectedPort);
-  const detectedPorts = useHardwareStore((s) => s.detectedPorts);
-  const isScanningPorts = useHardwareStore((s) => s.isScanningPorts);
-  const scanPorts = useHardwareStore((s) => s.scanPorts);
+  const requestWebSerialPort = useHardwareStore((s) => s.requestWebSerialPort);
   const isCompiling = useHardwareStore((s) => s.isCompiling);
   const compileResult = useHardwareStore((s) => s.compileResult);
   const compileCode = useHardwareStore((s) => s.compileCode);
   const isUploading = useHardwareStore((s) => s.isUploading);
   const uploadResult = useHardwareStore((s) => s.uploadResult);
   const uploadCode = useHardwareStore((s) => s.uploadCode);
+  const flashProgress = useHardwareStore((s) => s.flashProgress);
   const [showBuildOutput, setShowBuildOutput] = useState(false);
-
-  useEffect(() => {
-    scanPorts();
-  }, [scanPorts]);
 
   const handleCreateFile = () => {
     let name = newFileName.trim();
@@ -748,9 +741,8 @@ export function CodeEditorPanel() {
               }`}
               onClick={() => {
                 setTargetMode("hardware");
-                scanPorts();
               }}
-              title="Target: Board Fisik USB Asli"
+              title="Target: Board Fisik USB Asli (Web Serial)"
             >
               <Usb size={12} className="shrink-0" />
               <span>Fisik</span>
@@ -768,32 +760,24 @@ export function CodeEditorPanel() {
             <option value="esp32_wroom">ESP32 DevKit</option>
           </select>
 
-          {/* Port Selector (visible when in hardware mode) */}
+          {/* Web Serial Port Selector (visible when in hardware mode) */}
           {targetMode === "hardware" && (
             <div className="flex items-center gap-1 min-w-0">
-              <select
-                className="text-[11px] font-mono px-1.5 py-1 rounded border border-slate-300 dark:border-slate-700 bg-white dark:bg-slate-900 text-slate-800 dark:text-slate-200 max-w-[100px] truncate shadow-2xs"
-                value={selectedPort}
-                onChange={(e) => setSelectedPort(e.target.value)}
-                title="Pilih port serial USB board Anda"
-              >
-                {detectedPorts.length > 0 ? (
-                  detectedPorts.map((p) => (
-                    <option key={p.address} value={p.address}>
-                      {p.label || p.address}
-                    </option>
-                  ))
-                ) : (
-                  <option value="">(Belum ada port)</option>
-                )}
-              </select>
               <button
                 type="button"
-                className="p-1 rounded bg-white hover:bg-slate-100 dark:bg-slate-800 dark:hover:bg-slate-700 border border-slate-300 dark:border-slate-700 text-slate-700 dark:text-slate-300 transition cursor-pointer shadow-2xs shrink-0"
-                onClick={() => scanPorts()}
-                title="Pindai Ulang Port Serial"
+                className="px-2 py-1 rounded text-[11px] font-semibold flex items-center gap-1.5 border transition cursor-pointer shadow-2xs shrink-0 bg-white dark:bg-slate-800 hover:bg-slate-50 dark:hover:bg-slate-700 border-slate-300 dark:border-slate-700 text-slate-700 dark:text-slate-300"
+                onClick={async () => {
+                  const ok = await requestWebSerialPort();
+                  if (ok) {
+                    showToast("Port serial berhasil dipilih!");
+                  }
+                }}
+                title="Pilih port serial USB dari browser (Web Serial API)"
               >
-                <RefreshCw size={11} className={isScanningPorts ? "animate-spin" : ""} />
+                <Usb size={11} className="shrink-0" />
+                <span className="max-w-[100px] truncate font-mono text-[10px]">
+                  {selectedPort || "Pilih Port"}
+                </span>
               </button>
             </div>
           )}
@@ -822,16 +806,17 @@ export function CodeEditorPanel() {
             <span>Verify</span>
           </button>
 
-          {/* Upload ke Board Button */}
+          {/* Upload ke Board via Web Serial */}
           <button
             type="button"
             disabled={isCompiling || isUploading}
             className="px-2 py-1 rounded bg-emerald-600 hover:bg-emerald-500 text-white font-semibold flex items-center gap-1 text-[11px] transition shadow-xs disabled:opacity-40 cursor-pointer shrink-0"
             onClick={async () => {
-              if (!selectedPort) {
-                await scanPorts();
-                if (!useHardwareStore.getState().selectedPort) {
-                  showToast("Colokkan board & pilih port serial!");
+              // Pastikan user sudah memilih port via Web Serial
+              if (!useHardwareStore.getState()._webSerialPort) {
+                const ok = await requestWebSerialPort();
+                if (!ok) {
+                  showToast("Pilih port serial terlebih dahulu!");
                   return;
                 }
               }
@@ -839,12 +824,12 @@ export function CodeEditorPanel() {
               setShowBuildOutput(true);
               const res = await uploadCode(bundled);
               if (res.success) {
-                showToast("Upload Firmware ke Board Berhasil!");
+                showToast("Upload Firmware via Web Serial Berhasil!");
               } else {
                 showToast("Upload Gagal! Periksa kabel & port.");
               }
             }}
-            title="Unggah firmware langsung ke mikrokontroler fisik"
+            title="Kompilasi di server, lalu flash firmware langsung ke board via Web Serial (browser)"
           >
             {isUploading ? <Loader2 size={11} className="animate-spin" /> : <ArrowUpCircle size={11} />}
             <span>Upload</span>
@@ -963,7 +948,7 @@ export function CodeEditorPanel() {
       </div>
       {/* ─── BUILD OUTPUT / HARDWARE LOG DRAWER ─── */}
       {showBuildOutput && (compileResult || uploadResult || isCompiling || isUploading) && (
-        <div className="border-t border-slate-800 bg-slate-950 flex flex-col max-h-[220px] shrink-0 z-20">
+        <div className="border-t border-slate-800 bg-slate-950 flex flex-col max-h-[260px] shrink-0 z-20">
           <div className="flex items-center justify-between px-3 py-1.5 bg-slate-900 border-b border-slate-800 text-xs">
             <div className="flex items-center gap-2 font-semibold">
               <Terminal size={13} className="text-sky-400" />
@@ -973,7 +958,12 @@ export function CodeEditorPanel() {
                   <Loader2 size={10} className="animate-spin" /> Mengompilasi...
                 </span>
               )}
-              {isUploading && (
+              {isUploading && flashProgress && (
+                <span className="text-[10px] text-emerald-400 flex items-center gap-1 font-mono">
+                  <Loader2 size={10} className="animate-spin" /> {flashProgress.message}
+                </span>
+              )}
+              {isUploading && !flashProgress && (
                 <span className="text-[10px] text-emerald-400 flex items-center gap-1 font-mono">
                   <Loader2 size={10} className="animate-spin" /> Mengunggah ke board...
                 </span>
@@ -1022,6 +1012,22 @@ export function CodeEditorPanel() {
               </button>
             </div>
           </div>
+
+          {/* Flash Progress Bar */}
+          {isUploading && flashProgress && flashProgress.percent > 0 && (
+            <div className="px-3 pt-2">
+              <div className="w-full bg-slate-800 rounded-full h-2 overflow-hidden">
+                <div
+                  className="h-full rounded-full transition-all duration-300 ease-out bg-gradient-to-r from-emerald-500 to-sky-500"
+                  style={{ width: `${Math.min(flashProgress.percent, 100)}%` }}
+                />
+              </div>
+              <p className="text-[10px] text-slate-400 font-mono mt-1">
+                {flashProgress.stage === "compiling" ? "📦" : flashProgress.stage === "flashing" ? "⚡" : flashProgress.stage === "done" ? "✅" : flashProgress.stage === "error" ? "❌" : "🔄"}
+                {" "}{flashProgress.message} ({flashProgress.percent}%)
+              </p>
+            </div>
+          )}
 
           <div className="p-3 font-mono text-[11px] overflow-y-auto whitespace-pre-wrap flex-1 text-slate-300 select-text leading-relaxed">
             {uploadResult ? uploadResult.log : compileResult ? compileResult.log : "Menjalankan proses..."}

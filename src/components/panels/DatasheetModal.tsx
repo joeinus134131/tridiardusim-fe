@@ -1,6 +1,7 @@
 "use client";
 import React, { useState } from "react";
 import { physicalInfo, ComponentDatasheet } from "@/lib/components/physical";
+import { useLanguage } from "@/i18n/LanguageContext";
 import { X, ExternalLink } from "lucide-react";
 
 interface DatasheetModalProps {
@@ -9,20 +10,20 @@ interface DatasheetModalProps {
   initialComponentKey?: string;
 }
 
-const componentLabels: Record<string, string> = {
-  esp32_wroom: "ESP32-WROOM-32 (DevKitC V4)",
-  arduino_uno: "Arduino Uno R3 DIP",
-  breadboard: "Breadboard BB400",
-  led_red: "Red LED 5mm (WP7113ID)",
-  resistor_220: "Resistor 220Ω (CFR-25)",
-  potentiometer: "Potensiometer 10kΩ (RK09K)",
-  push_button: "Push Button 6x6mm (Omron B3F)",
-  oled_ssd1306: "OLED Display 0.96\" (SSD1306)",
-  servo_sg90: "Micro Servo SG90 (9g)",
-  lcd1602_i2c: "LCD 16x2 Display (I2C)",
-  dht11: "Sensor DHT11 (Suhu & RH)",
-  hcsr04: "Sensor Ultrasonik HC-SR04",
-  jumper: "Jumper Wire (ZW-MM-10)",
+const componentLabels: Record<string, { en: string; id: string }> = {
+  esp32_wroom: { en: "ESP32-WROOM-32 (DevKitC V4)", id: "ESP32-WROOM-32 (DevKitC V4)" },
+  arduino_uno: { en: "Arduino Uno R3 DIP", id: "Arduino Uno R3 DIP" },
+  breadboard: { en: "Breadboard BB400", id: "Breadboard BB400" },
+  led_red: { en: "Red LED 5mm (WP7113ID)", id: "LED Merah 5mm (WP7113ID)" },
+  resistor_220: { en: "220Ω Resistor (CFR-25)", id: "Resistor 220Ω (CFR-25)" },
+  potentiometer: { en: "10kΩ Potentiometer (RK09K)", id: "Potensiometer 10kΩ (RK09K)" },
+  push_button: { en: "Push Button 6x6mm (Omron B3F)", id: "Push Button 6x6mm (Omron B3F)" },
+  oled_ssd1306: { en: '0.96" OLED Display (SSD1306)', id: 'OLED Display 0.96" (SSD1306)' },
+  servo_sg90: { en: "SG90 Micro Servo (9g)", id: "Micro Servo SG90 (9g)" },
+  lcd1602_i2c: { en: "16x2 LCD Display (I2C)", id: "LCD 16x2 Display (I2C)" },
+  dht11: { en: "DHT11 Sensor (Temp & RH)", id: "Sensor DHT11 (Suhu & RH)" },
+  hcsr04: { en: "HC-SR04 Ultrasonic Sensor", id: "Sensor Ultrasonik HC-SR04" },
+  jumper: { en: "Jumper Wire (ZW-MM-10)", id: "Kabel Jumper (ZW-MM-10)" },
 };
 
 export function DatasheetModal({
@@ -30,6 +31,7 @@ export function DatasheetModal({
   onClose,
   initialComponentKey = "esp32_wroom",
 }: DatasheetModalProps) {
+  const { lang, t } = useLanguage();
   const [selectedKey, setSelectedKey] = useState<string>(
     initialComponentKey in physicalInfo ? initialComponentKey : "esp32_wroom"
   );
@@ -59,17 +61,17 @@ export function DatasheetModal({
           <div className="flex items-center gap-3">
             <div>
               <h2 id="datasheet-title" className="text-base font-bold text-white leading-snug">
-                Dokumentasi & Datasheet Resmi Komponen
+                {t.datasheet.title}
               </h2>
               <p className="text-xs text-slate-300">
-                Data spesifikasi teknis dan rujukan manufaktur resmi
+                {t.datasheet.subtitle}
               </p>
             </div>
           </div>
           <button
             onClick={onClose}
             className="datasheet-close-btn flex items-center justify-center"
-            aria-label="Tutup datasheet"
+            aria-label={t.datasheet.closeAria}
           >
             <X size={18} />
           </button>
@@ -80,7 +82,7 @@ export function DatasheetModal({
           {/* Component Selector Sidebar */}
           <aside className="datasheet-nav">
             <span className="text-[11px] font-bold text-slate-400 uppercase tracking-wider px-2 py-1">
-              Katalog Komponen
+              {t.datasheet.catalog}
             </span>
             {Object.keys(physicalInfo).map((key) => (
               <button
@@ -88,7 +90,7 @@ export function DatasheetModal({
                 className={`datasheet-nav-item ${selectedKey === key ? "active" : ""}`}
                 onClick={() => setSelectedKey(key)}
               >
-                {componentLabels[key] || key}
+                {componentLabels[key]?.[lang] || componentLabels[key]?.en || key}
               </button>
             ))}
           </aside>
@@ -99,7 +101,7 @@ export function DatasheetModal({
               <div className="flex flex-wrap items-start justify-between gap-3 border-b border-slate-700/80 pb-4">
                 <div>
                   <span className="text-[11px] font-semibold px-2.5 py-1 rounded bg-blue-500/20 text-blue-300 border border-blue-400/40 inline-block mb-1.5">
-                    Pabrikan: {data.manufacturer}
+                    {t.datasheet.manufacturer}{data.manufacturer}
                   </span>
                   <h3 className="text-xl font-bold text-white tracking-tight">{data.variant}</h3>
                 </div>
@@ -109,7 +111,7 @@ export function DatasheetModal({
                   rel="noreferrer"
                   className="datasheet-pdf-link flex items-center gap-1.5 font-semibold"
                 >
-                  <span>PDF / Rujukan Resmi</span>
+                  <span>{t.datasheet.pdfLink}</span>
                   <ExternalLink size={13} />
                 </a>
               </div>
@@ -117,19 +119,19 @@ export function DatasheetModal({
               {/* 4 Metric Cards */}
               <div className="grid grid-cols-1 md:grid-cols-2 gap-3 mt-4 text-sm">
                 <div className="datasheet-metric">
-                  <span className="label">Dimensi Mekanik</span>
+                  <span className="label">{t.datasheet.dimensions}</span>
                   <span className="value">{data.dimensions}</span>
                 </div>
                 <div className="datasheet-metric">
-                  <span className="label">Tegangan Operasional</span>
+                  <span className="label">{t.datasheet.voltage}</span>
                   <span className="value">{data.operatingVoltage}</span>
                 </div>
                 <div className="datasheet-metric">
-                  <span className="label">Batas / Rating Arus</span>
+                  <span className="label">{t.datasheet.current}</span>
                   <span className="value">{data.currentRating}</span>
                 </div>
                 <div className="datasheet-metric">
-                  <span className="label">Konfigurasi Terminal</span>
+                  <span className="label">{t.datasheet.pinout}</span>
                   <span className="value">{data.pinoutSummary}</span>
                 </div>
               </div>
@@ -137,7 +139,7 @@ export function DatasheetModal({
               {/* Key Specifications List */}
               <div className="mt-5 p-3.5 bg-slate-800/60 rounded-lg border border-slate-700/80">
                 <h4 className="text-xs font-bold text-slate-200 uppercase tracking-wider mb-2.5 flex items-center gap-1.5">
-                  Spesifikasi Teknis Pabrikan
+                  {t.datasheet.techSpecs}
                 </h4>
                 <ul className="datasheet-specs-list">
                   {data.specs.map((spec, i) => (
@@ -151,7 +153,7 @@ export function DatasheetModal({
               {/* Simulation Notes / Transparent Limits */}
               <div className="mt-4 p-3.5 bg-amber-950/30 border border-amber-500/40 rounded-lg text-xs">
                 <strong className="block font-bold text-amber-300 mb-1 flex items-center gap-1">
-                  Batas Emulasi & Parameter Simulasi:
+                  {t.datasheet.emulationLimits}
                 </strong>
                 <p className="text-amber-100/90 leading-relaxed">{data.limits}</p>
               </div>
@@ -162,10 +164,10 @@ export function DatasheetModal({
         {/* Footer */}
         <div className="datasheet-footer">
           <span className="text-xs text-slate-300 font-medium">
-            100% parameter disinkronkan dengan spesifikasi pabrikan resmi tanpa rekayasa AI.
+            {t.datasheet.footerNote}
           </span>
           <button onClick={onClose} className="btn-primary font-medium px-4">
-            Tutup Lembar Datasheet
+            {t.datasheet.closeSheet}
           </button>
         </div>
       </div>

@@ -2,9 +2,11 @@
 
 import { useState } from "react";
 import { useSimulatorStore } from "@/store/useSimulatorStore";
+import { useLanguage } from "@/i18n/LanguageContext";
 import { ChevronDown, ChevronUp, Sliders } from "lucide-react";
 
 export function SensorPanel() {
+  const { t } = useLanguage();
   const components = useSimulatorStore((state) => state.components);
   const updateComponentState = useSimulatorStore(
     (state) => state.updateComponentState,
@@ -25,7 +27,7 @@ export function SensorPanel() {
         >
           <div className="flex items-center gap-2">
             <Sliders size={16} className="text-[var(--accent)]" />
-            <span>Sensors</span>
+            <span>{t.sensors.title}</span>
           </div>
           <ChevronDown size={16} />
         </div>
@@ -38,7 +40,7 @@ export function SensorPanel() {
       <div className="h-10 border-b border-[var(--border)] flex items-center justify-between px-3 bg-[var(--bg-elevated)] shrink-0">
         <div className="flex items-center gap-2 font-medium text-sm">
           <Sliders size={16} className="text-[var(--accent)]" />
-          <span>Sensor Controls</span>
+          <span>{t.sensors.controls}</span>
         </div>
         <button className="btn-icon p-1.5" onClick={() => setIsExpanded(false)}>
           <ChevronUp size={14} />
@@ -99,7 +101,7 @@ export function SensorPanel() {
                   updateComponentState(sensor.id, { isPressed: false })
                 }
               >
-                {sensor.state?.isPressed ? "Pressed" : "Press & Hold"}
+                {sensor.state?.isPressed ? t.sensors.pressed : t.sensors.pressHold}
               </button>
             )}
 

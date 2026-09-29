@@ -1,6 +1,7 @@
 "use client";
 import React, { useState, useRef, useEffect } from "react";
 import { useSimulatorStore } from "@/store/useSimulatorStore";
+import { useLanguage } from "@/i18n/LanguageContext";
 import { Play, Pause, Square, Check } from "lucide-react";
 
 interface DesktopMenuBarProps {
@@ -38,6 +39,7 @@ export function DesktopMenuBar({
   onToggleRightPanel,
   busy = false,
 }: DesktopMenuBarProps) {
+  const { t } = useLanguage();
   const [activeMenu, setActiveMenu] = useState<string | null>(null);
   const menuBarRef = useRef<HTMLDivElement>(null);
 
@@ -86,6 +88,16 @@ export function DesktopMenuBar({
     setActiveMenu(null);
   };
 
+  const helpExamples: [string, string][] = [
+    ["esp32_wifi", t.library.helpExamples.esp32_wifi],
+    ["esp32", t.library.helpExamples.esp32],
+    ["blink", t.library.helpExamples.blink],
+    ["button", t.library.helpExamples.button],
+    ["pwm", t.library.helpExamples.pwm],
+    ["breadboard", t.library.helpExamples.breadboard],
+    ["serial", t.library.helpExamples.serial],
+  ];
+
   return (
     <div className="desktop-menubar-wrapper" ref={menuBarRef}>
       <div className="desktop-menubar">
@@ -96,7 +108,7 @@ export function DesktopMenuBar({
             onClick={() => handleMenuClick("file")}
             onMouseEnter={() => handleMenuHover("file")}
           >
-            File
+            {t.menu.file}
           </button>
           {activeMenu === "file" && (
             <div className="menu-dropdown">
@@ -104,7 +116,7 @@ export function DesktopMenuBar({
                 className="dropdown-item"
                 onClick={() => actionAndClose(onNewProject)}
               >
-                <span>Proyek Baru</span>
+                <span>{t.menu.newProject}</span>
                 <span className="shortcut">Ctrl+N</span>
               </button>
               <div className="dropdown-divider" />
@@ -112,34 +124,34 @@ export function DesktopMenuBar({
                 className="dropdown-item"
                 onClick={() => actionAndClose(onSaveLocal)}
               >
-                <span>Simpan Lokal (Browser)</span>
+                <span>{t.menu.saveLocal}</span>
                 <span className="shortcut">Ctrl+S</span>
               </button>
               <button
                 className="dropdown-item"
                 onClick={() => actionAndClose(onLoadLocal)}
               >
-                <span>Buka dari Lokal</span>
+                <span>{t.menu.openLocal}</span>
               </button>
               <button
                 className="dropdown-item"
                 onClick={() => actionAndClose(onRestore)}
               >
-                <span>Pulihkan Sesi Sebelumnya</span>
+                <span>{t.menu.restoreSession}</span>
               </button>
               <div className="dropdown-divider" />
               <button
                 className="dropdown-item"
                 onClick={() => actionAndClose(onExportJson)}
               >
-                <span>Ekspor File JSON...</span>
+                <span>{t.menu.exportJson}</span>
                 <span className="shortcut">Ctrl+E</span>
               </button>
               <button
                 className="dropdown-item"
                 onClick={() => actionAndClose(onImportJson)}
               >
-                <span>Impor File JSON...</span>
+                <span>{t.menu.importJson}</span>
                 <span className="shortcut">Ctrl+O</span>
               </button>
               <div className="dropdown-divider" />
@@ -148,14 +160,14 @@ export function DesktopMenuBar({
                 disabled={busy}
                 onClick={() => actionAndClose(onSaveServer)}
               >
-                <span>Simpan ke Server (Backend)</span>
+                <span>{t.menu.saveServer}</span>
               </button>
               <button
                 className="dropdown-item"
                 disabled={busy}
                 onClick={() => actionAndClose(onLoadServer)}
               >
-                <span>Buka Proyek Server...</span>
+                <span>{t.menu.openServer}</span>
               </button>
             </div>
           )}
@@ -168,7 +180,7 @@ export function DesktopMenuBar({
             onClick={() => handleMenuClick("edit")}
             onMouseEnter={() => handleMenuHover("edit")}
           >
-            Edit
+            {t.menu.edit}
           </button>
           {activeMenu === "edit" && (
             <div className="menu-dropdown">
@@ -188,7 +200,7 @@ export function DesktopMenuBar({
                   })
                 }
               >
-                <span>Putar Komponen (90°)</span>
+                <span>{t.menu.rotateComponent}</span>
                 <span className="shortcut">R</span>
               </button>
               <button
@@ -200,7 +212,7 @@ export function DesktopMenuBar({
                   })
                 }
               >
-                <span>Hapus Komponen Terpilih</span>
+                <span>{t.menu.deleteSelected}</span>
                 <span className="shortcut">Del</span>
               </button>
               <div className="dropdown-divider" />
@@ -208,7 +220,7 @@ export function DesktopMenuBar({
                 className="dropdown-item"
                 onClick={() => actionAndClose(cancelWiring)}
               >
-                <span>Batalkan Jalur Kabel</span>
+                <span>{t.menu.cancelWire}</span>
                 <span className="shortcut">Esc</span>
               </button>
               <div className="dropdown-divider" />
@@ -216,7 +228,7 @@ export function DesktopMenuBar({
                 className="dropdown-item text-rose-400"
                 onClick={() => actionAndClose(onClearAll)}
               >
-                <span>Kosongkan Semua Ruang Kerja</span>
+                <span>{t.menu.clearWorkspace}</span>
               </button>
             </div>
           )}
@@ -229,7 +241,7 @@ export function DesktopMenuBar({
             onClick={() => handleMenuClick("view")}
             onMouseEnter={() => handleMenuHover("view")}
           >
-            View
+            {t.menu.view}
           </button>
           {activeMenu === "view" && (
             <div className="menu-dropdown">
@@ -237,21 +249,21 @@ export function DesktopMenuBar({
                 className="dropdown-item"
                 onClick={() => actionAndClose(() => setCameraView("perspective"))}
               >
-                <span>Perspektif 3D Orbit</span>
+                <span>{t.menu.perspective3d}</span>
                 <span className="shortcut">3D</span>
               </button>
               <button
                 className="dropdown-item"
                 onClick={() => actionAndClose(() => setCameraView("top"))}
               >
-                <span>Tampak Atas (Top View)</span>
+                <span>{t.menu.topView}</span>
                 <span className="shortcut">2D</span>
               </button>
               <button
                 className="dropdown-item"
                 onClick={() => actionAndClose(() => setCameraView("front"))}
               >
-                <span>Tampak Depan (Front View)</span>
+                <span>{t.menu.frontView}</span>
               </button>
               <div className="dropdown-divider" />
               <button
@@ -260,7 +272,7 @@ export function DesktopMenuBar({
               >
                 <span className="flex items-center gap-1.5">
                   {cameraMode === "orbit" && <Check size={12} />}
-                  Mode Putar (Orbit 3D)
+                  {t.menu.orbitMode}
                 </span>
                 <span className="shortcut">O</span>
               </button>
@@ -270,7 +282,7 @@ export function DesktopMenuBar({
               >
                 <span className="flex items-center gap-1.5">
                   {cameraMode === "pan" && <Check size={12} />}
-                  Mode Geser Bebas (Pan)
+                  {t.menu.panMode}
                 </span>
                 <span className="shortcut">H</span>
               </button>
@@ -280,7 +292,7 @@ export function DesktopMenuBar({
                 onClick={() => actionAndClose(onToggleRightPanel)}
               >
                 <span>
-                  {isRightPanelOpen ? "Tutup Panel Properti" : "Buka Panel Properti"}
+                  {isRightPanelOpen ? t.menu.closeProps : t.menu.openProps}
                 </span>
               </button>
             </div>
@@ -294,7 +306,7 @@ export function DesktopMenuBar({
             onClick={() => handleMenuClick("tools")}
             onMouseEnter={() => handleMenuHover("tools")}
           >
-            Tools
+            {t.menu.tools}
           </button>
           {activeMenu === "tools" && (
             <div className="menu-dropdown">
@@ -305,7 +317,7 @@ export function DesktopMenuBar({
               >
                 <span className="text-emerald-400 flex items-center gap-1.5">
                   <Play size={12} />
-                  Jalankan Simulasi
+                  {t.menu.runSim}
                 </span>
                 <span className="shortcut">F5</span>
               </button>
@@ -316,7 +328,7 @@ export function DesktopMenuBar({
               >
                 <span className="flex items-center gap-1.5">
                   <Pause size={12} />
-                  Jeda Simulasi
+                  {t.menu.pauseSim}
                 </span>
               </button>
               <button
@@ -326,7 +338,7 @@ export function DesktopMenuBar({
               >
                 <span className="text-rose-400 flex items-center gap-1.5">
                   <Square size={12} />
-                  Hentikan Simulasi
+                  {t.menu.stopSim}
                 </span>
                 <span className="shortcut">Shift+F5</span>
               </button>
@@ -335,7 +347,7 @@ export function DesktopMenuBar({
                 className="dropdown-item"
                 onClick={() => actionAndClose(onOpenDatasheet)}
               >
-                <span>Buka Lembar Datasheet Komponen</span>
+                <span>{t.menu.openDatasheet}</span>
                 <span className="shortcut">D</span>
               </button>
             </div>
@@ -349,7 +361,7 @@ export function DesktopMenuBar({
             onClick={() => handleMenuClick("help")}
             onMouseEnter={() => handleMenuHover("help")}
           >
-            Help
+            {t.menu.help}
           </button>
           {activeMenu === "help" && (
             <div className="menu-dropdown">
@@ -357,26 +369,18 @@ export function DesktopMenuBar({
                 className="dropdown-item"
                 onClick={() => actionAndClose(onOpenHelp)}
               >
-                <span>Panduan Navigasi & Simulasi</span>
+                <span>{t.menu.navGuide}</span>
                 <span className="shortcut">F1</span>
               </button>
               <button
                 className="dropdown-item font-semibold text-blue-400"
                 onClick={() => actionAndClose(onOpenDatasheet)}
               >
-                <span>Dokumentasi & Datasheet Asli</span>
+                <span>{t.menu.docsDatasheet}</span>
               </button>
               <div className="dropdown-divider" />
-              <div className="dropdown-header">Contoh Rangkaian:</div>
-              {[
-                ["esp32_wifi", "ESP32 Wi-Fi + Real Internet Fetch"],
-                ["esp32", "ESP32 DevKit + Resistor Breadboard"],
-                ["blink", "Arduino Uno Blink + LED"],
-                ["button", "Tombol PushButton Pull-up"],
-                ["pwm", "Potensiometer Kontrol PWM"],
-                ["breadboard", "Breadboard BB400 + Jumper"],
-                ["serial", "Komunikasi Serial Echo"],
-              ].map(([id, label]) => (
+              <div className="dropdown-header">{t.menu.examplesLabel}</div>
+              {helpExamples.map(([id, label]) => (
                 <button
                   key={id}
                   className="dropdown-item pl-5"

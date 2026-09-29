@@ -19,6 +19,8 @@ import {
 } from "lucide-react";
 import dynamic from "next/dynamic";
 import { useSimulatorStore } from "@/store/useSimulatorStore";
+import { useLanguage } from "@/i18n/LanguageContext";
+import { LanguageSwitcher } from "@/components/LanguageSwitcher";
 import { ComponentRegistry } from "@/lib/components/ComponentRegistry";
 import { CodeEditorPanel } from "@/components/panels/CodeEditorPanel";
 import { SerialMonitor } from "@/components/panels/SerialMonitor";
@@ -38,7 +40,7 @@ const SimulatorCanvas = dynamic(
     ),
   {
     ssr: false,
-    loading: () => <p className="p-5">Memuat ruang 3D…</p>,
+    loading: () => <p className="p-5">Loading 3D space…</p>,
   },
 );
 const api = process.env.NEXT_PUBLIC_API_URL || "http://localhost:8080";
@@ -46,14 +48,22 @@ const api = process.env.NEXT_PUBLIC_API_URL || "http://localhost:8080";
 function RuntimeStatus() {
   const simulationState = useSimulatorStore((s) => s.simulationState);
   const elapsedMs = useSimulatorStore((s) => s.elapsedMs);
+  const { t } = useLanguage();
+  const label =
+    simulationState === "running"
+      ? t.common.stateRunning
+      : simulationState === "paused"
+        ? t.common.statePaused
+        : t.common.stateStopped;
   return (
     <span className="runtime-status">
-      {simulationState} · {(elapsedMs / 1000).toFixed(1)} s
+      {label} · {(elapsedMs / 1000).toFixed(1)} s
     </span>
   );
 }
 
 function PinVoltages({ component }: { component: CircuitComponent }) {
+  const { t } = useLanguage();
   const voltages = useSimulatorStore((s) => s.voltages);
   const wiringActive = useSimulatorStore((s) => s.wiringState.active);
   const finishWiring = useSimulatorStore((s) => s.finishWiring);
@@ -61,7 +71,7 @@ function PinVoltages({ component }: { component: CircuitComponent }) {
   return (
     <details className="inspector-details">
       <summary>
-        Terminal & Tegangan Pin ({component.pins.length})
+        {t.inspector.pinsTitle} ({component.pins.length})
       </summary>
       <div className="mt-2 max-h-52 overflow-y-auto flex flex-col gap-1 pr-1">
         {component.pins.map((p: PinDefinition) => (
@@ -73,7 +83,7 @@ function PinVoltages({ component }: { component: CircuitComponent }) {
                 ? finishWiring(component.id, p.id)
                 : startWiring(component.id, p.id)
             }
-            title="Klik untuk menyambungkan kabel ke pin ini"
+            title={t.inspector.clickPinTitle}
           >
             <span className="font-mono font-medium">{p.name || p.id}</span>
             <span className="inspector-pin-voltage">
@@ -87,6 +97,7 @@ function PinVoltages({ component }: { component: CircuitComponent }) {
 }
 
 export default function WorkspacePage() {
+  const { t } = useLanguage();
   const components = useSimulatorStore((s) => s.components);
   const wires = useSimulatorStore((s) => s.wires);
   const code = useSimulatorStore((s) => s.code);
@@ -119,7 +130,7 @@ export default function WorkspacePage() {
   const setCameraMode = useSimulatorStore((s) => s.setCameraMode);
 
   const [query, setQuery] = useState("");
-  const [name, setName] = useState("Rangkaian saya");
+  const [name, setName] = useState(t.notices.defaultProjectName);
   const [notice, setNotice] = useState("");
   const [tab, setTab] = useState("komponen");
   const [, setProjects] = useState<{ id: string; name: string }[]>([]);
@@ -252,7 +263,7 @@ export default function WorkspacePage() {
   const replace = (p: Project) => {
     backup();
     load(p);
-    setNotice("Rangkaian dibuka. Sebelumnya tersedia lewat Pulihkan.");
+    setNotice(t.notices.openedRecovery);
   };
 
   const selected = components.find((c) => c.id === selectedComponentId);
@@ -290,29 +301,29 @@ export default function WorkspacePage() {
               selectedWireId: null,
               serialOutput: [],
             });
-            setName("Proyek Baru");
-            setNotice("Ruang kerja baru siap.");
+            setName(t.notices.newProjectDefault);
+            setNotice(t.notices.newWorkspace);
           });
         }}
         onSaveLocal={() => {
           guard(() => {
             localStorage.setItem("ardusim-project", JSON.stringify(snapshot()));
-            setNotice("Tersimpan lokal di browser ini.");
+            setNotice(t.notices.savedLocal);
           });
         }}
         onLoadLocal={() => {
           guard(() => {
             const data = localStorage.getItem("ardusim-project");
-            if (!data) throw new Error("Tidak ada data proyek tersimpan lokal");
+            if (!data) throw new Error(t.notices.noLocalData);
             replace(parseProject(JSON.parse(data)));
           });
         }}
         onRestore={() => {
           guard(() => {
             const data = localStorage.getItem("ardusim-recovery");
-            if (!data) throw new Error("Tidak ada sesi cadangan pemulihan");
+            if (!data) throw new Error(t.notices.noRecovery);
             replace(parseProject(JSON.parse(data)));
-            setNotice("Rangkaian sesi sebelumnya dipulihkan.");
+            setNotice(t.notices.restoredSession);
           });
         }}
         onExportJson={() => {
@@ -328,10 +339,10 @@ export default function WorkspacePage() {
               signal: AbortSignal.timeout(5000),
             });
             if (!response.ok) {
-              throw new Error("Backend menolak proyek: " + (await response.text()));
+              throw new Error(t.notices.backendRejected + (await response.text()));
             }
             const p = await response.json();
-            setNotice("Tersimpan di backend: " + p.id);
+            setNotice(t.notices.savedBackend + p.id);
           });
         }}
         onLoadServer={() => {
@@ -339,10 +350,10 @@ export default function WorkspacePage() {
             const r = await fetch(api + "/api/projects", {
               signal: AbortSignal.timeout(5000),
             });
-            if (!r.ok) throw new Error("Backend tidak tersedia");
+            if (!r.ok) throw new Error(t.notices.backendUnavailable);
             const list = (await r.json()).projects;
             setProjects(list);
-            setNotice(`Ditemukan ${list.length} proyek tersimpan di server.`);
+            setNotice(t.notices.foundProjects.replace("{n}", String(list.length)));
           });
         }}
         onClearAll={() => {
@@ -353,7 +364,7 @@ export default function WorkspacePage() {
               wires: [],
               selectedComponentId: null,
             });
-            setNotice("Ruang kerja dibersihkan.");
+            setNotice(t.notices.workspaceCleared);
           });
         }}
         onOpenDatasheet={() => {
@@ -378,7 +389,7 @@ export default function WorkspacePage() {
         </div>
 
         <input
-          aria-label="Nama proyek"
+          aria-label={t.toolbar.projectNameAria}
           value={name}
           maxLength={128}
           onChange={(e) => setName(e.target.value)}
@@ -390,11 +401,11 @@ export default function WorkspacePage() {
             disabled={simulationState === "running"}
           >
             {simulationState === "paused" ? (
-              "Lanjut"
+              t.toolbar.resume
             ) : (
               <>
                 <Play size={13} className="fill-current" />
-                <span>Jalankan</span>
+                <span>{t.toolbar.run}</span>
               </>
             )}
           </button>
@@ -403,7 +414,7 @@ export default function WorkspacePage() {
             onClick={pauseSimulation}
             disabled={simulationState !== "running"}
           >
-            Jeda
+            {t.toolbar.pause}
           </button>
           <button
             className="small-button flex items-center gap-1.5"
@@ -411,7 +422,7 @@ export default function WorkspacePage() {
             disabled={simulationState === "stopped"}
           >
             <Square size={11} className="fill-current" />
-            <span>Stop</span>
+            <span>{t.toolbar.stop}</span>
           </button>
         </div>
         <RuntimeStatus />
@@ -427,19 +438,20 @@ export default function WorkspacePage() {
           }}
         >
           <FileText size={13} />
-          <span>Datasheet</span>
+          <span>{t.toolbar.datasheet}</span>
         </button>
         <button
           className="small-button flex items-center gap-1.5"
           onClick={() => setRightPanelOpen(!rightPanelOpen)}
-          title="Buka/Tutup Panel Properti di sebelah kanan"
+          title={t.toolbar.togglePropsTitle}
         >
           <SlidersHorizontal size={13} />
-          <span>Properti</span>
+          <span>{t.toolbar.properties}</span>
         </button>
         <button className="small-button" onClick={() => setHelp(!help)}>
-          Panduan
+          {t.toolbar.guide}
         </button>
+        <LanguageSwitcher />
         <ThemeToggle />
       </header>
 
@@ -453,7 +465,7 @@ export default function WorkspacePage() {
           const f = e.target.files?.[0];
           if (f)
             guard(async () => {
-              if (f.size > 2e6) throw new Error("File maksimum 2 MB");
+              if (f.size > 2e6) throw new Error(t.notices.maxFileSize);
               replace(parseProject(JSON.parse(await f.text())));
             });
           e.target.value = "";
@@ -464,7 +476,7 @@ export default function WorkspacePage() {
       {notice && (
         <div role="status" className="notice">
           {notice}
-          <button onClick={() => setNotice("")} aria-label="Tutup pesan">
+          <button onClick={() => setNotice("")} aria-label={t.common.closeMessage}>
             ×
           </button>
         </div>
@@ -479,7 +491,7 @@ export default function WorkspacePage() {
           >
             <div className="flex justify-between items-center mb-3">
               <h3 className="font-bold text-lg text-slate-100 flex items-center gap-2">
-                Panduan Penggunaan IDN MAKERSPACE Lab 3D
+                {t.helpModal.title}
               </h3>
               <button className="datasheet-close-btn flex items-center justify-center" onClick={() => setHelp(false)}>
                 <X size={16} />
@@ -487,26 +499,26 @@ export default function WorkspacePage() {
             </div>
             <div className="text-xs text-slate-300 space-y-3 leading-relaxed">
               <div className="p-3 bg-slate-800/80 rounded border border-slate-700">
-                <strong className="text-blue-400 block mb-1">Navigasi Kamera 3D Standar:</strong>
-                <p>- <strong>Drag Mouse Kiri</strong>: Orbit / Putar sudut pandang 360° ke segala arah.</p>
-                <p>- <strong>Drag Mouse Kanan / Shift + Kiri / Roda Tengah</strong>: Pan / Menggeser kamera.</p>
-                <p>- <strong>Scroll Wheel</strong>: Zoom in / Zoom out.</p>
+                <strong className="text-blue-400 block mb-1">{t.helpModal.navTitle}</strong>
+                <p>- {t.helpModal.navOrbit}</p>
+                <p>- {t.helpModal.navPan}</p>
+                <p>- {t.helpModal.navZoom}</p>
               </div>
               <div className="p-3 bg-slate-800/80 rounded border border-slate-700">
-                <strong className="text-emerald-400 block mb-1">Pemasangan Fisik & Breadboard:</strong>
-                <p>- Seret komponen (resistor, led, potensiometer, tombol, ESP32) langsung ke atas breadboard.</p>
-                <p>- Kaki komponen otomatis menempel dan tertancap pas ke lubang breadboard tanpa melayang.</p>
-                <p>- Tekan tombol <kbd className="px-1 py-0.5 bg-slate-700 rounded">R</kbd> untuk memutar orientasi komponen 90°.</p>
+                <strong className="text-emerald-400 block mb-1">{t.helpModal.physicalTitle}</strong>
+                <p>- {t.helpModal.physicalDrag}</p>
+                <p>- {t.helpModal.physicalSnap}</p>
+                <p>- {t.helpModal.physicalRotatePrefix} <kbd className="px-1 py-0.5 bg-slate-700 rounded">R</kbd> {t.helpModal.physicalRotateSuffix}</p>
               </div>
               <div className="p-3 bg-slate-800/80 rounded border border-slate-700">
-                <strong className="text-amber-400 block mb-1">Pengkabelan & Wiring:</strong>
-                <p>- Klik pin terminal awal, lalu klik pin terminal tujuan untuk membuat koneksi kabel.</p>
-                <p>- Tekan <kbd className="px-1 py-0.5 bg-slate-700 rounded">Esc</kbd> untuk membatalkan penarikan kabel.</p>
+                <strong className="text-amber-400 block mb-1">{t.helpModal.wiringTitle}</strong>
+                <p>- {t.helpModal.wiringClick}</p>
+                <p>- {t.helpModal.wiringEscPrefix} <kbd className="px-1 py-0.5 bg-slate-700 rounded">Esc</kbd> {t.helpModal.wiringEscSuffix}</p>
               </div>
             </div>
             <div className="mt-4 pt-3 border-t border-slate-700 flex justify-end">
               <button className="btn-primary" onClick={() => setHelp(false)}>
-                Mengerti & Tutup
+                {t.helpModal.gotIt}
               </button>
             </div>
           </div>
@@ -529,21 +541,21 @@ export default function WorkspacePage() {
               onClick={() => setTab("komponen")}
               className={tab === "komponen" ? "active" : ""}
             >
-              Komponen
+              {t.library.components}
             </button>
             <button
               onClick={() => setTab("wiring")}
               className={tab === "wiring" ? "active" : ""}
             >
-              Sambungan
+              {t.library.wiring}
             </button>
           </div>
           {tab === "komponen" ? (
             <>
               <input
                 className="library-search"
-                aria-label="Cari komponen"
-                placeholder="Cari komponen…"
+                aria-label={t.library.searchAria}
+                placeholder={t.library.searchPlaceholder}
                 value={query}
                 onChange={(e) => setQuery(e.target.value)}
               />
@@ -562,7 +574,7 @@ export default function WorkspacePage() {
                       className="component-card"
                       onClick={() => {
                         if (components.length >= 100) {
-                          setNotice("Batas maksimum 100 komponen");
+                          setNotice(t.wiring.maxComponents);
                           return;
                         }
                         const n = components.length;
@@ -587,7 +599,7 @@ export default function WorkspacePage() {
                     >
                       <strong>{c.name}</strong>
                       <small>
-                        {c.pins.length} pin · {c.category}
+                        {c.pins.length} {t.library.pinsUnit} · {c.category}
                       </small>
                       <p>{c.description}</p>
                     </button>
@@ -595,12 +607,12 @@ export default function WorkspacePage() {
               </div>
               <div className="examples">
                 <details>
-                  <summary>Komponen di Canvas ({components.length})</summary>
+                  <summary>{t.library.inCanvas} ({components.length})</summary>
                   {components.map((c) => (
                     <button
                       key={c.id}
                       className="pin-row"
-                      aria-label={"Pilih " + c.name}
+                      aria-label={t.library.selectPrefix + c.name}
                       onClick={() => selectComponent(c.id)}
                     >
                       {c.name}
@@ -608,24 +620,26 @@ export default function WorkspacePage() {
                   ))}
                 </details>
                 <div className="flex items-center justify-between mt-1 mb-1">
-                  <strong>Contoh siap pakai</strong>
-                  <span className="text-[10px] opacity-60 font-mono">12 Presets</span>
+                  <strong>{t.library.readyExamples}</strong>
+                  <span className="text-[10px] opacity-60 font-mono">{t.library.presetsCount}</span>
                 </div>
                 <div className="examples-scroll-container">
-                  {[
-                    ["dht11", "Sensor DHT11 Suhu & RH"],
-                    ["hcsr04", "Ultrasonik HC-SR04 Jarak"],
-                    ["servo", "Micro Servo SG90 9g"],
-                    ["lcd1602", "LCD 16x2 Display I2C"],
-                    ["oled", "OLED Display 0.96\" SSD1306"],
-                    ["esp32_wifi", "ESP32 Wi-Fi + Internet Fetch"],
-                    ["esp32", "ESP32 DevKit + Breadboard"],
-                    ["blink", "Uno Blink + Resistor"],
-                    ["button", "Tombol INPUT_PULLUP"],
-                    ["pwm", "Potensiometer ke PWM"],
-                    ["breadboard", "Breadboard + Jumper"],
-                    ["serial", "Serial Echo Monitor"],
-                  ].map(([id, label]) => (
+                  {(
+                    [
+                      ["dht11", t.library.examples.dht11],
+                      ["hcsr04", t.library.examples.hcsr04],
+                      ["servo", t.library.examples.servo],
+                      ["lcd1602", t.library.examples.lcd1602],
+                      ["oled", t.library.examples.oled],
+                      ["esp32_wifi", t.library.examples.esp32_wifi],
+                      ["esp32", t.library.examples.esp32],
+                      ["blink", t.library.examples.blink],
+                      ["button", t.library.examples.button],
+                      ["pwm", t.library.examples.pwm],
+                      ["breadboard", t.library.examples.breadboard],
+                      ["serial", t.library.examples.serial],
+                    ] as [string, string][]
+                  ).map(([id, label]) => (
                     <button
                       key={id}
                       className="small-button text-left truncate"
@@ -640,31 +654,31 @@ export default function WorkspacePage() {
             </>
           ) : (
             <div className="wiring-panel">
-              <p>Pilih dua terminal, lalu sambungkan.</p>
+              <p>{t.wiring.hint}</p>
               <label>
-                Dari
+                {t.wiring.from}
                 <select
-                  aria-label="Terminal awal"
+                  aria-label={t.wiring.fromAria}
                   value={from}
                   onChange={(e) => setFrom(e.target.value)}
                 >
-                  <option value="">Pilih pin…</option>
+                  <option value="">{t.wiring.selectPin}</option>
                   {options}
                 </select>
               </label>
               <label>
-                Ke
+                {t.wiring.to}
                 <select
-                  aria-label="Terminal tujuan"
+                  aria-label={t.wiring.toAria}
                   value={to}
                   onChange={(e) => setTo(e.target.value)}
                 >
-                  <option value="">Pilih pin…</option>
+                  <option value="">{t.wiring.selectPin}</option>
                   {options}
                 </select>
               </label>
               <label>
-                Warna
+                {t.wiring.color}
                 <input
                   type="color"
                   value={color}
@@ -686,28 +700,28 @@ export default function WorkspacePage() {
                   });
                   setNotice(
                     id
-                      ? "Kabel terhubung."
-                      : "Kabel duplikat atau terminal tidak valid.",
+                      ? t.wiring.connected
+                      : t.wiring.duplicateInvalid,
                   );
                 }}
               >
-                Sambungkan
+                {t.wiring.connect}
               </button>
-              <h3>{wires.length} kabel aktif</h3>
+              <h3>{wires.length} {t.wiring.activeWires}</h3>
               {wires.map((w) => (
                 <div key={w.id} className="wire-row">
                   <button onClick={() => selectWire(w.id)}>
                     {components.find((c) => c.id === w.sourceComponentId)?.name}{" "}
                     · {w.sourcePinId}
                     <br />
-                    <span className="opacity-60 text-[11px]">ke </span>
+                    <span className="opacity-60 text-[11px]">{t.wiring.toWord} </span>
                     {
                       components.find((c) => c.id === w.targetComponentId)?.name
                     }{" "}
                     · {w.targetPinId}
                   </button>
                   <button
-                    aria-label={"Hapus kabel " + w.id}
+                    aria-label={t.wiring.deleteWireAria + w.id}
                     onClick={() => removeWire(w.id)}
                     className="flex items-center justify-center p-1 hover:text-red-400"
                   >
@@ -726,25 +740,25 @@ export default function WorkspacePage() {
             <button
               className={`small-button flex items-center gap-1 ${cameraMode === "orbit" ? "active" : ""}`}
               onClick={() => setCameraMode("orbit")}
-              title="Mode Putar / Orbit 3D [O] (Klik-kiri drag untuk memutar)"
+              title={t.cameraTools.orbitTitle}
             >
               <RotateCcw size={12} />
-              <span>Putar</span>
+              <span>{t.cameraTools.orbit}</span>
             </button>
             <button
               className={`small-button flex items-center gap-1 ${cameraMode === "pan" ? "active" : ""}`}
               onClick={() => setCameraMode("pan")}
-              title="Mode Geser / Pan Bebas [H] (Klik-kiri drag untuk menggeser bebas)"
+              title={t.cameraTools.panTitle}
             >
               <Hand size={12} />
-              <span>Geser</span>
+              <span>{t.cameraTools.pan}</span>
             </button>
             <div className="divider" />
             {(
               [
-                ["perspective", "3D"],
-                ["top", "Atas"],
-                ["front", "Depan"],
+                ["perspective", t.cameraTools.view3d],
+                ["top", t.cameraTools.top],
+                ["front", t.cameraTools.front],
               ] as const
             ).map(([view, label]) => (
               <button
@@ -768,25 +782,25 @@ export default function WorkspacePage() {
                   20,
                 );
               }}
-              title="Pusatkan kembali tampilan ke seluruh komponen (Fit View)"
+              title={t.cameraTools.fitTitle}
             >
               <Focus size={12} />
-              <span>Fit</span>
+              <span>{t.cameraTools.fit}</span>
             </button>
           </div>
           <div className="scene-instruction">
             {isWiringActive ? (
               <>
-                <strong>Tujuan untuk pin {wiringSourcePinId}</strong>
-                <button onClick={cancelWiring}>Batalkan · Esc</button>
+                <strong>{t.scene.wiringTarget} {wiringSourcePinId}</strong>
+                <button onClick={cancelWiring}>{t.scene.cancelEsc}</button>
               </>
             ) : (
               <span>
                 {cameraMode === "pan"
-                  ? "Mode Geser Aktif: Drag kiri untuk geser kanvas bebas · Tahan Spasi / Klik Kanan juga bisa geser"
-                  : "Mode Putar Aktif: Drag kiri untuk putar 3D · Tahan Spasi / Klik Kanan untuk geser bebas"}
+                  ? t.scene.panHint
+                  : t.scene.orbitHint}
                 {" · "}
-                Klik pin untuk menyambung kabel
+                {t.scene.clickPinHint}
               </span>
             )}
           </div>
@@ -813,13 +827,13 @@ export default function WorkspacePage() {
               <>
                 <div className="flex items-center gap-1.5 font-bold text-xs tracking-wider">
                   <SlidersHorizontal size={13} className="text-cyan-400" />
-                  <span>PROPERTI & INSPEKTOR</span>
+                  <span>{t.inspector.title}</span>
                 </div>
                 <button
                   className="small-button text-xs px-2 py-0.5"
                   onClick={() => setRightPanelOpen(false)}
-                  title="Tutup Panel Properti"
-                  aria-label="Tutup Panel Properti"
+                  title={t.inspector.closeTitle}
+                  aria-label={t.inspector.closeTitle}
                 >
                   <PanelRightClose size={14} />
                 </button>
@@ -829,12 +843,12 @@ export default function WorkspacePage() {
                 <button
                   className="small-button text-xs p-1"
                   onClick={() => setRightPanelOpen(true)}
-                  title="Buka Panel Properti"
-                  aria-label="Buka Panel Properti"
+                  title={t.inspector.openTitle}
+                  aria-label={t.inspector.openTitle}
                 >
                   <PanelRightOpen size={14} />
                 </button>
-                <span className="collapsed-title">PROPERTI</span>
+                <span className="collapsed-title">{t.inspector.collapsedTitle}</span>
               </>
             )}
           </div>
@@ -849,7 +863,7 @@ export default function WorkspacePage() {
                       <span className="inspector-subtitle">ID: {selected.id.slice(0, 8)}</span>
                     </div>
                     <button
-                      aria-label="Tutup properti"
+                      aria-label={t.inspector.closeAria}
                       onClick={() => selectComponent(null)}
                       className="text-xs p-1 opacity-60 hover:opacity-100 font-bold"
                     >
@@ -873,7 +887,7 @@ export default function WorkspacePage() {
                         onClick={() => openDatasheetFor(selected.typeId.startsWith("jumper_") ? "jumper" : selected.typeId)}
                         className="text-[11px] text-blue-600 dark:text-blue-400 hover:underline font-semibold flex items-center gap-1 mt-1 text-left"
                       >
-                        <span>Lihat Spesifikasi & Datasheet Asli</span>
+                        <span>{t.inspector.viewSpecs}</span>
                         <ExternalLink size={12} />
                       </button>
                     )}
@@ -891,7 +905,7 @@ export default function WorkspacePage() {
                         ])
                       }
                     >
-                      Putar 90° (R)
+                      {t.inspector.rotate90}
                     </button>
                     <button
                       className="small-button text-xs py-1.5 text-rose-600 dark:text-rose-400 font-medium"
@@ -900,19 +914,19 @@ export default function WorkspacePage() {
                         removeComponent(selected.id);
                       }}
                     >
-                      Hapus
+                      {t.inspector.deleteBtn}
                     </button>
                   </div>
 
                   {/* Transform Coordinate Controls */}
                   <div className="inspector-card">
-                    <span className="text-[11px] font-semibold block mb-1.5 opacity-90">Koordinat Posisi 3D</span>
+                    <span className="text-[11px] font-semibold block mb-1.5 opacity-90">{t.inspector.position3d}</span>
                     <div className="grid grid-cols-3 gap-1.5">
                       {(["x", "y", "z"] as const).map((axis, i) => (
                         <label key={axis} className="text-[10px] flex flex-col gap-0.5 opacity-80 uppercase font-mono">
                           {axis}
                           <input
-                            aria-label={"Posisi " + axis}
+                            aria-label={t.inspector.positionAria + axis}
                             type="number"
                             step="0.508"
                             className="inspector-input"
@@ -936,13 +950,13 @@ export default function WorkspacePage() {
                   {selected.typeId === "potentiometer" && (
                     <div className="inspector-card">
                       <label className="text-xs font-semibold flex justify-between mb-1.5">
-                        <span>Putaran Resistansi:</span>
+                        <span>{t.inspector.resistanceTurn}</span>
                         <span className="font-mono text-emerald-600 dark:text-emerald-400 font-bold">
                           {Math.round(Number(selected.state.value) * 100)}%
                         </span>
                       </label>
                       <input
-                        aria-label="Putaran potensiometer"
+                        aria-label={t.inspector.potentiometerAria}
                         type="range"
                         min="0"
                         max="1"
@@ -960,7 +974,7 @@ export default function WorkspacePage() {
 
                   {selected.typeId === "push_button" && (
                     <div className="inspector-card">
-                      <span className="text-xs font-semibold block mb-1.5">Sakelar Tombol Fisik:</span>
+                      <span className="text-xs font-semibold block mb-1.5">{t.inspector.physicalSwitch}</span>
                       <button
                         className="btn-primary w-full text-xs py-2"
                         onPointerDown={() =>
@@ -980,14 +994,14 @@ export default function WorkspacePage() {
                           updateComponentState(selected.id, { isPressed: false })
                         }
                       >
-                        Tekan / Tahan Tombol
+                        {t.inspector.pressHoldButton}
                       </button>
                     </div>
                   )}
 
                   {selected.typeId === "led_red" && (
                     <div className="inspector-card text-xs flex justify-between items-center">
-                      <span className="opacity-80">Arus Dioda LED:</span>
+                      <span className="opacity-80">{t.inspector.ledCurrent}</span>
                       <span className="font-mono font-bold text-amber-600 dark:text-amber-400">
                         {Number(selected.state.currentMa || 0).toFixed(2)} mA
                       </span>
@@ -998,16 +1012,16 @@ export default function WorkspacePage() {
                 </div>
               ) : (
                 <div className="inspector-empty-card">
-                  <p className="font-semibold mb-1">Pilih Komponen</p>
+                  <p className="font-semibold mb-1">{t.inspector.selectComponent}</p>
                   <p className="text-xs opacity-75">
-                    Klik salah satu komponen pada simulasi 3D untuk melihat parameter fisik, menggeser koordinat, atau menguji pin.
+                    {t.inspector.selectComponentHint}
                   </p>
                   <div className="mt-4 pt-3 border-t border-slate-500/20 text-left text-xs flex flex-col gap-1.5 opacity-80">
-                    <span className="font-semibold">Panduan Kontrol 3D:</span>
-                    <span>- <strong>Drag Kiri</strong>: Orbit kamera bebas</span>
-                    <span>- <strong>Drag Kanan/Tengah</strong>: Geser (Pan)</span>
-                    <span>- <strong>Scroll Wheel</strong>: Zoom in/out</span>
-                    <span>- <strong>R</strong>: Putar komponen terpilih</span>
+                    <span className="font-semibold">{t.inspector.controlsTitle}</span>
+                    <span>- {t.inspector.orbitFree}</span>
+                    <span>- {t.inspector.panDrag}</span>
+                    <span>- {t.inspector.zoomScroll}</span>
+                    <span>- {t.inspector.rotateR}</span>
                   </div>
                 </div>
               )}
@@ -1026,14 +1040,14 @@ export default function WorkspacePage() {
 
       {/* 6. FOOTER */}
       <footer className="workspace-footer">
-        DC kuasistatik · subset Arduino · 1 unit ≈ 5 mm · Kontrol 3D Orbit: Drag Kiri · Pan: Drag Kanan · Zoom: Scroll
+        {t.footer.text}
         <span>
           <button
             type="button"
             className="text-blue-400 hover:text-blue-300 underline ml-2"
             onClick={() => setDatasheetOpen(true)}
           >
-            Buka Katalog Datasheet Resmi
+            {t.footer.openCatalog}
           </button>
         </span>
       </footer>

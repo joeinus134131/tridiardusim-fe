@@ -1,8 +1,10 @@
 'use client';
 import { WireColors } from './WireColors';
 import { useSimulatorStore } from '@/store/useSimulatorStore';
+import { useLanguage } from '@/i18n/LanguageContext';
 import { world, type Vec } from '@/lib/components/placement';
 export function WireProperties() {
+  const { t } = useLanguage();
   const wire = useSimulatorStore((s) => s.wires.find((w) => w.id === s.selectedWireId));
   const all = useSimulatorStore((s) => s.components);
   const update = useSimulatorStore((s) => s.updateWire);
@@ -24,9 +26,9 @@ export function WireProperties() {
   return (
     <div className="properties">
       <div className="panel-heading">
-        <strong>Jalur Kabel Jumper</strong>
+        <strong>{t.wireProps.title}</strong>
         <button
-          aria-label="Tutup properti kabel"
+          aria-label={t.inspector.closeWireAria}
           onClick={() => useSimulatorStore.getState().selectWire(null)}
         >
           ×
@@ -34,17 +36,17 @@ export function WireProperties() {
       </div>
       <div className="property-body">
         <label>
-          Warna kabel
+          {t.wireProps.colorLabel}
           <input
             type="color"
-            aria-label="Warna kabel terpilih"
+            aria-label={t.wireProps.colorAria}
             value={wire.color}
             onChange={(e) => update(wire.id, { color: e.target.value })}
           />
         </label>
         <WireColors onChange={(color) => update(wire.id, { color })} />
         <p>
-          Atur lekukan kabel di kanvas atau sesuaikan koordinat. Ujung kabel rigid dan mengunci kuat pada pin.
+          {t.wireProps.hint}
         </p>
         <div className="flex gap-2">
           <button
@@ -52,20 +54,20 @@ export function WireProperties() {
             disabled={(wire.path?.length || 0) >= 12}
             onClick={addPoint}
           >
-            + Titik lekukan
+            {t.wireProps.addBend}
           </button>
           <button className="small-button" onClick={() => update(wire.id, { path: undefined })}>
-            Reset jalur lurus
+            {t.wireProps.resetStraight}
           </button>
         </div>
         {(wire.path || []).map((p, index) => (
           <fieldset key={index}>
-            <legend>Tekukan {index + 1}</legend>
+            <legend>{t.wireProps.bendLegend}{index + 1}</legend>
             {["X", "Y", "Z"].map((axis, i) => (
               <label key={axis}>
                 {axis}
                 <input
-                  aria-label={`Tekukan ${index + 1} ${axis}`}
+                  aria-label={t.wireProps.bendAria.replace("{i}", String(index + 1)).replace("{axis}", axis)}
                   type="number"
                   step="0.254"
                   value={Number(p[i].toFixed(3))}
@@ -85,7 +87,7 @@ export function WireProperties() {
               className="small-button"
               onClick={() => update(wire.id, { path: wire.path!.filter((_, i) => i !== index) })}
             >
-              Hapus tekukan {index + 1}
+              {t.wireProps.removeBend}{index + 1}
             </button>
           </fieldset>
         ))}
@@ -98,7 +100,7 @@ export function WireProperties() {
             <svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2">
               <path d="M3 6h18m-2 0v14c0 1-1 2-2 2H7c-1 0-2-1-2-2V6m3 0V4c0-1 1-2 2-2h4c1 0 2 1 2 2v2" />
             </svg>
-            Hapus Kabel
+            {t.wireProps.deleteWire}
           </button>
           <span className="text-[11px] text-slate-400 font-mono">Del / Backspace</span>
         </div>

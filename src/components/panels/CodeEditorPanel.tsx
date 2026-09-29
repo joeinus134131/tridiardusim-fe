@@ -29,6 +29,9 @@ import {
   Loader2,
   ArrowUpCircle,
   Terminal,
+  Moon,
+  Sun,
+  Contrast,
 } from "lucide-react";
 
 // Dynamic import of Monaco Editor with SSR disabled
@@ -600,12 +603,12 @@ export function CodeEditorPanel() {
       )}
 
       {/* ─── TOOLBAR (ROW 1: EDITOR CONTROLS) ─── */}
-      <div className="flex items-center justify-between gap-1.5 px-2.5 py-1.5 border-b border-slate-200 dark:border-slate-800 bg-white dark:bg-slate-900/90 text-xs shrink-0 select-none">
+      <div className="flex items-center justify-between gap-1.5 px-2.5 py-1.5 border-b border-slate-200 dark:border-slate-800 bg-white dark:bg-slate-900/90 text-xs shrink-0 select-none overflow-x-auto no-scrollbar">
         {/* Left: Library Catalog & File I/O */}
-        <div className="flex items-center gap-1.5 shrink-0">
+        <div className="flex items-center gap-1.5 shrink-0 min-w-0">
           <button
             type="button"
-            className="flex items-center gap-1 px-2 py-1 rounded bg-sky-50 dark:bg-sky-500/15 hover:bg-sky-100 dark:hover:bg-sky-500/25 border border-sky-300 dark:border-sky-500/40 text-sky-700 dark:text-sky-300 text-[11px] font-semibold transition cursor-pointer shadow-2xs"
+            className="flex items-center gap-1 px-2 py-1 rounded bg-sky-50 dark:bg-sky-500/15 hover:bg-sky-100 dark:hover:bg-sky-500/25 border border-sky-300 dark:border-sky-500/40 text-sky-700 dark:text-sky-300 text-[11px] font-semibold transition cursor-pointer shadow-2xs shrink-0"
             onClick={() => setShowLibraryModal(true)}
             title={t.editor.libraryTitle}
           >
@@ -615,7 +618,7 @@ export function CodeEditorPanel() {
 
           {/* Open .ino / .h / .cpp File */}
           <label
-            className="flex items-center gap-1 px-1.5 py-1 rounded bg-slate-100 hover:bg-slate-200 dark:bg-slate-800 dark:hover:bg-slate-700 border border-slate-300 dark:border-slate-700 text-slate-700 dark:text-slate-200 text-[11px] font-medium cursor-pointer transition-colors shadow-2xs"
+            className="flex items-center gap-1 px-1.5 py-1 rounded bg-slate-100 hover:bg-slate-200 dark:bg-slate-800 dark:hover:bg-slate-700 border border-slate-300 dark:border-slate-700 text-slate-700 dark:text-slate-200 text-[11px] font-medium cursor-pointer transition-colors shadow-2xs shrink-0"
             title={t.editor.openTitle}
           >
             <Upload size={12} className="shrink-0" />
@@ -642,7 +645,7 @@ export function CodeEditorPanel() {
           {/* Download File */}
           <button
             type="button"
-            className="flex items-center gap-1 px-1.5 py-1 rounded bg-slate-100 hover:bg-slate-200 dark:bg-slate-800 dark:hover:bg-slate-700 border border-slate-300 dark:border-slate-700 text-slate-700 dark:text-slate-200 text-[11px] font-medium transition-colors shadow-2xs cursor-pointer"
+            className="flex items-center gap-1 px-1.5 py-1 rounded bg-slate-100 hover:bg-slate-200 dark:bg-slate-800 dark:hover:bg-slate-700 border border-slate-300 dark:border-slate-700 text-slate-700 dark:text-slate-200 text-[11px] font-medium transition-colors shadow-2xs cursor-pointer shrink-0"
             onClick={() => download(activeFileName, code)}
             title={`Download ${activeFileName}`}
           >
@@ -656,7 +659,7 @@ export function CodeEditorPanel() {
           {/* Toggle Line Numbers */}
           <button
             type="button"
-            className={`p-1 rounded text-[11px] font-medium border transition-colors cursor-pointer shadow-2xs ${
+            className={`w-6 h-6 flex items-center justify-center rounded text-[11px] font-medium border transition-colors cursor-pointer shadow-2xs shrink-0 ${
               showLineNumbers
                 ? "bg-sky-50 dark:bg-sky-950/60 text-sky-700 dark:text-sky-300 border-sky-300 dark:border-sky-600"
                 : "bg-slate-100 dark:bg-slate-800 text-slate-500 dark:text-slate-400 border-slate-300 dark:border-slate-700"
@@ -667,51 +670,54 @@ export function CodeEditorPanel() {
             <Hash size={12} />
           </button>
 
-          {/* Theme Selector */}
+          {/* Theme Selector (Dark, Light, High Contrast) */}
           <div
             suppressHydrationWarning
-            className="flex items-center rounded border border-slate-300 dark:border-slate-700 bg-slate-100 dark:bg-slate-800/80 p-0.5 shadow-2xs"
+            className="flex items-center rounded border border-slate-300 dark:border-slate-700 bg-slate-100 dark:bg-slate-800/80 p-0.5 shadow-2xs shrink-0"
           >
             <button
               type="button"
-              className={`px-1.5 py-0.5 rounded text-[10px] font-mono transition-colors cursor-pointer ${
+              className={`w-6 h-6 flex items-center justify-center rounded text-[10px] transition-colors cursor-pointer ${
                 activeTheme === "vs-dark"
-                  ? "bg-sky-600 text-white font-bold shadow-xs"
+                  ? "bg-sky-600 text-white shadow-xs font-bold"
                   : "text-slate-600 dark:text-slate-400 hover:text-slate-900 dark:hover:text-slate-200"
               }`}
               onClick={() => setEditorTheme("vs-dark")}
               title={t.editor.themeDark}
+              aria-label={t.editor.themeDark}
             >
-              Dark
+              <Moon size={12} className="shrink-0" />
             </button>
             <button
               type="button"
-              className={`px-1.5 py-0.5 rounded text-[10px] font-mono transition-colors cursor-pointer ${
+              className={`w-6 h-6 flex items-center justify-center rounded text-[10px] transition-colors cursor-pointer ${
                 activeTheme === "vs"
-                  ? "bg-sky-600 text-white font-bold shadow-xs"
+                  ? "bg-sky-600 text-white shadow-xs font-bold"
                   : "text-slate-600 dark:text-slate-400 hover:text-slate-900 dark:hover:text-slate-200"
               }`}
               onClick={() => setEditorTheme("vs")}
               title={t.editor.themeLight}
+              aria-label={t.editor.themeLight}
             >
-              Light
+              <Sun size={12} className="shrink-0" />
             </button>
             <button
               type="button"
-              className={`px-1.5 py-0.5 rounded text-[10px] font-mono transition-colors cursor-pointer ${
+              className={`w-6 h-6 flex items-center justify-center rounded text-[10px] transition-colors cursor-pointer ${
                 activeTheme === "hc-black"
-                  ? "bg-sky-600 text-white font-bold shadow-xs"
+                  ? "bg-sky-600 text-white shadow-xs font-bold"
                   : "text-slate-600 dark:text-slate-400 hover:text-slate-900 dark:hover:text-slate-200"
               }`}
               onClick={() => setEditorTheme("hc-black")}
               title={t.editor.themeHc}
+              aria-label={t.editor.themeHc}
             >
-              HC
+              <Contrast size={12} className="shrink-0" />
             </button>
           </div>
 
           {/* Font Size Zoom Controls */}
-          <div className="flex items-center gap-0.5 bg-slate-100 dark:bg-slate-800/80 rounded border border-slate-300 dark:border-slate-700 px-0.5 py-0.5 shadow-2xs">
+          <div className="flex items-center gap-0.5 bg-slate-100 dark:bg-slate-800/80 rounded border border-slate-300 dark:border-slate-700 px-0.5 py-0.5 shadow-2xs shrink-0">
             <button
               type="button"
               className="p-1 text-slate-600 dark:text-slate-400 hover:text-slate-900 dark:hover:text-slate-200 disabled:opacity-30 cursor-pointer"
@@ -738,9 +744,10 @@ export function CodeEditorPanel() {
       </div>
 
       {/* ─── HARDWARE & TARGET CONTROL RIBBON (ROW 2) ─── */}
-      <div className="flex items-center justify-between gap-1.5 px-2.5 py-1.5 border-b border-slate-200 dark:border-slate-800 bg-slate-50 dark:bg-slate-950/90 text-xs shrink-0 select-none">
-        <div className="flex items-center gap-1.5 min-w-0">
-          {/* Target Selector */}
+      <div className="flex flex-col gap-1.5 px-2.5 py-1.5 border-b border-slate-200 dark:border-slate-800 bg-slate-50 dark:bg-slate-950/90 text-xs shrink-0 select-none">
+        {/* Line 1: Mode Switcher + (Board/Port in Physical mode, or Simulation Status in Simulate mode) */}
+        <div className="flex items-center justify-between gap-1.5 min-w-0">
+          {/* Target Selector: Simulate vs Physical */}
           <div className="flex items-center rounded border border-slate-300 dark:border-slate-700 bg-white dark:bg-slate-900 p-0.5 shrink-0 shadow-2xs">
             <button
               type="button"
@@ -772,20 +779,29 @@ export function CodeEditorPanel() {
             </button>
           </div>
 
-          {/* Board Selector */}
-          <select
-            className="text-[11px] font-semibold px-1.5 py-1 rounded border border-slate-300 dark:border-slate-700 bg-white dark:bg-slate-900 text-slate-800 dark:text-slate-200 max-w-[125px] truncate cursor-pointer shadow-2xs"
-            value={selectedBoard}
-            onChange={(e) => setSelectedBoard(e.target.value as any)}
-            title={t.editor.boardSelectTitle}
-          >
-            <option value="arduino_uno">Uno R3 (AVR)</option>
-            <option value="esp32_wroom">ESP32 DevKit</option>
-          </select>
+          {/* Ketika di Mode Simulate: Tampilkan indikator status simulasi virtual */}
+          {targetMode === "simulation" && (
+            <div className="flex items-center gap-1.5 text-[11px] text-slate-500 dark:text-slate-400 font-medium shrink-0">
+              <span className="w-1.5 h-1.5 rounded-full bg-emerald-500 animate-pulse" />
+              <span className="text-[10px] hidden sm:inline">{t.editor.targetSimTitle}</span>
+            </div>
+          )}
 
-          {/* Web Serial Port Selector (visible when in hardware mode) */}
+          {/* Board Selector & Port Selector: HANYA MUNCUL DI MODE PHYSICAL (HARDWARE) */}
           {targetMode === "hardware" && (
-            <div className="flex items-center gap-1 min-w-0">
+            <div className="flex items-center gap-1.5 min-w-0">
+              {/* Board Selector */}
+              <select
+                className="text-[11px] font-semibold px-1.5 py-1 rounded border border-slate-300 dark:border-slate-700 bg-white dark:bg-slate-900 text-slate-800 dark:text-slate-200 cursor-pointer shadow-2xs shrink-0 max-w-[95px] truncate"
+                value={selectedBoard}
+                onChange={(e) => setSelectedBoard(e.target.value as any)}
+                title={t.editor.boardSelectTitle}
+              >
+                <option value="arduino_uno">Uno R3</option>
+                <option value="esp32_wroom">ESP32</option>
+              </select>
+
+              {/* Web Serial Port Selector */}
               <button
                 type="button"
                 className="px-2 py-1 rounded text-[11px] font-semibold flex items-center gap-1.5 border transition cursor-pointer shadow-2xs shrink-0 bg-white dark:bg-slate-800 hover:bg-slate-50 dark:hover:bg-slate-700 border-slate-300 dark:border-slate-700 text-slate-700 dark:text-slate-300"
@@ -797,67 +813,68 @@ export function CodeEditorPanel() {
                 }}
                 title={t.editor.selectPortTitle}
               >
-                <Usb size={11} className="shrink-0" />
-                <span className="max-w-[100px] truncate font-mono text-[10px]">
-                  {selectedPort || t.editor.selectPort}
+                <Usb size={11} className="shrink-0 text-emerald-600 dark:text-emerald-400" />
+                <span className="max-w-[75px] truncate font-mono text-[10px]">
+                  {selectedPort ? selectedPort.replace(/^(\/dev\/cu\.|\/dev\/tty)/, "") : "Port"}
                 </span>
               </button>
             </div>
           )}
         </div>
 
-        {/* Right Action Buttons: Compile & Upload */}
-        <div className="flex items-center gap-1.5 shrink-0">
-          {/* Verify / Compile Button */}
-          <button
-            type="button"
-            disabled={isCompiling || isUploading}
-            className="px-2 py-1 rounded bg-sky-50 dark:bg-sky-500/15 hover:bg-sky-100 dark:hover:bg-sky-500/25 border border-sky-300 dark:border-sky-500/40 text-sky-700 dark:text-sky-300 font-semibold flex items-center gap-1 text-[11px] transition disabled:opacity-40 cursor-pointer shadow-2xs shrink-0"
-            onClick={async () => {
-              const bundled = bundleSketchFiles(files);
-              setShowBuildOutput(true);
-              const res = await compileCode(bundled);
-              if (res.success) {
-                showToast(t.editor.compileSuccess);
-              } else {
-                showToast(t.editor.compileFail);
-              }
-            }}
-            title={t.editor.compileTitle}
-          >
-            {isCompiling ? <Loader2 size={11} className="animate-spin text-sky-500" /> : <Check size={11} />}
-            <span>Verify</span>
-          </button>
-
-          {/* Upload ke Board via Web Serial */}
-          <button
-            type="button"
-            disabled={isCompiling || isUploading}
-            className="px-2 py-1 rounded bg-emerald-600 hover:bg-emerald-500 text-white font-semibold flex items-center gap-1 text-[11px] transition shadow-xs disabled:opacity-40 cursor-pointer shrink-0"
-            onClick={async () => {
-              // Pastikan user sudah memilih port via Web Serial
-              if (!useHardwareStore.getState()._webSerialPort) {
-                const ok = await requestWebSerialPort();
-                if (!ok) {
-                  showToast(t.editor.selectPortFirst);
-                  return;
+        {/* Line 2 (Action Buttons: Verify & Upload): HANYA MUNCUL DI MODE PHYSICAL (HARDWARE) */}
+        {targetMode === "hardware" && (
+          <div className="flex items-center gap-1.5 pt-1 border-t border-slate-200/60 dark:border-slate-800/60">
+            {/* Verify / Compile Button */}
+            <button
+              type="button"
+              disabled={isCompiling || isUploading}
+              className="flex-1 py-1 px-2 rounded bg-sky-50 dark:bg-sky-500/15 hover:bg-sky-100 dark:hover:bg-sky-500/25 border border-sky-300 dark:border-sky-500/40 text-sky-700 dark:text-sky-300 font-semibold flex items-center justify-center gap-1 text-[11px] transition disabled:opacity-40 cursor-pointer shadow-2xs"
+              onClick={async () => {
+                const bundled = bundleSketchFiles(files);
+                setShowBuildOutput(true);
+                const res = await compileCode(bundled);
+                if (res.success) {
+                  showToast(t.editor.compileSuccess);
+                } else {
+                  showToast(t.editor.compileFail);
                 }
-              }
-              const bundled = bundleSketchFiles(files);
-              setShowBuildOutput(true);
-              const res = await uploadCode(bundled);
-              if (res.success) {
-                showToast(t.editor.uploadSuccess);
-              } else {
-                showToast(t.editor.uploadFail);
-              }
-            }}
-            title={t.editor.uploadTitle}
-          >
-            {isUploading ? <Loader2 size={11} className="animate-spin" /> : <ArrowUpCircle size={11} />}
-            <span>Upload</span>
-          </button>
-        </div>
+              }}
+              title={t.editor.compileTitle}
+            >
+              {isCompiling ? <Loader2 size={12} className="animate-spin text-sky-500" /> : <Check size={12} />}
+              <span>Verify</span>
+            </button>
+
+            {/* Upload ke Board via Web Serial */}
+            <button
+              type="button"
+              disabled={isCompiling || isUploading}
+              className="flex-1 py-1 px-2 rounded bg-emerald-600 hover:bg-emerald-500 text-white font-semibold flex items-center justify-center gap-1 text-[11px] transition shadow-xs disabled:opacity-40 cursor-pointer"
+              onClick={async () => {
+                if (!useHardwareStore.getState()._webSerialPort) {
+                  const ok = await requestWebSerialPort();
+                  if (!ok) {
+                    showToast(t.editor.selectPortFirst);
+                    return;
+                  }
+                }
+                const bundled = bundleSketchFiles(files);
+                setShowBuildOutput(true);
+                const res = await uploadCode(bundled);
+                if (res.success) {
+                  showToast(t.editor.uploadSuccess);
+                } else {
+                  showToast(t.editor.uploadFail);
+                }
+              }}
+              title={t.editor.uploadTitle}
+            >
+              {isUploading ? <Loader2 size={12} className="animate-spin" /> : <ArrowUpCircle size={12} />}
+              <span>Upload</span>
+            </button>
+          </div>
+        )}
       </div>
 
       {/* ─── MULTI-FILE TABS BAR ─── */}

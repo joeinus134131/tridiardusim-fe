@@ -3,6 +3,7 @@
 import React, { useState, useEffect, useMemo } from "react";
 import dynamic from "next/dynamic";
 import { useSimulatorStore } from "@/store/useSimulatorStore";
+import { useLanguage } from "@/i18n/LanguageContext";
 import { download } from "@/lib/project/project";
 import { useTheme } from "next-themes";
 import { useHardwareStore } from "@/store/useHardwareStore";
@@ -25,7 +26,6 @@ import {
   Usb,
   CheckCircle2,
   AlertCircle,
-  RefreshCw,
   Loader2,
   ArrowUpCircle,
   Terminal,
@@ -36,7 +36,7 @@ const MonacoEditor = dynamic(() => import("@monaco-editor/react"), {
   ssr: false,
   loading: () => (
     <div className="flex-1 flex items-center justify-center bg-slate-950 text-slate-400 text-xs font-mono">
-      Memuat Editor Monaco...
+      Loading Monaco Editor…
     </div>
   ),
 });
@@ -52,13 +52,29 @@ interface LibraryItem {
   wrapperHeaderCode: string;
 }
 
-const LIBRARIES_CATALOG: LibraryItem[] = [
+type LibraryStrings = {
+  name: string;
+  description: string;
+};
+
+interface LocalizedLibraries {
+  dht: LibraryStrings;
+  hcsr04: LibraryStrings;
+  lcd1602: LibraryStrings;
+  servo: LibraryStrings;
+  oled: LibraryStrings;
+  wire: LibraryStrings;
+  wifi: LibraryStrings;
+}
+
+function buildLibrariesCatalog(s: LocalizedLibraries): LibraryItem[] {
+  return [
   {
     id: "dht",
-    name: "DHT Sensor (Suhu & Kelembaban)",
+    name: s.dht.name,
     category: "Sensors",
     header: "#include <DHT.h>",
-    description: "Library standar untuk membaca suhu (°C) dan kelembaban udara (% RH) dari sensor DHT11 atau DHT22.",
+    description: s.dht.description,
     templateCode: `// Contoh Baca Sensor Suhu & RH DHT11
 #include <DHT.h>
 
@@ -119,10 +135,10 @@ public:
   },
   {
     id: "hcsr04",
-    name: "Ultrasonik HC-SR04 (Jarak)",
+    name: s.hcsr04.name,
     category: "Sensors",
     header: "// HC-SR04 pulseIn\n#define TRIG_PIN 9\n#define ECHO_PIN 10",
-    description: "Pengukuran jarak pantul gelombang suara presisi 2 cm s/d 400 cm menggunakan durasi pulseIn.",
+    description: s.hcsr04.description,
     templateCode: `// Contoh Baca Sensor Jarak Ultrasonik HC-SR04
 const int trigPin = 9;
 const int echoPin = 10;
@@ -186,10 +202,10 @@ public:
   },
   {
     id: "lcd1602",
-    name: "LCD 16x2 I2C (LiquidCrystal_I2C)",
+    name: s.lcd1602.name,
     category: "Displays",
     header: "#include <Wire.h>\n#include <LiquidCrystal_I2C.h>",
-    description: "Modul layar karakter LCD 16x2 via interface bus I2C (PCF8574 address 0x27).",
+    description: s.lcd1602.description,
     templateCode: `// Contoh Tampilan LCD 16x2 I2C
 #include <Wire.h>
 #include <LiquidCrystal_I2C.h>
@@ -244,10 +260,10 @@ public:
   },
   {
     id: "servo",
-    name: "Micro Servo SG90 (Servo.h)",
+    name: s.servo.name,
     category: "Actuators",
     header: "#include <Servo.h>",
-    description: "Kontrol sudut putaran motor servo 0° s/d 180° via sinyal PWM pulsa.",
+    description: s.servo.description,
     templateCode: `// Contoh Kontrol Motor Servo SG90
 #include <Servo.h>
 
@@ -296,10 +312,10 @@ public:
   },
   {
     id: "oled",
-    name: "OLED SSD1306 128x64 I2C",
+    name: s.oled.name,
     category: "Displays",
     header: "#include <Wire.h>\n#include <Adafruit_GFX.h>\n#include <Adafruit_SSD1306.h>",
-    description: "Layar grafis monokrom OLED 0.96 inch dengan interface I2C alamat 0x3C.",
+    description: s.oled.description,
     templateCode: `// Contoh Tampilan Layar OLED SSD1306
 #include <Wire.h>
 #include <Adafruit_GFX.h>
@@ -355,10 +371,10 @@ public:
   },
   {
     id: "wire",
-    name: "I2C Bus Library (Wire.h)",
+    name: s.wire.name,
     category: "Communication",
     header: "#include <Wire.h>",
-    description: "Protokol Two-Wire Interface standar Arduino untuk komunikasi antarmuka sensor & modul I2C.",
+    description: s.wire.description,
     templateCode: `// Scan Bus I2C Sederhana
 #include <Wire.h>
 
@@ -386,10 +402,10 @@ inline void setupI2C() {
   },
   {
     id: "wifi",
-    name: "ESP32 Wi-Fi (WiFi.h)",
+    name: s.wifi.name,
     category: "Communication",
     header: "#include <WiFi.h>",
-    description: "Library komunikasi jaringan nirkabel bawaan mikrokontroler ESP32-WROOM.",
+    description: s.wifi.description,
     templateCode: `// Contoh Koneksi WiFi ESP32
 #include <WiFi.h>
 
@@ -423,9 +439,15 @@ inline void connectToWiFi(const char* ssid, const char* pass) {
 #endif
 `,
   },
-];
+  ];
+}
 
 export function CodeEditorPanel() {
+  const { t } = useLanguage();
+  const LIBRARIES_CATALOG = useMemo(
+    () => buildLibrariesCatalog(t.editor.libraries),
+    [t]
+  );
   const code = useSimulatorStore((s) => s.code);
   const setCode = useSimulatorStore((s) => s.setCode);
   const files = useSimulatorStore(
@@ -480,21 +502,15 @@ export function CodeEditorPanel() {
   const selectedBoard = useHardwareStore((s) => s.selectedBoard);
   const setSelectedBoard = useHardwareStore((s) => s.setSelectedBoard);
   const selectedPort = useHardwareStore((s) => s.selectedPort);
-  const setSelectedPort = useHardwareStore((s) => s.setSelectedPort);
-  const detectedPorts = useHardwareStore((s) => s.detectedPorts);
-  const isScanningPorts = useHardwareStore((s) => s.isScanningPorts);
-  const scanPorts = useHardwareStore((s) => s.scanPorts);
+  const requestWebSerialPort = useHardwareStore((s) => s.requestWebSerialPort);
   const isCompiling = useHardwareStore((s) => s.isCompiling);
   const compileResult = useHardwareStore((s) => s.compileResult);
   const compileCode = useHardwareStore((s) => s.compileCode);
   const isUploading = useHardwareStore((s) => s.isUploading);
   const uploadResult = useHardwareStore((s) => s.uploadResult);
   const uploadCode = useHardwareStore((s) => s.uploadCode);
+  const flashProgress = useHardwareStore((s) => s.flashProgress);
   const [showBuildOutput, setShowBuildOutput] = useState(false);
-
-  useEffect(() => {
-    scanPorts();
-  }, [scanPorts]);
 
   const handleCreateFile = () => {
     let name = newFileName.trim();
@@ -507,15 +523,15 @@ export function CodeEditorPanel() {
     const guardName = name.replace(/[^A-Za-z0-9_]/g, "_").toUpperCase();
     let initialContent = "";
     if (name.endsWith(".h")) {
-      initialContent = `#ifndef ${guardName}\n#define ${guardName}\n\n// Tulis deklarasi fungsi, struct, atau class di sini\n\n#endif\n`;
+      initialContent = `#ifndef ${guardName}\n#define ${guardName}\n\n// ${t.editor.newFileGuardComment}\n\n#endif\n`;
     } else if (name.endsWith(".cpp") || name.endsWith(".c")) {
-      initialContent = `// Implementasi tambahan untuk sketch\n\n`;
+      initialContent = `// ${t.editor.newFileImplComment}\n\n`;
     }
 
     addFile(name, initialContent);
     setShowNewFileInput(false);
     setNewFileName("");
-    showToast(`File ${name} berhasil dibuat!`);
+    showToast(t.editor.fileCreated.replace("{name}", name));
   };
 
   // Filtered libraries catalog
@@ -528,7 +544,7 @@ export function CodeEditorPanel() {
         lib.description.toLowerCase().includes(q) ||
         lib.header.toLowerCase().includes(q)
     );
-  }, [librarySearch]);
+  }, [librarySearch, LIBRARIES_CATALOG]);
 
   const insertHeaderToSketch = (headerLine: string) => {
     const mainFile = files.find((f) => f.name === "sketch.ino") || files[0];
@@ -541,7 +557,7 @@ export function CodeEditorPanel() {
     );
 
     if (missingLines.length === 0) {
-      showToast("Library sudah terpasang di dalam sketch.");
+      showToast(t.editor.libraryInstalled);
       return;
     }
 
@@ -552,7 +568,7 @@ export function CodeEditorPanel() {
       setActiveFile("sketch.ino");
       setTimeout(() => setCode(updated), 50);
     }
-    showToast(`Berhasil menyisipkan ${missingLines.join(", ")}`);
+    showToast(t.editor.includeInserted.replace("{lines}", missingLines.join(", ")));
     setShowLibraryModal(false);
   };
 
@@ -563,13 +579,13 @@ export function CodeEditorPanel() {
       setActiveFile("sketch.ino");
       setTimeout(() => setCode(template), 50);
     }
-    showToast("Template lengkap berhasil dimuat ke sketch.ino!");
+    showToast(t.editor.templateLoaded);
     setShowLibraryModal(false);
   };
 
   const createWrapperHeader = (name: string, content: string) => {
     addFile(name, content);
-    showToast(`File header wrapper ${name} berhasil ditambahkan!`);
+    showToast(t.editor.wrapperAdded.replace("{name}", name));
     setShowLibraryModal(false);
   };
 
@@ -591,19 +607,19 @@ export function CodeEditorPanel() {
             type="button"
             className="flex items-center gap-1 px-2 py-1 rounded bg-sky-50 dark:bg-sky-500/15 hover:bg-sky-100 dark:hover:bg-sky-500/25 border border-sky-300 dark:border-sky-500/40 text-sky-700 dark:text-sky-300 text-[11px] font-semibold transition cursor-pointer shadow-2xs"
             onClick={() => setShowLibraryModal(true)}
-            title="Katalog Pustaka & Sensor C++"
+            title={t.editor.libraryTitle}
           >
             <BookOpen size={12} className="text-sky-600 dark:text-sky-400 shrink-0" />
-            <span>Library</span>
+            <span>{t.editor.library}</span>
           </button>
 
           {/* Open .ino / .h / .cpp File */}
           <label
             className="flex items-center gap-1 px-1.5 py-1 rounded bg-slate-100 hover:bg-slate-200 dark:bg-slate-800 dark:hover:bg-slate-700 border border-slate-300 dark:border-slate-700 text-slate-700 dark:text-slate-200 text-[11px] font-medium cursor-pointer transition-colors shadow-2xs"
-            title="Buka file sketch (.ino, .h, .cpp)"
+            title={t.editor.openTitle}
           >
             <Upload size={12} className="shrink-0" />
-            <span className="hidden sm:inline">Buka</span>
+            <span className="hidden sm:inline">{t.editor.openBtn}</span>
             <input
               hidden
               type="file"
@@ -631,7 +647,7 @@ export function CodeEditorPanel() {
             title={`Download ${activeFileName}`}
           >
             <Download size={12} className="shrink-0" />
-            <span className="hidden sm:inline">Unduh</span>
+            <span className="hidden sm:inline">{t.editor.downloadBtn}</span>
           </button>
         </div>
 
@@ -646,7 +662,7 @@ export function CodeEditorPanel() {
                 : "bg-slate-100 dark:bg-slate-800 text-slate-500 dark:text-slate-400 border-slate-300 dark:border-slate-700"
             }`}
             onClick={() => setShowLineNumbers(!showLineNumbers)}
-            title={showLineNumbers ? "Nomor Baris: Aktif (Klik untuk sembunyikan)" : "Nomor Baris: Nonaktif (Klik untuk tampilkan)"}
+            title={showLineNumbers ? t.editor.lineNumbersOn : t.editor.lineNumbersOff}
           >
             <Hash size={12} />
           </button>
@@ -664,7 +680,7 @@ export function CodeEditorPanel() {
                   : "text-slate-600 dark:text-slate-400 hover:text-slate-900 dark:hover:text-slate-200"
               }`}
               onClick={() => setEditorTheme("vs-dark")}
-              title="Tema Gelap (VS Code Dark)"
+              title={t.editor.themeDark}
             >
               Dark
             </button>
@@ -676,7 +692,7 @@ export function CodeEditorPanel() {
                   : "text-slate-600 dark:text-slate-400 hover:text-slate-900 dark:hover:text-slate-200"
               }`}
               onClick={() => setEditorTheme("vs")}
-              title="Tema Terang (VS Code Light)"
+              title={t.editor.themeLight}
             >
               Light
             </button>
@@ -688,7 +704,7 @@ export function CodeEditorPanel() {
                   : "text-slate-600 dark:text-slate-400 hover:text-slate-900 dark:hover:text-slate-200"
               }`}
               onClick={() => setEditorTheme("hc-black")}
-              title="Tema High Contrast"
+              title={t.editor.themeHc}
             >
               HC
             </button>
@@ -701,7 +717,7 @@ export function CodeEditorPanel() {
               className="p-1 text-slate-600 dark:text-slate-400 hover:text-slate-900 dark:hover:text-slate-200 disabled:opacity-30 cursor-pointer"
               disabled={fontSize <= 11}
               onClick={() => setFontSize(Math.max(11, fontSize - 1))}
-              title="Kecilkan Font"
+              title={t.editor.zoomOut}
             >
               <ZoomOut size={11} />
             </button>
@@ -713,7 +729,7 @@ export function CodeEditorPanel() {
               className="p-1 text-slate-600 dark:text-slate-400 hover:text-slate-900 dark:hover:text-slate-200 disabled:opacity-30 cursor-pointer"
               disabled={fontSize >= 18}
               onClick={() => setFontSize(Math.min(18, fontSize + 1))}
-              title="Besarkan Font"
+              title={t.editor.zoomIn}
             >
               <ZoomIn size={11} />
             </button>
@@ -734,10 +750,10 @@ export function CodeEditorPanel() {
                   : "text-slate-600 dark:text-slate-400 hover:text-slate-900 dark:hover:text-slate-200"
               }`}
               onClick={() => setTargetMode("simulation")}
-              title="Target: Simulasi Virtual"
+              title={t.editor.targetSimTitle}
             >
               <Cpu size={12} className="shrink-0" />
-              <span>Simulasi</span>
+              <span>{t.editor.targetSim}</span>
             </button>
             <button
               type="button"
@@ -748,12 +764,11 @@ export function CodeEditorPanel() {
               }`}
               onClick={() => {
                 setTargetMode("hardware");
-                scanPorts();
               }}
-              title="Target: Board Fisik USB Asli"
+              title={t.editor.targetPhysicalTitle}
             >
               <Usb size={12} className="shrink-0" />
-              <span>Fisik</span>
+              <span>{t.editor.targetPhysical}</span>
             </button>
           </div>
 
@@ -762,38 +777,30 @@ export function CodeEditorPanel() {
             className="text-[11px] font-semibold px-1.5 py-1 rounded border border-slate-300 dark:border-slate-700 bg-white dark:bg-slate-900 text-slate-800 dark:text-slate-200 max-w-[125px] truncate cursor-pointer shadow-2xs"
             value={selectedBoard}
             onChange={(e) => setSelectedBoard(e.target.value as any)}
-            title="Pilih jenis board mikrokontroler target"
+            title={t.editor.boardSelectTitle}
           >
             <option value="arduino_uno">Uno R3 (AVR)</option>
             <option value="esp32_wroom">ESP32 DevKit</option>
           </select>
 
-          {/* Port Selector (visible when in hardware mode) */}
+          {/* Web Serial Port Selector (visible when in hardware mode) */}
           {targetMode === "hardware" && (
             <div className="flex items-center gap-1 min-w-0">
-              <select
-                className="text-[11px] font-mono px-1.5 py-1 rounded border border-slate-300 dark:border-slate-700 bg-white dark:bg-slate-900 text-slate-800 dark:text-slate-200 max-w-[100px] truncate shadow-2xs"
-                value={selectedPort}
-                onChange={(e) => setSelectedPort(e.target.value)}
-                title="Pilih port serial USB board Anda"
-              >
-                {detectedPorts.length > 0 ? (
-                  detectedPorts.map((p) => (
-                    <option key={p.address} value={p.address}>
-                      {p.label || p.address}
-                    </option>
-                  ))
-                ) : (
-                  <option value="">(Belum ada port)</option>
-                )}
-              </select>
               <button
                 type="button"
-                className="p-1 rounded bg-white hover:bg-slate-100 dark:bg-slate-800 dark:hover:bg-slate-700 border border-slate-300 dark:border-slate-700 text-slate-700 dark:text-slate-300 transition cursor-pointer shadow-2xs shrink-0"
-                onClick={() => scanPorts()}
-                title="Pindai Ulang Port Serial"
+                className="px-2 py-1 rounded text-[11px] font-semibold flex items-center gap-1.5 border transition cursor-pointer shadow-2xs shrink-0 bg-white dark:bg-slate-800 hover:bg-slate-50 dark:hover:bg-slate-700 border-slate-300 dark:border-slate-700 text-slate-700 dark:text-slate-300"
+                onClick={async () => {
+                  const ok = await requestWebSerialPort();
+                  if (ok) {
+                    showToast(t.editor.portSelectedToast);
+                  }
+                }}
+                title={t.editor.selectPortTitle}
               >
-                <RefreshCw size={11} className={isScanningPorts ? "animate-spin" : ""} />
+                <Usb size={11} className="shrink-0" />
+                <span className="max-w-[100px] truncate font-mono text-[10px]">
+                  {selectedPort || t.editor.selectPort}
+                </span>
               </button>
             </div>
           )}
@@ -811,27 +818,28 @@ export function CodeEditorPanel() {
               setShowBuildOutput(true);
               const res = await compileCode(bundled);
               if (res.success) {
-                showToast("Kompilasi C++ Berhasil!");
+                showToast(t.editor.compileSuccess);
               } else {
-                showToast("Kompilasi Gagal! Buka console log.");
+                showToast(t.editor.compileFail);
               }
             }}
-            title="Kompilasi sketch menggunakan arduino-cli"
+            title={t.editor.compileTitle}
           >
             {isCompiling ? <Loader2 size={11} className="animate-spin text-sky-500" /> : <Check size={11} />}
             <span>Verify</span>
           </button>
 
-          {/* Upload ke Board Button */}
+          {/* Upload ke Board via Web Serial */}
           <button
             type="button"
             disabled={isCompiling || isUploading}
             className="px-2 py-1 rounded bg-emerald-600 hover:bg-emerald-500 text-white font-semibold flex items-center gap-1 text-[11px] transition shadow-xs disabled:opacity-40 cursor-pointer shrink-0"
             onClick={async () => {
-              if (!selectedPort) {
-                await scanPorts();
-                if (!useHardwareStore.getState().selectedPort) {
-                  showToast("Colokkan board & pilih port serial!");
+              // Pastikan user sudah memilih port via Web Serial
+              if (!useHardwareStore.getState()._webSerialPort) {
+                const ok = await requestWebSerialPort();
+                if (!ok) {
+                  showToast(t.editor.selectPortFirst);
                   return;
                 }
               }
@@ -839,12 +847,12 @@ export function CodeEditorPanel() {
               setShowBuildOutput(true);
               const res = await uploadCode(bundled);
               if (res.success) {
-                showToast("Upload Firmware ke Board Berhasil!");
+                showToast(t.editor.uploadSuccess);
               } else {
-                showToast("Upload Gagal! Periksa kabel & port.");
+                showToast(t.editor.uploadFail);
               }
             }}
-            title="Unggah firmware langsung ke mikrokontroler fisik"
+            title={t.editor.uploadTitle}
           >
             {isUploading ? <Loader2 size={11} className="animate-spin" /> : <ArrowUpCircle size={11} />}
             <span>Upload</span>
@@ -877,7 +885,7 @@ export function CodeEditorPanel() {
                     e.stopPropagation();
                     deleteFile(file.name);
                   }}
-                  title={`Tutup ${file.name}`}
+                  title={`${t.editor.closeFileTitle}${file.name}`}
                 >
                   <X size={11} />
                 </button>
@@ -893,7 +901,7 @@ export function CodeEditorPanel() {
               type="text"
               autoFocus
               className="bg-transparent text-[11px] font-mono text-slate-800 dark:text-slate-100 outline-none w-24"
-              placeholder="sensor.h"
+              placeholder={t.editor.newFilePlaceholder}
               value={newFileName}
               onChange={(e) => setNewFileName(e.target.value)}
               onKeyDown={(e) => {
@@ -924,10 +932,10 @@ export function CodeEditorPanel() {
               setNewFileName("");
               setShowNewFileInput(true);
             }}
-            title="Tambah file baru (.h atau .cpp)"
+            title={t.editor.addFileTitle}
           >
             <Plus size={12} />
-            <span>+ File</span>
+            <span>{t.editor.addFileBtn}</span>
           </button>
         )}
       </div>
@@ -963,19 +971,24 @@ export function CodeEditorPanel() {
       </div>
       {/* ─── BUILD OUTPUT / HARDWARE LOG DRAWER ─── */}
       {showBuildOutput && (compileResult || uploadResult || isCompiling || isUploading) && (
-        <div className="border-t border-slate-800 bg-slate-950 flex flex-col max-h-[220px] shrink-0 z-20">
+        <div className="border-t border-slate-800 bg-slate-950 flex flex-col max-h-[260px] shrink-0 z-20">
           <div className="flex items-center justify-between px-3 py-1.5 bg-slate-900 border-b border-slate-800 text-xs">
             <div className="flex items-center gap-2 font-semibold">
               <Terminal size={13} className="text-sky-400" />
-              <span>Console Build & Upload</span>
+              <span>{t.editor.buildConsole}</span>
               {isCompiling && (
                 <span className="text-[10px] text-sky-400 flex items-center gap-1 font-mono">
-                  <Loader2 size={10} className="animate-spin" /> Mengompilasi...
+                  <Loader2 size={10} className="animate-spin" /> {t.editor.compiling}
                 </span>
               )}
-              {isUploading && (
+              {isUploading && flashProgress && (
                 <span className="text-[10px] text-emerald-400 flex items-center gap-1 font-mono">
-                  <Loader2 size={10} className="animate-spin" /> Mengunggah ke board...
+                  <Loader2 size={10} className="animate-spin" /> {flashProgress.message}
+                </span>
+              )}
+              {isUploading && !flashProgress && (
+                <span className="text-[10px] text-emerald-400 flex items-center gap-1 font-mono">
+                  <Loader2 size={10} className="animate-spin" /> {t.editor.uploading}
                 </span>
               )}
               {!isCompiling && !isUploading && compileResult && (
@@ -989,12 +1002,12 @@ export function CodeEditorPanel() {
                   {compileResult.success ? (
                     <>
                       <CheckCircle2 size={11} className="shrink-0" />
-                      <span>BUILD SUCCESS</span>
+                      <span>{t.editor.buildSuccess}</span>
                     </>
                   ) : (
                     <>
                       <AlertCircle size={11} className="shrink-0" />
-                      <span>BUILD FAILED</span>
+                      <span>{t.editor.buildFailed}</span>
                     </>
                   )}
                 </span>
@@ -1016,15 +1029,31 @@ export function CodeEditorPanel() {
                 type="button"
                 className="text-slate-400 hover:text-slate-200 text-xs p-1 rounded hover:bg-slate-800 transition cursor-pointer"
                 onClick={() => setShowBuildOutput(false)}
-                title="Tutup Console"
+                title={t.editor.closeConsole}
               >
                 <X size={13} />
               </button>
             </div>
           </div>
 
+          {/* Flash Progress Bar */}
+          {isUploading && flashProgress && flashProgress.percent > 0 && (
+            <div className="px-3 pt-2">
+              <div className="w-full bg-slate-800 rounded-full h-2 overflow-hidden">
+                <div
+                  className="h-full rounded-full transition-all duration-300 ease-out bg-gradient-to-r from-emerald-500 to-sky-500"
+                  style={{ width: `${Math.min(flashProgress.percent, 100)}%` }}
+                />
+              </div>
+              <p className="text-[10px] text-slate-400 font-mono mt-1">
+                {flashProgress.stage === "compiling" ? "📦" : flashProgress.stage === "flashing" ? "⚡" : flashProgress.stage === "done" ? "✅" : flashProgress.stage === "error" ? "❌" : "🔄"}
+                {" "}{flashProgress.message} ({flashProgress.percent}%)
+              </p>
+            </div>
+          )}
+
           <div className="p-3 font-mono text-[11px] overflow-y-auto whitespace-pre-wrap flex-1 text-slate-300 select-text leading-relaxed">
-            {uploadResult ? uploadResult.log : compileResult ? compileResult.log : "Menjalankan proses..."}
+            {uploadResult ? uploadResult.log : compileResult ? compileResult.log : t.editor.runningProcess}
           </div>
         </div>
       )}
@@ -1032,16 +1061,16 @@ export function CodeEditorPanel() {
       {/* ─── INTEGRATED MICRO STATUS BAR ─── */}
       <div className="flex items-center justify-between px-2.5 py-1 border-t border-slate-200 dark:border-slate-800/80 bg-slate-100 dark:bg-slate-950/90 text-[10px] text-slate-500 dark:text-slate-400 font-mono select-none shrink-0 z-10">
         <div className="flex items-center gap-2 truncate">
-          <span className="text-slate-700 dark:text-slate-300">{lineCount} baris</span>
+          <span className="text-slate-700 dark:text-slate-300">{lineCount} {t.editor.linesUnit}</span>
           <span className="text-slate-400 dark:text-slate-600">·</span>
-          <span>{charCount} kar</span>
+          <span>{charCount} {t.editor.charsUnit}</span>
           <span className="text-slate-400 dark:text-slate-600">·</span>
           <span className="text-sky-600 dark:text-sky-400 font-semibold truncate max-w-[110px] sm:max-w-[160px]">{activeFileName}</span>
         </div>
         <div className="flex items-center gap-2 shrink-0">
           <span
             className="text-[9px] px-1.5 py-0.5 rounded bg-slate-200 dark:bg-slate-800/70 text-slate-700 dark:text-slate-300 border border-slate-300 dark:border-slate-700/50 hover:text-sky-600 dark:hover:text-sky-300 hover:border-sky-500/40 transition cursor-help hidden xs:inline-block"
-            title="Pustaka C++ Bawaan: DHT.h, NewPing.h, LiquidCrystal_I2C.h, Servo.h, Adafruit_SSD1306.h, WiFi.h"
+            title={t.editor.builtinLibsTitle}
           >
             C++ (Arduino)
           </span>
@@ -1049,10 +1078,10 @@ export function CodeEditorPanel() {
             type="button"
             onClick={() => setShowLibraryModal(true)}
             className="flex items-center gap-1 text-[9px] text-sky-600 dark:text-sky-400 hover:text-sky-700 dark:hover:text-sky-300 hover:underline transition px-1 py-0.5 rounded hover:bg-slate-200 dark:hover:bg-slate-800/50 cursor-pointer"
-            title="Kelola & Import Pustaka"
+            title={t.editor.manageLibsTitle}
           >
             <BookOpen size={10} />
-            <span className="hidden sm:inline">Library (6)</span>
+            <span className="hidden sm:inline">{t.editor.libraryCount}</span>
           </button>
         </div>
       </div>
@@ -1069,10 +1098,10 @@ export function CodeEditorPanel() {
                 </div>
                 <div>
                   <h3 className="text-sm font-semibold text-slate-900 dark:text-slate-100">
-                    Katalog Library & Sensor Bawaan
+                    {t.editor.catalogTitle}
                   </h3>
                   <p className="text-[11px] text-slate-500 dark:text-slate-400">
-                    Impor header, boilerplate, atau buat wrapper file .h langsung ke sketch
+                    {t.editor.catalogSubtitle}
                   </p>
                 </div>
               </div>
@@ -1091,7 +1120,7 @@ export function CodeEditorPanel() {
                 <Search size={14} className="text-slate-400" />
                 <input
                   type="text"
-                  placeholder="Cari library (DHT11, Ultrasonik, LCD 16x2, Servo, OLED, I2C)..."
+                  placeholder={t.editor.searchPlaceholder}
                   className="bg-transparent text-xs text-slate-900 dark:text-slate-200 outline-none w-full"
                   value={librarySearch}
                   onChange={(e) => setLibrarySearch(e.target.value)}
@@ -1120,7 +1149,7 @@ export function CodeEditorPanel() {
                       <div className="flex items-center gap-2">
                         <span className="text-xs font-bold text-slate-900 dark:text-slate-100">{lib.name}</span>
                         <span className="text-[9px] px-1.5 py-0.2 rounded bg-sky-500/10 text-sky-600 dark:text-sky-400 border border-sky-500/30">
-                          {lib.category}
+                          {t.editor.categories[lib.category as keyof typeof t.editor.categories] ?? lib.category}
                         </span>
                       </div>
                       <p className="text-[11px] text-slate-500 dark:text-slate-400 mt-0.5 leading-snug">
@@ -1141,7 +1170,7 @@ export function CodeEditorPanel() {
                       onClick={() => insertHeaderToSketch(lib.header)}
                     >
                       <Plus size={11} />
-                      <span>Sisipkan #include</span>
+                      <span>{t.editor.insertInclude}</span>
                     </button>
 
                     <button
@@ -1150,17 +1179,17 @@ export function CodeEditorPanel() {
                       onClick={() => insertTemplateToSketch(lib.templateCode)}
                     >
                       <Code2 size={11} className="text-indigo-600 dark:text-indigo-400" />
-                      <span>Pakai Template Lengkap</span>
+                      <span>{t.editor.useFullTemplate}</span>
                     </button>
 
                     <button
                       type="button"
                       className="px-2.5 py-1 rounded bg-white hover:bg-slate-100 dark:bg-slate-800/80 dark:hover:bg-slate-700 border border-slate-300 dark:border-slate-700 text-slate-700 dark:text-slate-300 text-[11px] font-medium flex items-center gap-1.5 transition cursor-pointer shadow-2xs"
                       onClick={() => createWrapperHeader(lib.wrapperHeaderName, lib.wrapperHeaderCode)}
-                      title={`Buat file header ${lib.wrapperHeaderName} di tab baru`}
+                      title={t.editor.makeWrapper.replace("{name}", lib.wrapperHeaderName)}
                     >
                       <Sparkles size={11} className="text-amber-500 dark:text-amber-400" />
-                      <span>Buat Header Modular ({lib.wrapperHeaderName})</span>
+                      <span>{t.editor.makeWrapper.replace("{name}", lib.wrapperHeaderName)}</span>
                     </button>
                   </div>
                 </div>
@@ -1168,20 +1197,20 @@ export function CodeEditorPanel() {
 
               {filteredLibraries.length === 0 && (
                 <div className="p-8 text-center text-slate-400 text-xs">
-                  Tidak ada library yang cocok dengan pencarian "{librarySearch}".
+                  {t.editor.noLibraryMatch.replace("{q}", librarySearch)}
                 </div>
               )}
             </div>
 
             {/* Modal Footer */}
             <div className="px-4 py-2.5 border-t border-slate-200 dark:border-slate-800 bg-slate-50 dark:bg-slate-900 flex justify-between items-center text-[11px] text-slate-500 dark:text-slate-400">
-              <span>{filteredLibraries.length} library siap pakai</span>
+              <span>{t.editor.librariesReady.replace("{n}", String(filteredLibraries.length))}</span>
               <button
                 type="button"
                 className="px-3 py-1 rounded bg-white hover:bg-slate-100 dark:bg-slate-800 dark:hover:bg-slate-700 text-slate-700 dark:text-slate-200 border border-slate-300 dark:border-slate-700 text-xs transition cursor-pointer shadow-2xs"
                 onClick={() => setShowLibraryModal(false)}
               >
-                Tutup
+                {t.editor.closeBtn}
               </button>
             </div>
           </div>

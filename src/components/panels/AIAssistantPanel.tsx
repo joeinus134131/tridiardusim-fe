@@ -2,6 +2,7 @@
 
 import { useState } from "react";
 import { Bot, User, Send, X, Sparkles, Loader2 } from "lucide-react";
+import { useLanguage } from "@/i18n/LanguageContext";
 
 interface ChatMessage {
   id: string;
@@ -10,17 +11,17 @@ interface ChatMessage {
 }
 
 export function AIAssistantPanel() {
+  const { t } = useLanguage();
   const [isOpen, setIsOpen] = useState(false);
-  const [messages, setMessages] = useState<ChatMessage[]>([
-    {
-      id: "1",
-      role: "ai",
-      content:
-        "Hi! I'm ArduBot, your AI circuit assistant. How can I help you build or code your project today?",
-    },
-  ]);
+  const [messages, setMessages] = useState<ChatMessage[]>([]);
   const [input, setInput] = useState("");
   const [isTyping, setIsTyping] = useState(false);
+
+  // Welcome message follows the active language until the user starts chatting.
+  const visibleMessages: ChatMessage[] =
+    messages.length > 0
+      ? messages
+      : [{ id: "welcome", role: "ai", content: t.ai.greeting }];
 
   const handleSend = async (e: React.FormEvent) => {
     e.preventDefault();
@@ -31,19 +32,17 @@ export function AIAssistantPanel() {
       role: "user",
       content: input,
     };
-    setMessages((prev) => [...prev, userMsg]);
+    setMessages([...visibleMessages, userMsg]);
     setInput("");
     setIsTyping(true);
 
     // Simulate network delay and basic AI response for MVP
     // In full implementation, this calls the Go backend POST /api/ai/chat
     setTimeout(() => {
-      let reply =
-        "I can help with that! However, I am currently running in offline mode. Once the backend is fully connected, I'll be able to generate circuits and write code for you.";
+      let reply = t.ai.offlineReply;
 
       if (userMsg.content.toLowerCase().includes("blink")) {
-        reply =
-          "To make an LED blink, you need an Arduino Uno, an LED, and a 220-ohm resistor. Connect the long leg (anode) to pin 13 and the short leg (cathode) to GND. The default code in the editor already blinks pin 13!";
+        reply = t.ai.blinkReply;
       }
 
       const aiMsg: ChatMessage = {
@@ -61,7 +60,7 @@ export function AIAssistantPanel() {
       <button
         className="absolute right-4 top-20 glass-panel p-3 text-[var(--accent)] hover:text-white hover:bg-[var(--accent)] transition-all rounded-full shadow-lg z-[var(--z-panel)] animate-pulse-glow flex items-center justify-center"
         onClick={() => setIsOpen(true)}
-        title="Open AI Assistant"
+        title={t.ai.openTitle}
       >
         <Bot size={24} />
       </button>
@@ -85,7 +84,7 @@ export function AIAssistantPanel() {
 
       {/* Chat History */}
       <div className="flex-1 overflow-y-auto p-4 flex flex-col gap-4">
-        {messages.map((msg) => (
+        {visibleMessages.map((msg) => (
           <div
             key={msg.id}
             className={`flex gap-3 ${msg.role === "user" ? "flex-row-reverse" : ""}`}
@@ -109,7 +108,7 @@ export function AIAssistantPanel() {
             </div>
             <div className="p-3 rounded-2xl bg-[var(--bg-elevated)] border border-[var(--border)] rounded-tl-sm text-[var(--text-muted)] flex items-center gap-2">
               <Loader2 size={14} className="animate-spin" />
-              <span className="text-xs">ArduBot is thinking...</span>
+              <span className="text-xs">{t.ai.thinking}</span>
             </div>
           </div>
         )}
@@ -124,7 +123,7 @@ export function AIAssistantPanel() {
           type="text"
           value={input}
           onChange={(e) => setInput(e.target.value)}
-          placeholder="Ask me anything..."
+          placeholder={t.ai.placeholder}
           className="flex-1 bg-[var(--bg-surface)] border border-[var(--border)] rounded-full px-4 py-2 text-sm outline-none focus:border-[var(--accent)] transition-colors"
           disabled={isTyping}
         />

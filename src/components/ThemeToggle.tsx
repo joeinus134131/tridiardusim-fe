@@ -3,9 +3,11 @@
 import * as React from "react";
 import { Moon, Sun } from "lucide-react";
 import { useTheme } from "next-themes";
+import { useLanguage } from "@/i18n/LanguageContext";
 
 export function ThemeToggle() {
   const { theme, setTheme, resolvedTheme } = useTheme();
+  const { t } = useLanguage();
   const [mounted, setMounted] = React.useState(false);
 
   React.useEffect(() => {
@@ -16,7 +18,7 @@ export function ThemeToggle() {
     return (
       <button
         className="btn-icon p-1.5 w-7 h-7 rounded-md border border-slate-300 dark:border-slate-700 bg-slate-100 dark:bg-slate-800 opacity-60"
-        aria-label="Toggle Theme"
+        aria-label={t.theme.toggle}
       >
         <div className="w-4 h-4" />
       </button>
@@ -29,8 +31,8 @@ export function ThemeToggle() {
     <button
       onClick={() => setTheme(currentTheme === "dark" ? "light" : "dark")}
       className="btn-icon tooltip p-1.5 relative overflow-hidden w-7 h-7 flex items-center justify-center border border-slate-300 dark:border-slate-700 bg-slate-100 hover:bg-slate-200 dark:bg-slate-800 dark:hover:bg-slate-700 text-slate-700 dark:text-slate-200 rounded-md shrink-0 cursor-pointer shadow-2xs transition-colors"
-      data-tooltip="Toggle Theme"
-      aria-label="Toggle Theme"
+      data-tooltip={t.theme.toggle}
+      aria-label={t.theme.toggle}
     >
       <div className="relative w-4 h-4 flex items-center justify-center">
         <Sun

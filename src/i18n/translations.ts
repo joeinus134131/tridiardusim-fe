@@ -306,7 +306,7 @@ export const en = {
   serial: {
     simTab: "Simulation",
     simTabTitle: "Virtual Simulation Serial Monitor",
-    hardwareTab: "Physical Board",
+    hardwareTab: "Physical",
     hardwareTabTitle: "Real Physical USB Board Serial Monitor",
     followOn: "SCROLL: ON",
     followOff: "SCROLL: OFF",

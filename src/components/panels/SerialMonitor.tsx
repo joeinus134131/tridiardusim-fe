@@ -3,12 +3,14 @@
 import { useState, useRef, useEffect } from "react";
 import { useSimulatorStore } from "@/store/useSimulatorStore";
 import { useHardwareStore } from "@/store/useHardwareStore";
+import { useLanguage } from "@/i18n/LanguageContext";
 import { arduinoEngine } from "@/lib/simulation/ArduinoInterpreter";
 import { download } from "@/lib/project/project";
 import { physicalSerial, isWebSerialSupported } from "@/lib/hardware/webSerial";
 import { Usb, Play, Square, RotateCcw, Download, Trash2, Cpu, AlertTriangle } from "lucide-react";
 
 export function SerialMonitor() {
+  const { t } = useLanguage();
   const [activeTab, setActiveTab] = useState<"virtual" | "hardware">("virtual");
 
   // Virtual Simulator Serial State
@@ -63,19 +65,19 @@ export function SerialMonitor() {
     if (isHardwareConnected) {
       await physicalSerial.disconnect();
       setHardwareConnected(false);
-      appendHardwareLog("[INFO] Terputus dari port serial.\n", "info");
+      appendHardwareLog("[INFO] Disconnected from serial port.\n", "info");
     } else {
-      appendHardwareLog(`[INFO] Menghubungkan ke port serial (${hardwareBaudRate} baud)...\n`, "info");
+      appendHardwareLog(`[INFO] Connecting to serial port (${hardwareBaudRate} baud)...\n`, "info");
       const ok = await physicalSerial.requestAndConnect(hardwareBaudRate);
       if (ok) {
-        appendHardwareLog(`[INFO] Berhasil tersambung ke perangkat keras fisik!\n`, "info");
+        appendHardwareLog(`[INFO] Successfully connected to physical hardware!\n`, "info");
       }
     }
   };
 
   const handleResetBoard = async () => {
     if (!isHardwareConnected) return;
-    appendHardwareLog("[INFO] Mengirim sinyal reset DTR ke board...\n", "info");
+    appendHardwareLog("[INFO] Sending DTR reset signal to board...\n", "info");
     await physicalSerial.pulseDTR();
   };
 
@@ -95,10 +97,10 @@ export function SerialMonitor() {
                 : "text-slate-600 dark:text-slate-400 hover:text-slate-900 dark:hover:text-slate-200"
             }`}
             onClick={() => setActiveTab("virtual")}
-            title="Serial Monitor Simulasi Virtual"
+            title={t.serial.simTabTitle}
           >
             <Cpu size={12} className="shrink-0" />
-            <span>Simulasi</span>
+            <span>{t.serial.simTab}</span>
           </button>
 
           <button
@@ -109,10 +111,10 @@ export function SerialMonitor() {
                 : "text-slate-600 dark:text-slate-400 hover:text-slate-900 dark:hover:text-slate-200"
             }`}
             onClick={() => setActiveTab("hardware")}
-            title="Serial Monitor Board Fisik Real USB"
+            title={t.serial.hardwareTabTitle}
           >
             <Usb size={12} className="shrink-0" />
-            <span>Board Fisik</span>
+            <span>{t.serial.hardwareTab}</span>
             {isHardwareConnected && (
               <span className="w-1.5 h-1.5 rounded-full bg-emerald-300 animate-pulse shrink-0" />
             )}
@@ -130,9 +132,9 @@ export function SerialMonitor() {
                 : "bg-white dark:bg-slate-800 text-slate-500 dark:text-slate-400 border-slate-300 dark:border-slate-700"
             }`}
             onClick={() => setFollow(!follow)}
-            title={follow ? "Auto-scroll Aktif (Klik untuk jeda)" : "Auto-scroll Jeda (Klik untuk ikuti)"}
+            title={follow ? t.serial.followOnTitle : t.serial.followOffTitle}
           >
-            {follow ? "SCROLL: ON" : "SCROLL: OFF"}
+            {follow ? t.serial.followOn : t.serial.followOff}
           </button>
 
           {/* Clear */}
@@ -146,7 +148,7 @@ export function SerialMonitor() {
                 clearHardwareLogs();
               }
             }}
-            title="Bersihkan log output"
+            title={t.serial.clearTitle}
           >
             <Trash2 size={12} />
           </button>
@@ -162,7 +164,7 @@ export function SerialMonitor() {
                   : hardwareLogs.map((m) => m.text).join("");
               download(`serial_${activeTab}.txt`, text);
             }}
-            title="Unduh log serial (.txt)"
+            title={t.serial.downloadTitle}
           >
             <Download size={12} />
           </button>
@@ -176,7 +178,7 @@ export function SerialMonitor() {
           <div className="flex items-center justify-between gap-1.5 px-2.5 py-1 border-b border-slate-200 dark:border-slate-800 bg-slate-100/70 dark:bg-slate-900/60 text-xs shrink-0">
             <div className="flex items-center gap-1.5">
               <select
-                aria-label="Baud serial"
+                aria-label={t.serial.baudAria}
                 className="text-[11px] font-mono bg-white dark:bg-slate-800 border border-slate-300 dark:border-slate-700 rounded px-1.5 py-0.5 text-slate-800 dark:text-slate-200 shadow-2xs cursor-pointer"
                 value={baud}
                 onChange={(e) =>
@@ -184,34 +186,34 @@ export function SerialMonitor() {
                 }
               >
                 {[9600, 19200, 38400, 57600, 115200].map((v) => (
-                  <option key={v} value={v}>{v} baud</option>
+                  <option key={v} value={v}>{v} {t.serial.baudUnit}</option>
                 ))}
               </select>
               <select
-                aria-label="Akhiran serial"
+                aria-label={t.serial.endingAria}
                 className="text-[11px] font-mono bg-white dark:bg-slate-800 border border-slate-300 dark:border-slate-700 rounded px-1.5 py-0.5 text-slate-800 dark:text-slate-200 shadow-2xs cursor-pointer"
                 value={ending}
                 onChange={(e) => setEnding(e.target.value)}
               >
-                <option value="">Tanpa akhiran</option>
+                <option value="">{t.serial.noEnding}</option>
                 <option value={"\n"}>Newline (\n)</option>
                 <option value={"\r\n"}>CRLF (\r\n)</option>
               </select>
             </div>
             <span className="text-[10px] font-mono text-slate-500 dark:text-slate-400">
-              {status === "running" ? "Simulasi Aktif" : status === "paused" ? "Dijeda" : "Berhenti"}
+              {status === "running" ? t.serial.simActive : status === "paused" ? t.serial.simPaused : t.serial.simStopped}
             </span>
           </div>
 
           {mismatch && (
             <p className="panel-note text-amber-700 dark:text-amber-400 px-2.5 py-1 text-[11px] bg-amber-50 dark:bg-amber-950/30 border-b border-amber-200 dark:border-amber-900/50 flex items-center gap-1">
               <AlertTriangle size={11} className="shrink-0" />
-              <span>Sketch memakai {sketchBaud} baud. Samakan baud untuk mengirim.</span>
+              <span>{t.serial.baudMismatch.replace("{baud}", String(sketchBaud))}</span>
             </p>
           )}
 
           {/* Virtual Terminal Output */}
-          <div ref={virtualRef} className="serial-output flex-1 p-2.5 font-mono text-[11px] overflow-y-auto whitespace-pre-wrap select-text bg-white dark:bg-slate-950 leading-relaxed" aria-label="Keluaran serial">
+          <div ref={virtualRef} className="serial-output flex-1 p-2.5 font-mono text-[11px] overflow-y-auto whitespace-pre-wrap select-text bg-white dark:bg-slate-950 leading-relaxed" aria-label={t.serial.outputAria}>
             {output.length ? (
               output.map((m) => (
                 <span
@@ -229,7 +231,7 @@ export function SerialMonitor() {
               ))
             ) : (
               <span className="opacity-60 text-slate-400 dark:text-slate-500">
-                Menunggu Serial.begin(9600) dari sketch simulasi virtual...
+                {t.serial.waitingSketch}
               </span>
             )}
           </div>
@@ -246,9 +248,9 @@ export function SerialMonitor() {
             }}
           >
             <input
-              aria-label="Input serial"
+              aria-label={t.serial.inputAria}
               className="flex-1 text-[11px] font-mono bg-white dark:bg-slate-950 border border-slate-300 dark:border-slate-700 rounded px-2 py-1 text-slate-900 dark:text-slate-100 outline-none focus:border-sky-500 shadow-2xs"
-              placeholder="Kirim ke Serial.read() simulasi..."
+              placeholder={t.serial.sendPlaceholder}
               value={input}
               maxLength={1024}
               onChange={(e) => setInput(e.target.value)}
@@ -257,7 +259,7 @@ export function SerialMonitor() {
               className="px-2.5 py-1 text-xs font-semibold rounded bg-sky-600 hover:bg-sky-500 text-white disabled:opacity-40 transition shadow-2xs cursor-pointer shrink-0"
               disabled={status !== "running" || mismatch || !sketchBaud}
             >
-              Kirim
+              {t.serial.send}
             </button>
           </form>
         </>
@@ -281,12 +283,12 @@ export function SerialMonitor() {
                 {isHardwareConnected ? (
                   <>
                     <Square size={11} />
-                    <span>Putus</span>
+                    <span>{t.serial.disconnect}</span>
                   </>
                 ) : (
                   <>
                     <Play size={11} />
-                    <span>Hubungkan USB</span>
+                    <span>{t.serial.connectUsb}</span>
                   </>
                 )}
               </button>
@@ -296,7 +298,7 @@ export function SerialMonitor() {
                 disabled={!isHardwareConnected}
                 className="p-1 rounded bg-white hover:bg-slate-100 dark:bg-slate-800 dark:hover:bg-slate-700 border border-slate-300 dark:border-slate-700 text-slate-700 dark:text-slate-300 disabled:opacity-30 flex items-center transition cursor-pointer shadow-2xs"
                 onClick={handleResetBoard}
-                title="Kirim pulsa DTR untuk mereset Arduino/ESP32"
+                title={t.serial.resetBoardTitle}
               >
                 <RotateCcw size={11} />
               </button>
@@ -319,7 +321,7 @@ export function SerialMonitor() {
                 value={ending}
                 onChange={(e) => setEnding(e.target.value)}
               >
-                <option value="">None</option>
+                <option value="">{t.serial.noEndingShort}</option>
                 <option value={"\n"}>\n</option>
                 <option value={"\r\n"}>\r\n</option>
               </select>
@@ -329,7 +331,7 @@ export function SerialMonitor() {
           {!isWebSerialSupported() && (
             <div className="px-2.5 py-1.5 bg-amber-50 dark:bg-amber-950/40 border-b border-amber-200 dark:border-amber-800/60 text-amber-800 dark:text-amber-300 text-[11px] flex items-center gap-1.5">
               <AlertTriangle size={13} className="text-amber-600 dark:text-amber-400 shrink-0" />
-              <span>Gunakan browser Google Chrome, Edge, atau Opera untuk koneksi Web Serial USB.</span>
+              <span>{t.serial.webSerialHint}</span>
             </div>
           )}
 
@@ -337,7 +339,7 @@ export function SerialMonitor() {
           <div
             ref={hardwareRef}
             className="serial-output flex-1 p-2.5 font-mono text-[11px] overflow-y-auto whitespace-pre-wrap bg-white dark:bg-slate-950 text-slate-800 dark:text-slate-200 select-text leading-relaxed"
-            aria-label="Keluaran hardware serial"
+            aria-label={t.serial.hardwareOutputAria}
           >
             {hardwareLogs.length > 0 ? (
               hardwareLogs.map((log) => (
@@ -358,8 +360,8 @@ export function SerialMonitor() {
               ))
             ) : (
               <div className="text-slate-400 dark:text-slate-500 opacity-80 flex flex-col gap-0.5 text-[11px]">
-                <span>Belum ada data dari perangkat keras fisik.</span>
-                <span>Klik <strong>"Hubungkan USB"</strong> untuk mulai membaca serial port.</span>
+                <span>{t.serial.noHardwareData1}</span>
+                <span>{t.serial.noHardwareData2} <strong>&quot;{t.serial.connectUsb}&quot;</strong> {t.serial.noHardwareData3}</span>
               </div>
             )}
           </div>
@@ -378,12 +380,12 @@ export function SerialMonitor() {
             }}
           >
             <input
-              aria-label="Input serial hardware"
+              aria-label={t.serial.hardwareInputAria}
               className="flex-1 text-[11px] font-mono bg-white dark:bg-slate-950 border border-slate-300 dark:border-slate-700 rounded px-2 py-1 text-slate-900 dark:text-slate-100 outline-none focus:border-emerald-500 shadow-2xs"
               placeholder={
                 isHardwareConnected
-                  ? "Ketik perintah serial ke board nyata..."
-                  : "Sambungkan board untuk mengirim data serial..."
+                  ? t.serial.typeCommandPlaceholder
+                  : t.serial.connectToSendPlaceholder
               }
               value={input}
               disabled={!isHardwareConnected}
@@ -394,7 +396,7 @@ export function SerialMonitor() {
               className="px-2.5 py-1 text-xs font-semibold rounded bg-emerald-600 hover:bg-emerald-500 text-white disabled:opacity-40 transition shadow-2xs cursor-pointer shrink-0"
               disabled={!isHardwareConnected || !input.trim()}
             >
-              Kirim
+              {t.serial.send}
             </button>
           </form>
         </>

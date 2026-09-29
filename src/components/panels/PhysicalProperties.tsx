@@ -3,6 +3,7 @@ import { WireColors } from './WireColors';
 import { useState } from 'react';
 import { ExternalLink, RotateCcw, RotateCw, Compass, Zap, Disc, ShieldCheck, AlertTriangle, Activity } from 'lucide-react';
 import { useSimulatorStore } from '@/store/useSimulatorStore';
+import { useLanguage } from '@/i18n/LanguageContext';
 import { contacts, world, type Vec } from '@/lib/components/placement';
 import type { CircuitComponent } from '@/lib/components/componentTypes';
 
@@ -13,6 +14,7 @@ export function PhysicalProperties({
   component: CircuitComponent;
   onOpenDatasheet?: (key: string) => void;
 }) {
+  const { t } = useLanguage();
   const all = useSimulatorStore((s) => s.components);
   const [boardId, setBoardId] = useState('');
   const [holeId, setHoleId] = useState(contacts(c, all)[0]?.holeId || 't10_2');
@@ -40,7 +42,7 @@ export function PhysicalProperties({
     <>
       <div className="flex items-center justify-between gap-2 mb-1">
         <span className="inspector-badge">
-          Rigid Body · Collision On
+          {t.physical.rigidBadge}
         </span>
         {onOpenDatasheet && (
           <button
@@ -48,7 +50,7 @@ export function PhysicalProperties({
             className="text-xs text-blue-600 dark:text-blue-400 hover:underline font-semibold flex items-center gap-1"
             onClick={() => onOpenDatasheet(c.typeId.startsWith('jumper_') ? 'jumper' : c.typeId)}
           >
-            <span>Datasheet Asli</span>
+            <span>{t.physical.datasheetLink}</span>
             <ExternalLink size={12} />
           </button>
         )}
@@ -59,7 +61,7 @@ export function PhysicalProperties({
         <summary className="flex items-center justify-between">
           <span className="font-semibold text-xs flex items-center gap-1.5">
             <Compass size={13} className="text-sky-600 dark:text-sky-400" />
-            Orientasi & Kemiringan Fisik (3D Pose)
+            {t.physical.orientationTitle}
           </span>
           <span className="text-[10px] font-mono font-medium px-1.5 py-0.5 rounded border bg-slate-100 dark:bg-slate-800 text-slate-700 dark:text-slate-200 border-slate-300 dark:border-slate-700/60 shadow-xs">
             {pitchDeg}° / {yawDeg}°
@@ -67,7 +69,7 @@ export function PhysicalProperties({
         </summary>
 
         <p className="text-[11px] opacity-80 mt-1 mb-2 leading-tight">
-          Sesuaikan sudut kemiringan dan arah hadap komponen agar pin mengarah horizontal, diagonal, atau tegak seperti kondisi pemasangan nyata di meja kerja.
+          {t.physical.orientationHint}
         </p>
 
         {/* Quick Presets */}
@@ -83,8 +85,8 @@ export function PhysicalProperties({
               state().updateComponentRotation(c.id, [0, c.rotation[1], 0]);
             }}
           >
-            <span className={`font-semibold ${pitchDeg === 0 ? 'text-sky-800 dark:text-sky-300' : 'text-slate-800 dark:text-slate-200'}`}>Tegak (0°)</span>
-            <span className={`text-[9px] ${pitchDeg === 0 ? 'text-sky-700 dark:text-sky-300/80 font-medium' : 'text-slate-500 dark:text-slate-400'}`}>Vertikal</span>
+            <span className={`font-semibold ${pitchDeg === 0 ? 'text-sky-800 dark:text-sky-300' : 'text-slate-800 dark:text-slate-200'}`}>{t.physical.upright}</span>
+            <span className={`text-[9px] ${pitchDeg === 0 ? 'text-sky-700 dark:text-sky-300/80 font-medium' : 'text-slate-500 dark:text-slate-400'}`}>{t.physical.vertical}</span>
           </button>
           <button
             type="button"
@@ -97,8 +99,8 @@ export function PhysicalProperties({
               state().updateComponentRotation(c.id, [-Math.PI / 2, c.rotation[1], 0]);
             }}
           >
-            <span className={`font-semibold ${pitchDeg === -90 ? 'text-amber-800 dark:text-amber-300' : 'text-slate-800 dark:text-slate-200'}`}>Tidur (-90°)</span>
-            <span className={`text-[9px] ${pitchDeg === -90 ? 'text-amber-700 dark:text-amber-300/80 font-medium' : 'text-slate-500 dark:text-slate-400'}`}>Horizontal</span>
+            <span className={`font-semibold ${pitchDeg === -90 ? 'text-amber-800 dark:text-amber-300' : 'text-slate-800 dark:text-slate-200'}`}>{t.physical.lying}</span>
+            <span className={`text-[9px] ${pitchDeg === -90 ? 'text-amber-700 dark:text-amber-300/80 font-medium' : 'text-slate-500 dark:text-slate-400'}`}>{t.physical.horizontal}</span>
           </button>
           <button
             type="button"
@@ -111,8 +113,8 @@ export function PhysicalProperties({
               state().updateComponentRotation(c.id, [-Math.PI / 4, c.rotation[1], 0]);
             }}
           >
-            <span className={`font-semibold ${pitchDeg === -45 ? 'text-emerald-800 dark:text-emerald-300' : 'text-slate-800 dark:text-slate-200'}`}>Miring (45°)</span>
-            <span className={`text-[9px] ${pitchDeg === -45 ? 'text-emerald-700 dark:text-emerald-300/80 font-medium' : 'text-slate-500 dark:text-slate-400'}`}>Diagonal</span>
+            <span className={`font-semibold ${pitchDeg === -45 ? 'text-emerald-800 dark:text-emerald-300' : 'text-slate-800 dark:text-slate-200'}`}>{t.physical.tilted}</span>
+            <span className={`text-[9px] ${pitchDeg === -45 ? 'text-emerald-700 dark:text-emerald-300/80 font-medium' : 'text-slate-500 dark:text-slate-400'}`}>{t.physical.diagonal}</span>
           </button>
         </div>
 
@@ -126,7 +128,7 @@ export function PhysicalProperties({
             }}
           >
             <RotateCw size={11} className="text-indigo-600 dark:text-indigo-400" />
-            <span>Putar +90°</span>
+            <span>{t.physical.rotate90plus}</span>
           </button>
           <button
             type="button"
@@ -136,14 +138,14 @@ export function PhysicalProperties({
             }}
           >
             <RotateCcw size={11} className="text-purple-600 dark:text-purple-400" />
-            <span>Balik 180°</span>
+            <span>{t.physical.flip180}</span>
           </button>
         </div>
 
         {/* Pitch Slider */}
         <label className="flex flex-col text-[11px] gap-1 mb-2">
           <div className="flex justify-between items-center">
-            <span className="opacity-80">Kemiringan Pitch (Depan/Rebah):</span>
+            <span className="opacity-80">{t.physical.pitchLabel}</span>
             <span className="font-mono text-xs font-bold text-sky-700 dark:text-sky-400">
               {pitchDeg}°
             </span>
@@ -165,7 +167,7 @@ export function PhysicalProperties({
         {/* Yaw Slider */}
         <label className="flex flex-col text-[11px] gap-1 mb-1">
           <div className="flex justify-between items-center">
-            <span className="opacity-80">Arah Hadap Yaw (Putaran 360°):</span>
+            <span className="opacity-80">{t.physical.yawLabel}</span>
             <span className="font-mono text-xs font-bold text-indigo-700 dark:text-indigo-400">
               {yawDeg}°
             </span>
@@ -188,17 +190,17 @@ export function PhysicalProperties({
       {['resistor_220', 'led_red', 'potentiometer', 'push_button', 'esp32_wroom', 'oled_ssd1306', 'lcd1602_i2c', 'dht11', 'hcsr04', 'capacitor_universal'].includes(c.typeId) && (
         <details open className="inspector-details">
           <summary>
-            Koneksi Breadboard ({mounted.length ? `${mounted.length} Pin Tersambung` : 'Belum Tertancap'})
+            {t.physical.breadboardTitle} ({mounted.length ? t.physical.breadboardConnected.replace("{n}", String(mounted.length)) : t.physical.breadboardEmpty})
           </summary>
           <p className="text-[11px] opacity-80 mt-1 mb-2 leading-tight">
             {mounted.length
-              ? `${mounted.length} kaki komponen tertancap pas pada lubang breadboard.`
-              : 'Drag langsung komponen ke atas breadboard atau pilih lubang target di bawah ini.'}
+              ? t.physical.breadboardHintConnected.replace("{n}", String(mounted.length))
+              : t.physical.breadboardHintEmpty}
           </p>
           {board && (
             <div className="flex flex-col gap-1.5">
               <select
-                aria-label="Target lubang breadboard"
+                aria-label={t.physical.targetHoleAria}
                 value={holeId}
                 onChange={(e) => setHoleId(e.target.value)}
                 className="w-full text-xs font-mono px-2 py-1 rounded border border-slate-300 dark:border-slate-700 bg-white dark:bg-slate-800"
@@ -226,23 +228,23 @@ export function PhysicalProperties({
                   ]);
                 }}
               >
-                Tancapkan ke Lubang Ini
+                {t.physical.plugIntoHole}
               </button>
             </div>
           )}
           {c.typeId === 'resistor_220' && (
             <p className="text-[10px] opacity-70 mt-1">
-              Kaki resistor presisi pitch 10.16 mm (4 lubang). Geser ke luar breadboard untuk melepas.
+              {t.physical.resistorNote}
             </p>
           )}
           {c.typeId === 'capacitor_universal' && (
             <p className="text-[10px] opacity-70 mt-1">
-              Kaki kapasitor pitch 2.54 mm (1 baris lubang berdampingan). Anoda (+) di pin A, Katoda (-) di pin C.
+              {t.physical.capacitorNote}
             </p>
           )}
           {c.typeId === 'oled_ssd1306' && (
             <p className="text-[10px] opacity-70 mt-1">
-              Header 4-pin (GND, VCC, SCL, SDA) presisi pitch 2.54 mm. Dapat langsung ditancapkan ke 4 kolom breadboard berdampingan.
+              {t.physical.oledNote}
             </p>
           )}
         </details>
@@ -254,23 +256,23 @@ export function PhysicalProperties({
             <div className="flex items-center gap-1.5">
               <Zap size={15} className="text-amber-500 shrink-0" />
               <span className="text-xs font-bold text-slate-900 dark:text-slate-100">
-                Kapasitor Universal Adaptif
+                {t.physical.capacitorTitle}
               </span>
             </div>
             {c.state.status === 'overvoltage' ? (
               <span className="text-[10px] font-bold px-2 py-0.5 rounded bg-rose-50 dark:bg-rose-950/40 text-rose-700 dark:text-rose-300 border border-rose-200 dark:border-rose-800 flex items-center gap-1 animate-pulse">
                 <AlertTriangle size={11} className="text-rose-600 dark:text-rose-400" />
-                Overvoltage!
+                {t.physical.overvoltage}
               </span>
             ) : c.state.status === 'reversed' ? (
               <span className="text-[10px] font-bold px-2 py-0.5 rounded bg-amber-50 dark:bg-amber-950/40 text-amber-700 dark:text-amber-300 border border-amber-200 dark:border-amber-800 flex items-center gap-1 animate-pulse">
                 <AlertTriangle size={11} className="text-amber-600 dark:text-amber-400" />
-                Polaritas Terbalik
+                {t.physical.reversedPolarity}
               </span>
             ) : (
               <span className="text-[10px] font-semibold px-2 py-0.5 rounded bg-emerald-50 dark:bg-emerald-950/40 text-emerald-700 dark:text-emerald-300 border border-emerald-200 dark:border-emerald-800 flex items-center gap-1">
                 <ShieldCheck size={12} className="text-emerald-600 dark:text-emerald-400" />
-                Aman (Normal)
+                {t.physical.safeNormal}
               </span>
             )}
           </div>
@@ -278,7 +280,7 @@ export function PhysicalProperties({
           {/* Subtype Selector */}
           <div>
             <label className="text-[11px] font-semibold text-slate-800 dark:text-slate-200 mb-1 block">
-              Tipe Dielektrik & Konstruksi Fisik
+              {t.physical.dielectricTitle}
             </label>
             <div className="grid grid-cols-2 gap-1.5">
               <button
@@ -294,10 +296,10 @@ export function PhysicalProperties({
               >
                 <div className="font-bold flex items-center gap-1.5 text-xs">
                   <Zap size={13} className="text-sky-600 dark:text-sky-400 shrink-0" />
-                  <span>Elektrolit (Elco)</span>
+                  <span>{t.physical.electrolytic}</span>
                 </div>
                 <div className="text-[10px] text-slate-600 dark:text-slate-400 mt-1 leading-tight">
-                  Berpolaritas (+/-), kaleng silinder berventilasi.
+                  {t.physical.electrolyticDesc}
                 </div>
               </button>
 
@@ -314,10 +316,10 @@ export function PhysicalProperties({
               >
                 <div className="font-bold flex items-center gap-1.5 text-xs">
                   <Disc size={13} className="text-amber-600 dark:text-amber-400 shrink-0" />
-                  <span>Keramik (Disc)</span>
+                  <span>{t.physical.ceramic}</span>
                 </div>
                 <div className="text-[10px] text-slate-600 dark:text-slate-400 mt-1 leading-tight">
-                  Non-polaritas, cakram pipih kode EIA 3-digit.
+                  {t.physical.ceramicDesc}
                 </div>
               </button>
             </div>
@@ -327,7 +329,7 @@ export function PhysicalProperties({
           <div>
             <div className="flex justify-between items-center mb-1">
               <label className="text-[11px] font-semibold text-slate-800 dark:text-slate-200">
-                Kapasitansi Nominal
+                {t.physical.nominalCap}
               </label>
               <span className="text-xs font-mono font-bold text-sky-600 dark:text-sky-400">
                 {Number(c.state.displayValue ?? 470)} {String(c.state.unit || 'µF')}
@@ -410,10 +412,10 @@ export function PhysicalProperties({
           <div>
             <div className="flex justify-between items-center mb-1">
               <label className="text-[11px] font-semibold text-slate-800 dark:text-slate-200">
-                Tegangan Kerja Maksimum (WV)
+                {t.physical.maxVoltage}
               </label>
               <span className="text-xs font-mono font-bold text-amber-600 dark:text-amber-400">
-                {Number(c.state.ratedVoltage || 25)} Volt
+                {Number(c.state.ratedVoltage || 25)} {t.physical.voltUnit}
               </span>
             </div>
             <div className="grid grid-cols-4 gap-1">
@@ -435,7 +437,7 @@ export function PhysicalProperties({
               ))}
             </div>
             <p className="text-[9.5px] text-slate-600 dark:text-slate-400 mt-1">
-              Ukuran bodi kaleng 3D membesar proporsional mengikuti kapasitas dan tegangan kerja.
+              {t.physical.bodySizeNote}
             </p>
           </div>
 
@@ -443,7 +445,7 @@ export function PhysicalProperties({
           <div>
             <div className="flex justify-between items-center mb-1">
               <label className="text-[11px] font-semibold text-slate-800 dark:text-slate-200">
-                Resistansi Seri Ekivalen (ESR)
+                {t.physical.esrLabel}
               </label>
               <span className="text-[11px] font-mono font-semibold text-slate-700 dark:text-slate-300">
                 {Number(c.state.esr || 0.1).toFixed(2)} Ω
@@ -467,32 +469,32 @@ export function PhysicalProperties({
             <div className="flex items-center justify-between text-[11px] font-bold border-b border-slate-200 dark:border-slate-800 pb-1.5">
               <span className="flex items-center gap-1.5 text-slate-900 dark:text-slate-100">
                 <Activity size={13} className="text-emerald-600 dark:text-emerald-400 shrink-0" />
-                <span>Telemetri Fisika Rangkaian</span>
+                <span>{t.physical.telemetryTitle}</span>
               </span>
               <span className="font-mono text-[10px] text-slate-600 dark:text-slate-400">Q = C·V</span>
             </div>
 
             <div className="grid grid-cols-2 gap-2 pt-1 text-[11px]">
               <div>
-                <div className="text-[10px] text-slate-600 dark:text-slate-400 font-medium">Tegangan Plat (V_C)</div>
+                <div className="text-[10px] text-slate-600 dark:text-slate-400 font-medium">{t.physical.plateVoltage}</div>
                 <div className="font-mono font-bold text-slate-900 dark:text-slate-100 text-xs">
                   {Number(c.state.voltage || 0).toFixed(2)} V
                 </div>
               </div>
               <div>
-                <div className="text-[10px] text-slate-600 dark:text-slate-400 font-medium">Arus Aliran (I_C)</div>
+                <div className="text-[10px] text-slate-600 dark:text-slate-400 font-medium">{t.physical.flowCurrent}</div>
                 <div className="font-mono font-bold text-slate-900 dark:text-slate-100 text-xs">
                   {Number(c.state.currentMa || 0).toFixed(2)} mA
                 </div>
               </div>
               <div>
-                <div className="text-[10px] text-slate-600 dark:text-slate-400 font-medium">Muatan Tersimpan (Q)</div>
+                <div className="text-[10px] text-slate-600 dark:text-slate-400 font-medium">{t.physical.storedCharge}</div>
                 <div className="font-mono font-bold text-slate-900 dark:text-slate-100 text-xs">
                   {Number(c.state.chargeU_C || 0).toFixed(1)} µC
                 </div>
               </div>
               <div>
-                <div className="text-[10px] text-slate-600 dark:text-slate-400 font-medium">Energi Kapasitor (E)</div>
+                <div className="text-[10px] text-slate-600 dark:text-slate-400 font-medium">{t.physical.capEnergy}</div>
                 <div className="font-mono font-bold text-slate-900 dark:text-slate-100 text-xs">
                   {Number(c.state.energy_mJ || 0).toFixed(3)} mJ
                 </div>
@@ -502,7 +504,7 @@ export function PhysicalProperties({
             {/* Meter Bar (% of rated voltage) */}
             <div className="mt-1">
               <div className="flex justify-between text-[9.5px] text-slate-600 dark:text-slate-400 mb-0.5 font-mono">
-                <span>Beban Dielektrik</span>
+                <span>{t.physical.dielectricLoad}</span>
                 <span className="font-bold">
                   {(
                     (Math.abs(Number(c.state.voltage || 0)) /
@@ -539,21 +541,21 @@ export function PhysicalProperties({
       {c.typeId === 'led_red' && (
         <div className="inspector-card flex flex-col gap-2">
           <div className="flex justify-between items-center">
-            <span className="text-xs font-semibold">Pilihan Warna LED (5mm)</span>
+            <span className="text-xs font-semibold">{t.physical.ledColorsTitle}</span>
             <span className="text-[11px] font-mono uppercase opacity-75">
               {String(c.state.color || '#ef4444')}
             </span>
           </div>
           <div className="grid grid-cols-4 gap-1.5">
             {[
-              { name: 'Merah', color: '#ef4444' },
-              { name: 'Hijau', color: '#22c55e' },
-              { name: 'Biru', color: '#3b82f6' },
-              { name: 'Kuning', color: '#eab308' },
-              { name: 'Oranye', color: '#f97316' },
-              { name: 'Putih', color: '#f8fafc' },
-              { name: 'Ungu', color: '#a855f7' },
-              { name: 'Cyan', color: '#06b6d4' },
+              { name: t.physical.ledRed, color: '#ef4444' },
+              { name: t.physical.ledGreen, color: '#22c55e' },
+              { name: t.physical.ledBlue, color: '#3b82f6' },
+              { name: t.physical.ledYellow, color: '#eab308' },
+              { name: t.physical.ledOrange, color: '#f97316' },
+              { name: t.physical.ledWhite, color: '#f8fafc' },
+              { name: t.physical.ledPurple, color: '#a855f7' },
+              { name: t.physical.ledCyan, color: '#06b6d4' },
             ].map((swatch) => (
               <button
                 key={swatch.color}
@@ -574,7 +576,7 @@ export function PhysicalProperties({
             ))}
           </div>
           <label className="flex justify-between items-center text-xs mt-1 pt-1.5 border-t border-slate-700/40">
-            <span>Warna Kustom Hex</span>
+            <span>{t.physical.ledCustomHex}</span>
             <input
               type="color"
               className="w-8 h-6 rounded cursor-pointer border border-slate-600"
@@ -588,7 +590,7 @@ export function PhysicalProperties({
       {c.typeId === 'oled_ssd1306' && (
         <div className="inspector-card flex flex-col gap-2.5">
           <div className="flex justify-between items-center">
-            <span className="text-xs font-semibold">Tampilan Layar OLED 0.96"</span>
+            <span className="text-xs font-semibold">{t.physical.oledTitle}</span>
             <span
               className={`text-[10px] font-mono font-semibold px-2 py-0.5 rounded border shadow-xs ${
                 c.state.isPowered !== false
@@ -596,19 +598,19 @@ export function PhysicalProperties({
                   : 'bg-rose-100 dark:bg-rose-500/20 text-rose-800 dark:text-rose-300 border-rose-300 dark:border-rose-500/40'
               }`}
             >
-              {c.state.isPowered !== false ? 'Daya 3.3V-5V OK' : 'Belum Ada Daya'}
+              {c.state.isPowered !== false ? t.physical.poweredOk : t.physical.noPower}
             </span>
           </div>
 
           <div className="flex flex-col gap-1">
-            <span className="text-[11px] opacity-80">Preset Gambar & Grafik:</span>
+            <span className="text-[11px] opacity-80">{t.physical.imagePresetLabel}</span>
             <div className="grid grid-cols-3 gap-1">
               {[
-                { id: 'logo', label: 'Logo' },
-                { id: 'circuit', label: 'Sirkuit' },
-                { id: 'gauge', label: 'Gauge' },
-                { id: 'invader', label: 'Retro 8-Bit' },
-                { id: 'custom', label: 'Teks Bebas' },
+                { id: 'logo', label: t.physical.presetLogo },
+                { id: 'circuit', label: t.physical.presetCircuit },
+                { id: 'gauge', label: t.physical.presetGauge },
+                { id: 'invader', label: t.physical.presetRetro },
+                { id: 'custom', label: t.physical.presetCustom },
               ].map((p) => (
                 <button
                   key={p.id}
@@ -627,11 +629,11 @@ export function PhysicalProperties({
           </div>
 
           <div className="flex flex-col gap-1">
-            <span className="text-[11px] opacity-80">Teks / Karakter Tampilan:</span>
+            <span className="text-[11px] opacity-80">{t.physical.oledTextLabel}</span>
             <textarea
               rows={3}
               className="inspector-input text-xs font-mono resize-none leading-relaxed p-2"
-              placeholder="Ketik pesan untuk OLED..."
+              placeholder={t.physical.oledPlaceholder}
               value={String(c.state.text || '')}
               onChange={(e) =>
                 state().updateComponentState(c.id, {
@@ -650,7 +652,7 @@ export function PhysicalProperties({
                 state().updateComponentState(c.id, { inverted: !c.state.inverted })
               }
             >
-              {c.state.inverted ? 'Normal (Hitam)' : 'Invert Warna'}
+              {c.state.inverted ? t.physical.normalBlack : t.physical.invertColors}
             </button>
             <span className="text-[10px] opacity-60 font-mono">SSD1306 · 128×64</span>
           </div>
@@ -660,7 +662,7 @@ export function PhysicalProperties({
       {c.typeId === 'servo_sg90' && (
         <div className="inspector-card flex flex-col gap-2.5">
           <div className="flex justify-between items-center">
-            <span className="text-xs font-semibold">Micro Servo SG90 (9g)</span>
+            <span className="text-xs font-semibold">{t.physical.servoTitle}</span>
             <span
               className={`text-[10px] font-mono font-semibold px-1.5 py-0.5 rounded border shadow-xs ${
                 c.state.isPowered !== false
@@ -668,19 +670,19 @@ export function PhysicalProperties({
                   : 'bg-rose-100 dark:bg-rose-500/20 text-rose-800 dark:text-rose-300 border-rose-300 dark:border-rose-500/40'
               }`}
             >
-              {c.state.isPowered !== false ? 'Daya Cukup (4.8-6V)' : 'Tanpa Daya (Min 4.0V)'}
+              {c.state.isPowered !== false ? t.physical.servoPowerOk : t.physical.servoNoPower}
             </span>
           </div>
 
           <div className="flex flex-col gap-1.5">
             <div className="flex justify-between text-xs">
-              <span>Sudut Servo (Angle)</span>
+              <span>{t.physical.servoAngle}</span>
               <span className="font-mono font-bold text-sky-700 dark:text-sky-400">
                 {Math.round(Number(c.state.angle ?? 90))}°
               </span>
             </div>
             <input
-              aria-label="Sudut rotasi servo"
+              aria-label={t.physical.servoAngle}
               type="range"
               min={0}
               max={180}
@@ -692,19 +694,19 @@ export function PhysicalProperties({
               className="w-full cursor-pointer accent-sky-600 dark:accent-sky-500"
             />
             <div className="flex justify-between text-[10px] opacity-60">
-              <span>0° (Kiri)</span>
-              <span>90° (Tengah)</span>
-              <span>180° (Kanan)</span>
+              <span>{t.physical.servoLeft}</span>
+              <span>{t.physical.servoCenter}</span>
+              <span>{t.physical.servoRight}</span>
             </div>
           </div>
 
           <div className="flex flex-col gap-1">
-            <span className="text-[11px] opacity-80">Bentuk Lengan Horn:</span>
+            <span className="text-[11px] opacity-80">{t.physical.hornShape}</span>
             <div className="grid grid-cols-3 gap-1.5">
               {[
-                { id: 'single', label: '1 Sisi (Single)' },
-                { id: 'double', label: '2 Sisi (Double)' },
-                { id: 'cross', label: 'Silang (Cross)' },
+                { id: 'single', label: t.physical.hornSingle },
+                { id: 'double', label: t.physical.hornDouble },
+                { id: 'cross', label: t.physical.hornCross },
               ].map((h) => (
                 <button
                   key={h.id}
@@ -723,7 +725,7 @@ export function PhysicalProperties({
           </div>
 
           <div className="text-[10px] p-2 bg-slate-100 dark:bg-slate-900/60 rounded border border-slate-200 dark:border-slate-700/40 text-slate-700 dark:text-slate-300 leading-relaxed font-mono">
-            Kabel: Cokelat=GND · Merah=5V · Oranye=PWM (Pin D9/GPIO)
+            {t.physical.servoWireNote}
           </div>
         </div>
       )}
@@ -731,7 +733,7 @@ export function PhysicalProperties({
       {c.typeId === 'lcd1602_i2c' && (
         <div className="inspector-card flex flex-col gap-2.5">
           <div className="flex justify-between items-center">
-            <span className="text-xs font-semibold">LCD 16x2 I2C (PCF8574)</span>
+            <span className="text-xs font-semibold">{t.physical.lcdTitle}</span>
             <span
               className={`text-[10px] font-mono font-semibold px-1.5 py-0.5 rounded border shadow-xs ${
                 c.state.isPowered !== false
@@ -739,18 +741,18 @@ export function PhysicalProperties({
                   : 'bg-rose-100 dark:bg-rose-500/20 text-rose-800 dark:text-rose-300 border-rose-300 dark:border-rose-500/40'
               }`}
             >
-              {c.state.isPowered !== false ? 'Daya OK (5V)' : 'Butuh 5V (Min 4.2V)'}
+              {c.state.isPowered !== false ? t.physical.lcdPowerOk : t.physical.lcdNeedPower}
             </span>
           </div>
 
           <div className="flex flex-col gap-1.5">
-            <span className="text-[11px] opacity-80">Teks Baris 1 (Maks 16 karakter):</span>
+            <span className="text-[11px] opacity-80">{t.physical.lcdRow1}</span>
             <input
               type="text"
               maxLength={16}
               className="inspector-input text-xs font-mono p-1.5"
               value={String(c.state.line0 ?? '')}
-              placeholder="Baris 1..."
+              placeholder={t.physical.lcdRow1Ph}
               onChange={(e) =>
                 state().updateComponentState(c.id, { line0: e.target.value.slice(0, 16) })
               }
@@ -758,13 +760,13 @@ export function PhysicalProperties({
           </div>
 
           <div className="flex flex-col gap-1.5">
-            <span className="text-[11px] opacity-80">Teks Baris 2 (Maks 16 karakter):</span>
+            <span className="text-[11px] opacity-80">{t.physical.lcdRow2}</span>
             <input
               type="text"
               maxLength={16}
               className="inspector-input text-xs font-mono p-1.5"
               value={String(c.state.line1 ?? '')}
-              placeholder="Baris 2..."
+              placeholder={t.physical.lcdRow2Ph}
               onChange={(e) =>
                 state().updateComponentState(c.id, { line1: e.target.value.slice(0, 16) })
               }
@@ -779,7 +781,7 @@ export function PhysicalProperties({
                 state().updateComponentState(c.id, { backlight: c.state.backlight === false })
               }
             >
-              {c.state.backlight !== false ? 'Backlight ON' : 'Backlight OFF'}
+              {c.state.backlight !== false ? t.physical.backlightOn : t.physical.backlightOff}
             </button>
 
             <button
@@ -791,7 +793,7 @@ export function PhysicalProperties({
                 })
               }
             >
-              {c.state.theme === 'blue' ? 'Tema Biru' : 'Tema Hijau'}
+              {c.state.theme === 'blue' ? t.physical.themeBlue : t.physical.themeGreen}
             </button>
           </div>
           <div className="text-[10px] opacity-60 font-mono text-center">
@@ -803,7 +805,7 @@ export function PhysicalProperties({
       {c.typeId === 'dht11' && (
         <div className="inspector-card flex flex-col gap-2.5">
           <div className="flex justify-between items-center">
-            <span className="text-xs font-semibold">Sensor DHT11 (Suhu & RH)</span>
+            <span className="text-xs font-semibold">{t.physical.dhtTitle}</span>
             <span
               className={`text-[10px] font-mono font-semibold px-1.5 py-0.5 rounded border shadow-xs ${
                 c.state.isPowered !== false
@@ -811,31 +813,31 @@ export function PhysicalProperties({
                   : 'bg-rose-100 dark:bg-rose-500/20 text-rose-800 dark:text-rose-300 border-rose-300 dark:border-rose-500/40'
               }`}
             >
-              {c.state.isPowered !== false ? 'Daya OK (3.3V-5V)' : 'Butuh Daya (3.3V-5V)'}
+              {c.state.isPowered !== false ? t.physical.dhtPowerOk : t.physical.dhtNeedPower}
             </span>
           </div>
 
           {/* Temperature Slider */}
           <label className="flex flex-col text-[11px] gap-1">
             <div className="flex justify-between items-center">
-              <span className="opacity-80">Suhu Lingkungan (°C):</span>
+              <span className="opacity-80">{t.physical.ambientTemp}</span>
               <div className="flex items-center gap-1.5">
                 <span className="font-mono font-bold text-xs text-sky-700 dark:text-sky-400">
                   {Number(c.state.temperature ?? 24)}°C
                 </span>
                 <span className="text-[9px] px-1.5 py-0.5 rounded bg-slate-200 dark:bg-slate-800 text-slate-800 dark:text-slate-200 border border-slate-300 dark:border-slate-700 font-medium">
                   {Number(c.state.temperature ?? 24) < 18
-                    ? 'Sejuk'
+                    ? t.physical.tempCool
                     : Number(c.state.temperature ?? 24) <= 28
-                      ? 'Nyaman'
+                      ? t.physical.tempComfort
                       : Number(c.state.temperature ?? 24) <= 35
-                        ? 'Hangat'
-                        : 'Panas'}
+                        ? t.physical.tempWarm
+                        : t.physical.tempHot}
                 </span>
               </div>
             </div>
             <input
-              aria-label="Suhu lingkungan DHT11"
+              aria-label={t.physical.dhtTempAria}
               type="range"
               min="0"
               max="50"
@@ -851,22 +853,22 @@ export function PhysicalProperties({
           {/* Humidity Slider */}
           <label className="flex flex-col text-[11px] gap-1">
             <div className="flex justify-between items-center">
-              <span className="opacity-80">Kelembaban Udara (% RH):</span>
+              <span className="opacity-80">{t.physical.ambientHumidity}</span>
               <div className="flex items-center gap-1.5">
                 <span className="font-mono font-bold text-xs text-emerald-700 dark:text-emerald-400">
                   {Number(c.state.humidity ?? 50)}%
                 </span>
                 <span className="text-[9px] px-1.5 py-0.5 rounded bg-slate-200 dark:bg-slate-800 text-slate-800 dark:text-slate-200 border border-slate-300 dark:border-slate-700 font-medium">
                   {Number(c.state.humidity ?? 50) < 35
-                    ? 'Kering'
+                    ? t.physical.humDry
                     : Number(c.state.humidity ?? 50) <= 65
-                      ? 'Ideal'
-                      : 'Lembab'}
+                      ? t.physical.humIdeal
+                      : t.physical.humHumid}
                 </span>
               </div>
             </div>
             <input
-              aria-label="Kelembaban udara DHT11"
+              aria-label={t.physical.dhtHumAria}
               type="range"
               min="20"
               max="90"
@@ -880,7 +882,7 @@ export function PhysicalProperties({
           </label>
 
           <div className="text-[10px] p-2 bg-slate-100 dark:bg-slate-900/60 rounded border border-slate-200 dark:border-slate-700/40 text-slate-700 dark:text-slate-300 leading-relaxed font-mono">
-            Pinout: Pin 1 = VCC (3.3V/5V) · Pin 2 = DATA (Digital) · Pin 3 = GND
+            {t.physical.dhtPinout}
           </div>
         </div>
       )}
@@ -888,7 +890,7 @@ export function PhysicalProperties({
       {c.typeId === 'hcsr04' && (
         <div className="inspector-card flex flex-col gap-2.5">
           <div className="flex justify-between items-center">
-            <span className="text-xs font-semibold">Ultrasonik HC-SR04</span>
+            <span className="text-xs font-semibold">{t.physical.hcsrTitle}</span>
             <span
               className={`text-[10px] font-mono font-semibold px-1.5 py-0.5 rounded border shadow-xs ${
                 c.state.isPowered !== false
@@ -896,29 +898,29 @@ export function PhysicalProperties({
                   : 'bg-rose-100 dark:bg-rose-500/20 text-rose-800 dark:text-rose-300 border-rose-300 dark:border-rose-500/40'
               }`}
             >
-              {c.state.isPowered !== false ? 'Daya OK (5V)' : 'Butuh 5V (Min 4.2V)'}
+              {c.state.isPowered !== false ? t.physical.hcsrPowerOk : t.physical.hcsrNeedPower}
             </span>
           </div>
 
           {/* Distance Slider */}
           <label className="flex flex-col text-[11px] gap-1">
             <div className="flex justify-between items-center">
-              <span className="opacity-80">Jarak Objek Pantul:</span>
+              <span className="opacity-80">{t.physical.reflectDistance}</span>
               <div className="flex items-center gap-1.5">
                 <span className="font-mono font-bold text-xs text-cyan-700 dark:text-cyan-400">
                   {Number(c.state.distance ?? 25)} cm
                 </span>
                 <span className="text-[9px] px-1.5 py-0.5 rounded bg-slate-200 dark:bg-slate-800 text-slate-800 dark:text-slate-200 border border-slate-300 dark:border-slate-700 font-medium">
                   {Number(c.state.distance ?? 25) < 10
-                    ? 'Dekat!'
+                    ? t.physical.distNear
                     : Number(c.state.distance ?? 25) <= 50
-                      ? 'Sedang'
-                      : 'Jauh'}
+                      ? t.physical.distMedium
+                      : t.physical.distFar}
                 </span>
               </div>
             </div>
             <input
-              aria-label="Jarak objek HC-SR04"
+              aria-label={t.physical.hcsrDistAria}
               type="range"
               min="2"
               max="400"
@@ -933,26 +935,26 @@ export function PhysicalProperties({
 
           {/* Pulse Duration Metric Badge */}
           <div className="flex justify-between items-center text-[10px] font-mono px-1">
-            <span className="text-slate-600 dark:text-slate-400">Estimasi Durasi Pulsa:</span>
+            <span className="text-slate-600 dark:text-slate-400">{t.physical.pulseEstimate}</span>
             <span className="text-amber-700 dark:text-amber-300 font-bold">
               {Math.round(Number(c.state.distance ?? 25) * 58.3)} µs
             </span>
           </div>
 
           <div className="text-[10px] p-2 bg-slate-100 dark:bg-slate-900/60 rounded border border-slate-200 dark:border-slate-700/40 text-slate-700 dark:text-slate-300 leading-relaxed font-mono">
-            Pinout: VCC (5V) · TRIG (Input Pulsa) · ECHO (Output Pulsa) · GND
+            {t.physical.hcsrPinout}
           </div>
         </div>
       )}
 
       {c.typeId.startsWith('jumper_') && (
         <div className="inspector-card flex flex-col gap-2">
-          <span className="text-xs font-semibold">Warna Kabel Jumper</span>
+          <span className="text-xs font-semibold">{t.physical.jumperColorTitle}</span>
           <WireColors onChange={(color) => state().updateComponentState(c.id, { color })} />
           <label className="flex justify-between items-center text-xs">
-            Warna kustom
+            {t.physical.customColor}
             <input
-              aria-label="Warna jumper"
+              aria-label={t.physical.jumperColorAria}
               type="color"
               className="w-8 h-6 rounded cursor-pointer"
               value={colors[String(c.state.color)] || String(c.state.color)}
@@ -962,11 +964,11 @@ export function PhysicalProperties({
           {(['depth', 'bendHeight'] as const).map((key) => (
             <label key={key} className="flex flex-col text-[11px] gap-1">
               <span className="flex justify-between">
-                <span>{key === 'depth' ? 'Panjang lekukan' : 'Tinggi lengkungan'}</span>
+                <span>{key === 'depth' ? t.physical.bendLength : t.physical.archHeight}</span>
                 <span className="font-mono">{Number(c.state[key]).toFixed(1)}</span>
               </span>
               <input
-                aria-label={key === 'depth' ? 'Panjang lekukan jumper' : 'Tinggi lekukan jumper'}
+                aria-label={key === 'depth' ? t.physical.jumperDepthAria : t.physical.jumperHeightAria}
                 type="range"
                 min={key === 'depth' ? 3 : 0.3}
                 max={key === 'depth' ? 16 : 8}

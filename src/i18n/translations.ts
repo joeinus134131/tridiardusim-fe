@@ -174,6 +174,14 @@ export const en = {
     backendRejected: "Backend rejected project: ",
     backendUnavailable: "Backend unavailable",
   },
+  serverProjects: {
+    title: "Open Server Project",
+    subtitle: "Choose a saved project to replace the current workspace.",
+    empty: "No projects have been saved on the server yet.",
+    open: "Open",
+    refresh: "Refresh list",
+    close: "Close server projects",
+  },
   helpModal: {
     title: "IDN MAKERSPACE Lab 3D Usage Guide",
     navTitle: "Standard 3D Camera Navigation:",
@@ -687,6 +695,14 @@ export const id: Dict = {
     foundProjects: "Ditemukan {n} proyek tersimpan di server.",
     backendRejected: "Backend menolak proyek: ",
     backendUnavailable: "Backend tidak tersedia",
+  },
+  serverProjects: {
+    title: "Buka Proyek Server",
+    subtitle: "Pilih proyek tersimpan untuk mengganti ruang kerja saat ini.",
+    empty: "Belum ada proyek yang tersimpan di server.",
+    open: "Buka",
+    refresh: "Muat ulang daftar",
+    close: "Tutup daftar proyek server",
   },
   helpModal: {
     title: "Panduan Penggunaan IDN MAKERSPACE Lab 3D",

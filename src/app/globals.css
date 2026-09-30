@@ -1219,6 +1219,71 @@ body {
   overflow: hidden;
   color: #f8fafc;
 }
+.server-projects-modal {
+  width: min(620px, 100%);
+  max-height: min(720px, 88vh);
+  display: flex;
+  flex-direction: column;
+  overflow: hidden;
+  color: #f8fafc;
+  background: #0f172a;
+  border: 1px solid rgba(59, 130, 246, 0.35);
+  border-radius: 12px;
+  box-shadow: 0 25px 50px -12px rgba(0, 0, 0, 0.8);
+}
+.server-projects-body {
+  min-height: 180px;
+  padding: 14px;
+  overflow-y: auto;
+}
+.server-projects-list {
+  display: flex;
+  flex-direction: column;
+  gap: 8px;
+}
+.server-project-item {
+  width: 100%;
+  display: grid;
+  grid-template-columns: auto minmax(0, 1fr) auto;
+  align-items: center;
+  gap: 12px;
+  padding: 12px 14px;
+  text-align: left;
+  color: #e2e8f0;
+  background: #172033;
+  border: 1px solid rgba(148, 163, 184, 0.16);
+  border-radius: 9px;
+  cursor: pointer;
+}
+.server-project-item:hover:not(:disabled) {
+  background: #1e293b;
+  border-color: rgba(96, 165, 250, 0.65);
+}
+.server-project-item:disabled { opacity: 0.55; cursor: wait; }
+.server-project-item span { min-width: 0; display: flex; flex-direction: column; }
+.server-project-item strong { overflow: hidden; text-overflow: ellipsis; white-space: nowrap; }
+.server-project-item small { color: #64748b; font: 10px/1.4 monospace; }
+.server-project-open-label { color: #60a5fa; font-size: 12px; font-weight: 700; }
+.server-projects-empty { padding: 52px 20px; text-align: center; color: #94a3b8; }
+.server-projects-footer {
+  display: flex;
+  justify-content: flex-end;
+  padding: 12px 14px;
+  background: #0b1220;
+  border-top: 1px solid rgba(148, 163, 184, 0.12);
+}
+.server-project-refresh {
+  display: inline-flex;
+  align-items: center;
+  gap: 7px;
+  padding: 8px 12px;
+  color: #dbeafe;
+  background: #1d4ed8;
+  border: 0;
+  border-radius: 7px;
+  cursor: pointer;
+}
+.server-project-refresh:disabled { opacity: 0.55; cursor: wait; }
 .datasheet-header {
   display: flex;
   align-items: center;
@@ -1339,4 +1404,3 @@ body {
   align-items: center;
   justify-content: space-between;
 }
-

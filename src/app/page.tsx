@@ -3,6 +3,10 @@ import { PhysicalProperties } from "@/components/panels/PhysicalProperties";
 import { WireProperties } from "@/components/panels/WireProperties";
 import { DesktopMenuBar } from "@/components/panels/DesktopMenuBar";
 import { DatasheetModal } from "@/components/panels/DatasheetModal";
+import {
+  ServerProjectsModal,
+  type ServerProjectSummary,
+} from "@/components/panels/ServerProjectsModal";
 import { useState, useEffect, useRef } from "react";
 import {
   FileText,
@@ -133,7 +137,8 @@ export default function WorkspacePage() {
   const [name, setName] = useState(t.notices.defaultProjectName);
   const [notice, setNotice] = useState("");
   const [tab, setTab] = useState("komponen");
-  const [, setProjects] = useState<{ id: string; name: string }[]>([]);
+  const [projects, setProjects] = useState<ServerProjectSummary[]>([]);
+  const [serverProjectsOpen, setServerProjectsOpen] = useState(false);
   const [from, setFrom] = useState("");
   const [to, setTo] = useState("");
   const [color, setColor] = useState("#2563eb");
@@ -286,6 +291,29 @@ export default function WorkspacePage() {
     setDatasheetOpen(true);
   };
 
+  const fetchServerProjects = () =>
+    guard(async () => {
+      const response = await fetch(api + "/api/projects", {
+        signal: AbortSignal.timeout(5000),
+      });
+      if (!response.ok) throw new Error(t.notices.backendUnavailable);
+      const payload = (await response.json()) as { projects?: ServerProjectSummary[] };
+      const list = Array.isArray(payload.projects) ? payload.projects : [];
+      setProjects(list);
+      setServerProjectsOpen(true);
+      setNotice(t.notices.foundProjects.replace("{n}", String(list.length)));
+    });
+
+  const loadServerProject = (project: ServerProjectSummary) =>
+    guard(async () => {
+      const response = await fetch(api + "/api/projects/" + encodeURIComponent(project.id), {
+        signal: AbortSignal.timeout(5000),
+      });
+      if (!response.ok) throw new Error(t.notices.backendUnavailable);
+      replace(parseProject(await response.json()));
+      setServerProjectsOpen(false);
+    });
+
   return (
     <div className="workspace">
       {/* 1. TOP WINDOW MENU BAR */}
@@ -345,17 +373,7 @@ export default function WorkspacePage() {
             setNotice(t.notices.savedBackend + p.id);
           });
         }}
-        onLoadServer={() => {
-          guard(async () => {
-            const r = await fetch(api + "/api/projects", {
-              signal: AbortSignal.timeout(5000),
-            });
-            if (!r.ok) throw new Error(t.notices.backendUnavailable);
-            const list = (await r.json()).projects;
-            setProjects(list);
-            setNotice(t.notices.foundProjects.replace("{n}", String(list.length)));
-          });
-        }}
+        onLoadServer={() => void fetchServerProjects()}
         onClearAll={() => {
           guard(() => {
             backup();
@@ -380,6 +398,16 @@ export default function WorkspacePage() {
         isRightPanelOpen={rightPanelOpen}
         onToggleRightPanel={() => setRightPanelOpen(!rightPanelOpen)}
         busy={busy}
+      />
+
+      <ServerProjectsModal
+        isOpen={serverProjectsOpen}
+        projects={projects}
+        busy={busy}
+        labels={t.serverProjects}
+        onClose={() => setServerProjectsOpen(false)}
+        onRefresh={() => void fetchServerProjects()}
+        onSelect={(project) => void loadServerProject(project)}
       />
 
       {/* 2. SUB-TOOLBAR */}

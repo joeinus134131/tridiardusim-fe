@@ -116,6 +116,9 @@ export class ArduinoInterpreter {
         c.state.value,
         c.state.isPressed,
         c.state.resistance,
+        c.state.outputMask,
+        c.state.steps,
+        c.state.angle,
       ]),
       s.wires.map(w=>[w.sourceComponentId,w.sourcePinId,w.targetComponentId,w.targetPinId]),
     ]);

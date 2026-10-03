@@ -3,7 +3,9 @@ import {
   dht11Pins,
   hcsr04Pins,
   lcd1602Pins,
+  nema17Pins,
   oledPins,
+  omronCp1ePins,
   servoPins,
   unoPins,
 } from "./physical";
@@ -62,6 +64,16 @@ ComponentRegistry.register({
 ComponentRegistry.register({
  typeId: "esp32_wroom", name: "ESP32-WROOM DevKitC", type: "board", category: "Boards",
  description: "DevKitC V4 · 38 pin · GPIO 3.3 V, ADC 12-bit, PWM & Serial virtual.", defaultState: {}, pins: esp32Pins,
+});
+
+ComponentRegistry.register({
+  typeId: "plc_omron_cp1e",
+  name: "PLC Omron CP1E-N20",
+  type: "board",
+  category: "Boards",
+  description: "PLC kompak 24 VDC · 12 input digital · 8 output relay · indikator I/O realtime.",
+  defaultState: { isPowered: false, inputMask: 0, outputMask: 0, scanCount: 0, vDiff: 0 },
+  pins: omronCp1ePins,
 });
 
 ComponentRegistry.register({
@@ -209,6 +221,24 @@ ComponentRegistry.register({
     hornType: "single",
   },
   pins: servoPins,
+});
+
+ComponentRegistry.register({
+  typeId: "stepper_nema17",
+  name: "Motor Stepper NEMA 17 Bipolar",
+  type: "actuator",
+  description: "Stepper bipolar 42 mm · 1,8°/step · 200 langkah/putaran · empat kabel A+/A-/B+/B-.",
+  category: "Actuators",
+  defaultState: {
+    angle: 0,
+    steps: 0,
+    rpm: 0,
+    direction: "idle",
+    isPowered: false,
+    phaseIndex: -1,
+    currentMa: 0,
+  },
+  pins: nema17Pins,
 });
 
 ComponentRegistry.register({

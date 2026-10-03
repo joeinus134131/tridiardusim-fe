@@ -659,6 +659,71 @@ export function PhysicalProperties({
         </div>
       )}
 
+      {c.typeId === 'plc_omron_cp1e' && (
+        <details open className="inspector-details">
+          <summary className="flex items-center gap-1.5">
+            <Activity size={13} className="text-sky-500" />
+            <span className="text-xs font-semibold">PLC I/O Monitor</span>
+          </summary>
+          <div className="mt-2 flex items-center justify-between text-[11px]">
+            <span>CPU</span>
+            <span className={c.state.isPowered ? 'text-emerald-500 font-semibold' : 'text-rose-500'}>
+              {c.state.isPowered ? 'RUN · 24 V' : 'STOP'}
+            </span>
+          </div>
+          <div className="mt-2">
+            <span className="text-[10px] opacity-70">INPUT X0–X11</span>
+            <div className="grid grid-cols-6 gap-1 mt-1">
+              {Array.from({ length: 12 }, (_, i) => {
+                const active = (Number(c.state.inputMask || 0) & (1 << i)) !== 0;
+                return <div key={i} className={`rounded border px-1 py-1 text-center text-[9px] font-mono ${active ? 'bg-amber-500/20 border-amber-500 text-amber-500' : 'border-slate-300 dark:border-slate-700 opacity-60'}`}>X{i}</div>;
+              })}
+            </div>
+          </div>
+          <div className="mt-2">
+            <span className="text-[10px] opacity-70">RELAY OUTPUT Y0–Y7</span>
+            <div className="grid grid-cols-4 gap-1 mt-1">
+              {Array.from({ length: 8 }, (_, i) => {
+                const mask = Number(c.state.outputMask || 0);
+                const active = (mask & (1 << i)) !== 0;
+                return (
+                  <button key={i} type="button" onClick={() => state().updateComponentState(c.id, { outputMask: active ? mask & ~(1 << i) : mask | (1 << i) })} className={`rounded border px-1 py-1 text-[10px] font-mono ${active ? 'bg-emerald-500/20 border-emerald-500 text-emerald-500' : 'border-slate-300 dark:border-slate-700'}`}>
+                    Y{i} {active ? 'ON' : 'OFF'}
+                  </button>
+                );
+              })}
+            </div>
+          </div>
+          <p className="text-[10px] opacity-70 mt-2">Hubungkan 24V ke input X melalui sensor/sakelar. Output relay menghubungkan COMQ ke terminal Y yang aktif.</p>
+        </details>
+      )}
+
+      {c.typeId === 'stepper_nema17' && (
+        <details open className="inspector-details">
+          <summary className="flex items-center gap-1.5">
+            <Disc size={13} className="text-indigo-500" />
+            <span className="text-xs font-semibold">Stepper Debug</span>
+          </summary>
+          <div className="grid grid-cols-2 gap-2 mt-2 text-[11px]">
+            <div className="inspector-card"><span className="opacity-60">Posisi</span><div className="font-mono font-semibold">{Number(c.state.steps || 0)} step</div></div>
+            <div className="inspector-card"><span className="opacity-60">Sudut</span><div className="font-mono font-semibold">{Number(c.state.angle || 0).toFixed(1)}°</div></div>
+            <div className="inspector-card"><span className="opacity-60">Arah</span><div className="font-mono font-semibold">{String(c.state.direction || 'idle')}</div></div>
+            <div className="inspector-card"><span className="opacity-60">Arus coil</span><div className="font-mono font-semibold">{Number(c.state.currentMa || 0).toFixed(0)} mA</div></div>
+          </div>
+          <div className="grid grid-cols-2 gap-1.5 mt-2">
+            {[-1, 1].map((delta) => (
+              <button key={delta} type="button" className="small-button text-xs py-1" onClick={() => {
+                const steps = Number(c.state.steps || 0) + delta;
+                state().updateComponentState(c.id, { steps, angle: steps * 1.8, direction: delta > 0 ? 'CW' : 'CCW' });
+              }}>
+                {delta < 0 ? '−1 step CCW' : '+1 step CW'}
+              </button>
+            ))}
+          </div>
+          <p className="text-[10px] opacity-70 mt-2">Urutan kumparan bipolar dibaca realtime dari A+, A−, B+, B−. Gunakan driver H-bridge berarus terbatas pada rangkaian nyata.</p>
+        </details>
+      )}
+
       {c.typeId === 'servo_sg90' && (
         <div className="inspector-card flex flex-col gap-2.5">
           <div className="flex justify-between items-center">

@@ -641,7 +641,7 @@ body {
 }
 .scene-instruction {
   position: absolute;
-  bottom: 12px;
+  bottom: 58px;
   left: 12px;
   right: 12px;
   pointer-events: none;
@@ -918,6 +918,96 @@ body {
   height: 16px;
   background: var(--border);
   margin: 0 2px;
+}
+
+/* Canvas Floating Wire Toolbar - Bottom Center Dock */
+.canvas-wire-toolbar {
+  position: absolute;
+  bottom: 16px;
+  left: 50%;
+  transform: translateX(-50%);
+  display: flex;
+  align-items: center;
+  gap: 8px;
+  background: var(--bg-surface);
+  border: 1px solid var(--border);
+  padding: 6px 12px;
+  border-radius: 9999px;
+  box-shadow: 0 10px 28px rgba(0, 0, 0, 0.28);
+  backdrop-filter: blur(14px);
+  z-index: 15;
+  transition: all 0.25s cubic-bezier(0.16, 1, 0.3, 1);
+  max-width: calc(100% - 32px);
+  white-space: nowrap;
+}
+
+.canvas-wire-toolbar.active-wiring {
+  border-color: rgba(56, 189, 248, 0.6);
+  background: rgba(15, 23, 42, 0.92);
+  box-shadow: 0 12px 35px rgba(56, 189, 248, 0.25), 0 0 20px rgba(56, 189, 248, 0.15);
+}
+
+.canvas-wire-toolbar.selected-wire {
+  border-color: rgba(251, 191, 36, 0.6);
+  background: rgba(15, 23, 42, 0.92);
+  box-shadow: 0 12px 35px rgba(251, 191, 36, 0.2);
+}
+
+.canvas-wire-palette-popover {
+  position: absolute;
+  bottom: calc(100% + 10px);
+  left: 50%;
+  transform: translateX(-50%);
+  background: var(--bg-surface);
+  border: 1px solid var(--border);
+  border-radius: 12px;
+  padding: 8px 12px;
+  box-shadow: 0 12px 30px rgba(0, 0, 0, 0.3);
+  backdrop-filter: blur(16px);
+  z-index: 20;
+  display: flex;
+  align-items: center;
+  gap: 6px;
+  animation: popoverFadeIn 0.18s ease-out;
+}
+
+@keyframes popoverFadeIn {
+  from {
+    opacity: 0;
+    transform: translate(-50%, 6px);
+  }
+  to {
+    opacity: 1;
+    transform: translate(-50%, 0);
+  }
+}
+
+.wire-swatch-btn {
+  width: 20px;
+  height: 20px;
+  border-radius: 9999px;
+  border: 1.5px solid rgba(255, 255, 255, 0.35);
+  cursor: pointer;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  padding: 0;
+  transition: all 0.15s ease;
+  box-shadow: 0 1px 3px rgba(0, 0, 0, 0.3);
+}
+
+.wire-swatch-btn:hover {
+  transform: scale(1.22);
+  border-color: #ffffff;
+  box-shadow: 0 0 8px rgba(255, 255, 255, 0.5);
+}
+
+.wire-swatch-btn.selected {
+  transform: scale(1.18);
+  border-color: #ffffff;
+  outline: 2px solid var(--accent);
+  outline-offset: 1px;
+  box-shadow: 0 0 12px var(--accent-glow);
 }
 .diagnostics {
   top: 50px;

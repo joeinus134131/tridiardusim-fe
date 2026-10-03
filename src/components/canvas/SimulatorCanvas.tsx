@@ -23,6 +23,8 @@ import { ServoMotor } from "@/components/models/ServoMotor";
 import { LCD1602Display } from "@/components/models/LCD1602Display";
 import { DHT11Sensor } from "@/components/models/DHT11Sensor";
 import { HCSR04Sensor } from "@/components/models/HCSR04Sensor";
+import { OmronPLC } from "@/components/models/OmronPLC";
+import { StepperMotor } from "@/components/models/StepperMotor";
 import { WireRenderer } from "@/components/canvas/WireRenderer";
 import { ActiveWireRenderer } from "@/components/canvas/ActiveWireRenderer";
 
@@ -35,6 +37,10 @@ const ComponentRenderer = memo(function ComponentRenderer({
   typeId: string;
 }) {
   switch (typeId) {
+    case "plc_omron_cp1e":
+      return <OmronPLC id={id} />;
+    case "stepper_nema17":
+      return <StepperMotor id={id} />;
     case "esp32_wroom":
       return <ESP32Wroom id={id} />;
     case "arduino_uno":

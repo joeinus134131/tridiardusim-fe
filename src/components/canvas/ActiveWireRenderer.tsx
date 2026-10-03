@@ -8,8 +8,9 @@ import { ComponentRegistry } from "@/lib/components/ComponentRegistry";
 export function ActiveWireRenderer() {
   const wiringState = useSimulatorStore((state) => state.wiringState);
   const components = useSimulatorStore((state) => state.components);
+  const activeWireColor = useSimulatorStore((state) => state.activeWireColor || "#3b82f6");
 
-  const { active, sourceComponentId, sourcePinId, currentTargetPos } =
+  const { active, sourceComponentId, sourcePinId, currentTargetPos, snappedPin } =
     wiringState;
 
   // Calculate start position and direction dynamically
@@ -75,7 +76,7 @@ export function ActiveWireRenderer() {
       [sBase, sTop, sRigid, mid, p3, end],
       false,
       "catmullrom",
-      0.35
+      0.35,
     );
 
     return { curve: naturalCurve, endPos: end };
@@ -100,16 +101,17 @@ export function ActiveWireRenderer() {
 
   return (
     <group>
-      {/* Dynamic Active Jumper Wire */}
+      {/* Dynamic Active Jumper Wire with chosen color */}
       <mesh>
-        <tubeGeometry args={[curve, 40, 0.08, 8, false]} />
+        <tubeGeometry args={[curve, 48, 0.082, 10, false]} />
         <meshStandardMaterial
-          color="#3b82f6"
-          emissive="#3b82f6"
-          emissiveIntensity={0.25}
-          roughness={0.5}
+          color={activeWireColor}
+          emissive={activeWireColor}
+          emissiveIntensity={0.35}
+          roughness={0.45}
+          metalness={0.1}
           transparent
-          opacity={0.92}
+          opacity={0.94}
         />
       </mesh>
 
@@ -125,11 +127,24 @@ export function ActiveWireRenderer() {
         </mesh>
       </group>
 
-      {/* Cursor tip target */}
+      {/* Cursor tip target indicator (Glowing green when snapped!) */}
       <mesh position={endPos}>
-        <sphereGeometry args={[0.16, 12, 8]} />
-        <meshBasicMaterial color="#60a5fa" />
+        <sphereGeometry args={[snappedPin ? 0.24 : 0.16, 16, 12]} />
+        <meshStandardMaterial
+          color={snappedPin ? "#10b981" : activeWireColor}
+          emissive={snappedPin ? "#10b981" : activeWireColor}
+          emissiveIntensity={snappedPin ? 0.8 : 0.3}
+          roughness={0.3}
+        />
       </mesh>
+
+      {/* Snapped Target Terminal Boot preview */}
+      {snappedPin && (
+        <mesh position={[endPos.x, endPos.y + 0.28, endPos.z]}>
+          <cylinderGeometry args={[0.13, 0.13, 0.55, 16]} />
+          <meshStandardMaterial color="#0f172a" roughness={0.6} />
+        </mesh>
+      )}
     </group>
   );
 }

@@ -105,6 +105,18 @@ export function solveCircuit(
           sources.push({ node: node(c, p.id), voltage: c.typeId === "esp32_wroom" ? 3.3 : 5, resistance: 30000 });
       }
     }
+    if (c.typeId === "plc_omron_cp1e") {
+      // The compact simulation exposes the CP1E's 24 V control supply. Relay
+      // outputs are dry contacts and therefore bridge COMQ only when active.
+      fix(node(c, "0V"), 0);
+      fix(node(c, "24V"), 24);
+      const outputMask = Number(c.state.outputMask || 0);
+      for (let i = 0; i < 8; i++) {
+        if (outputMask & (1 << i)) {
+          edges.push({ a: node(c, "COMQ"), b: node(c, `Y${i}`), r: 0.05, vf: 0 });
+        }
+      }
+    }
     if (c.typeId === "resistor_220")
       edges.push({
         a: node(c, "L"),
@@ -146,6 +158,13 @@ export function solveCircuit(
         r: 100,
         vf: 0,
       });
+    if (c.typeId === "stepper_nema17") {
+      // SY42STH38-class bipolar winding: 1.65 ohm per phase.
+      edges.push(
+        { a: node(c, "A+"), b: node(c, "A-"), r: 1.65, vf: 0 },
+        { a: node(c, "B+"), b: node(c, "B-"), r: 1.65, vf: 0 },
+      );
+    }
     if (c.typeId === "lcd1602_i2c")
       edges.push({
         a: node(c, "VCC"),
@@ -345,6 +364,48 @@ export function solveCircuit(
         isPowered,
         vDiff,
       };
+    }
+    if (c.typeId === "plc_omron_cp1e") {
+      const common = voltage.get(node(c, "COMI")) || 0;
+      let inputMask = 0;
+      for (let i = 0; i < 12; i++) {
+        if ((voltage.get(node(c, `X${i}`)) || 0) - common >= 14) inputMask |= 1 << i;
+      }
+      states[c.id] = {
+        ...c.state,
+        isPowered: true,
+        inputMask,
+        scanCount: Number(c.state.scanCount || 0) + 1,
+        vDiff: 24,
+      };
+    }
+    if (c.typeId === "stepper_nema17") {
+      const va = (voltage.get(node(c, "A+")) || 0) - (voltage.get(node(c, "A-")) || 0);
+      const vb = (voltage.get(node(c, "B+")) || 0) - (voltage.get(node(c, "B-")) || 0);
+      const a = Math.abs(va) >= 1 ? Math.sign(va) : 0;
+      const b = Math.abs(vb) >= 1 ? Math.sign(vb) : 0;
+      const phases = [[1, 1], [-1, 1], [-1, -1], [1, -1]];
+      const phaseIndex = phases.findIndex(([pa, pb]) => pa === a && pb === b);
+      const previous = Number(c.state.phaseIndex ?? -1);
+      let delta = 0;
+      if (phaseIndex >= 0 && previous >= 0 && phaseIndex !== previous) {
+        const forward = (phaseIndex - previous + 4) % 4;
+        if (forward === 1) delta = 1;
+        else if (forward === 3) delta = -1;
+      }
+      const steps = Number(c.state.steps || 0) + delta;
+      const currentMa = (Math.abs(va) / 1.65 + Math.abs(vb) / 1.65) * 1000;
+      states[c.id] = {
+        ...c.state,
+        phaseIndex,
+        steps,
+        angle: steps * 1.8,
+        direction: delta > 0 ? "CW" : delta < 0 ? "CCW" : "idle",
+        isPowered: phaseIndex >= 0,
+        currentMa: Number(currentMa.toFixed(1)),
+      };
+      if (Math.abs(va) > 3.2 || Math.abs(vb) > 3.2)
+        warnings.add(`${c.name}: tegangan kumparan tinggi; gunakan driver stepper dengan pembatas arus.`);
     }
     if (c.typeId === "capacitor_universal") {
       const vA = voltage.get(node(c, "A")) || 0;

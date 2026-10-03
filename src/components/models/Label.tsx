@@ -39,11 +39,14 @@ export const Label = memo(function Label({
   position: [number, number, number];
   size?: number;
   color?: string;
-  rotation?: number;
+  rotation?: number | [number, number, number];
 }) {
   const texture = getOrCreateTexture(text, color);
+  const meshRotation: [number, number, number] = Array.isArray(rotation)
+    ? rotation
+    : [-Math.PI / 2, 0, rotation];
   return (
-    <mesh position={position} rotation={[-Math.PI / 2, 0, rotation]}>
+    <mesh position={position} rotation={meshRotation}>
       <planeGeometry args={[size * 8, size]} />
       <meshBasicMaterial
         map={texture}

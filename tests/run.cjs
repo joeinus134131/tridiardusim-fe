@@ -329,6 +329,37 @@ function test(name, fn) {
       assert.doesNotThrow(() => new SketchParser(sonarProj.code));
     });
 
+    test("Omron CP1E exposes 24V inputs and dry-contact relay outputs", () => {
+      const plc = instance("plc_omron_cp1e", "plc", [0, 0, 0]);
+      plc.state.outputMask = 1;
+      const wires = [
+        { id: "p1", sourceComponentId: "plc", sourcePinId: "24V", targetComponentId: "plc", targetPinId: "X0", color: "#ef4444" },
+        { id: "p2", sourceComponentId: "plc", sourcePinId: "0V", targetComponentId: "plc", targetPinId: "COMI", color: "#171717" },
+        { id: "p3", sourceComponentId: "plc", sourcePinId: "24V", targetComponentId: "plc", targetPinId: "COMQ", color: "#ef4444" },
+      ];
+      const r = solveCircuit([plc], wires, {});
+      assert.equal(r.states.plc.isPowered, true);
+      assert.equal(r.states.plc.inputMask & 1, 1);
+      assert.ok(r.voltages[terminal("plc", "Y0")] > 23.9);
+    });
+
+    test("NEMA17 resolves bipolar phase sequence into steps and angle", () => {
+      const plc = instance("plc_omron_cp1e", "plc", [0, 0, 0]);
+      const motor = instance("stepper_nema17", "motor", [0, 0, 0]);
+      motor.state.phaseIndex = 0;
+      const wires = [
+        { id: "s1", sourceComponentId: "plc", sourcePinId: "0V", targetComponentId: "motor", targetPinId: "A+", color: "#171717" },
+        { id: "s2", sourceComponentId: "plc", sourcePinId: "24V", targetComponentId: "motor", targetPinId: "A-", color: "#ef4444" },
+        { id: "s3", sourceComponentId: "plc", sourcePinId: "24V", targetComponentId: "motor", targetPinId: "B+", color: "#ef4444" },
+        { id: "s4", sourceComponentId: "plc", sourcePinId: "0V", targetComponentId: "motor", targetPinId: "B-", color: "#171717" },
+      ];
+      const r = solveCircuit([plc, motor], wires, {});
+      assert.equal(r.states.motor.phaseIndex, 1);
+      assert.equal(r.states.motor.steps, 1);
+      assert.equal(r.states.motor.angle, 1.8);
+      assert.ok(r.warnings.some((x) => x.includes("driver stepper")));
+    });
+
     test("bundleSketchFiles inlines custom .h headers and appends .cpp implementations", () => {
       const files = [
         {

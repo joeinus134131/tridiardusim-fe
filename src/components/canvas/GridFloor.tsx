@@ -6,16 +6,13 @@ import * as THREE from "three";
 import { useMemo } from "react";
 import { useSimulatorStore } from "@/store/useSimulatorStore";
 import { useTheme } from "next-themes";
+import { findClosestPin } from "@/lib/components/wiringUtils";
 
 export function GridFloor() {
   const { resolvedTheme } = useTheme();
   const isLight = resolvedTheme === "light";
 
   const isWiringActive = useSimulatorStore((state) => state.wiringState.active);
-  const updateWiringTarget = useSimulatorStore(
-    (state) => state.updateWiringTarget,
-  );
-  const cancelWiring = useSimulatorStore((state) => state.cancelWiring);
 
   const surfaceMaterial = useMemo(
     () =>
@@ -30,14 +27,43 @@ export function GridFloor() {
   const handlePointerMove = (e: ThreeEvent<PointerEvent>) => {
     if (isWiringActive) {
       e.stopPropagation();
-      updateWiringTarget([e.point.x, e.point.y, e.point.z]);
+      const s = useSimulatorStore.getState();
+      const pt: [number, number, number] = [e.point.x, e.point.y, e.point.z];
+      const snapped = findClosestPin(
+        s.components,
+        s.wiringState.sourceComponentId,
+        s.wiringState.sourcePinId,
+        pt,
+        1.35,
+      );
+
+      if (snapped) {
+        s.setSnappedPin(snapped);
+        s.updateWiringTarget(snapped.position);
+      } else {
+        if (s.wiringState.snappedPin) {
+          s.setSnappedPin(null);
+        }
+        s.updateWiringTarget(pt);
+      }
     }
   };
 
-  const handlePointerUp = (e: ThreeEvent<PointerEvent>) => {
+  const handlePointerDown = (e: ThreeEvent<PointerEvent>) => {
+    if (e.button !== 0) return;
     if (isWiringActive) {
       e.stopPropagation();
-      cancelWiring();
+      const s = useSimulatorStore.getState();
+      if (s.wiringState.snappedPin) {
+        // Complete wiring directly to snapped pin
+        s.finishWiring(
+          s.wiringState.snappedPin.componentId,
+          s.wiringState.snappedPin.pinId,
+        );
+      } else {
+        // Clicked far away on empty floor -> cancel wiring cleanly
+        s.cancelWiring();
+      }
     }
   };
 
@@ -48,7 +74,7 @@ export function GridFloor() {
         rotation={[-Math.PI / 2, 0, 0]}
         position={[0, 0, 0]}
         onPointerMove={handlePointerMove}
-        onPointerDown={handlePointerUp}
+        onPointerDown={handlePointerDown}
       >
         <planeGeometry args={[1000, 1000]} />
         <meshBasicMaterial visible={false} />

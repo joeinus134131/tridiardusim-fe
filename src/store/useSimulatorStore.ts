@@ -8,6 +8,10 @@ import {
 } from "@/lib/components/componentTypes";
 import { generateId } from "@/lib/utils";
 import { arduinoEngine } from "@/lib/simulation/ArduinoInterpreter";
+import {
+  detectSmartWireColor,
+  type SnappedPinInfo,
+} from "@/lib/components/wiringUtils";
 
 interface SimulatorState {
   placementNotice: string;
@@ -19,6 +23,8 @@ interface SimulatorState {
   wires: Wire[];
   selectedComponentId: string | null;
   selectedWireId: string | null;
+  activeWireColor: string;
+  setActiveWireColor: (color: string) => void;
 
   // Editor & Simulation
   code: string;
@@ -63,9 +69,11 @@ interface SimulatorState {
     sourceComponentId: string | null;
     sourcePinId: string | null;
     currentTargetPos: [number, number, number] | null;
+    snappedPin: SnappedPinInfo | null;
   };
   startWiring: (componentId: string, pinId: string) => void;
   updateWiringTarget: (pos: [number, number, number]) => void;
+  setSnappedPin: (snapped: SnappedPinInfo | null) => void;
   finishWiring: (targetComponentId: string, targetPinId: string) => void;
   cancelWiring: () => void;
 
@@ -89,6 +97,19 @@ export const useSimulatorStore = create<SimulatorState>((set, get) => ({
   wires: [],
   selectedComponentId: null,
   selectedWireId: null,
+  activeWireColor: "#3b82f6",
+  setActiveWireColor: (color) =>
+    set((state) => {
+      if (state.selectedWireId) {
+        return {
+          activeWireColor: color,
+          wires: state.wires.map((w) =>
+            w.id === state.selectedWireId ? { ...w, color } : w,
+          ),
+        };
+      }
+      return { activeWireColor: color };
+    }),
 
   code: `void setup() {
   // Put your setup code here, to run once:
@@ -133,6 +154,7 @@ void loop() {
     sourceComponentId: null,
     sourcePinId: null,
     currentTargetPos: null,
+    snappedPin: null,
   },
 
   // Actions
@@ -245,23 +267,50 @@ void loop() {
     }));
   },
 
-  selectWire: (id) => set({ selectedWireId: id, selectedComponentId: null }),
+  selectWire: (id) =>
+    set((state) => {
+      const w = id ? state.wires.find((wire) => wire.id === id) : null;
+      return {
+        selectedWireId: id,
+        selectedComponentId: null,
+        activeWireColor: w ? w.color : state.activeWireColor,
+      };
+    }),
 
-  startWiring: (componentId, pinId) =>
+  startWiring: (componentId, pinId) => {
+    const comp = get().components.find((c) => c.id === componentId);
+    const pin = comp?.pins.find((p) => p.id === pinId);
+    const pinName = pin?.name || pinId;
+    const smartColor = detectSmartWireColor(
+      pinName,
+      get().activeWireColor || "#3b82f6",
+    );
+
     set({
+      activeWireColor: smartColor,
       wiringState: {
         active: true,
         sourceComponentId: componentId,
         sourcePinId: pinId,
         currentTargetPos: null,
+        snappedPin: null,
       },
-    }),
+    });
+  },
 
   updateWiringTarget: (pos) =>
     set((state) => ({
       wiringState: {
         ...state.wiringState,
         currentTargetPos: pos,
+      },
+    })),
+
+  setSnappedPin: (snapped) =>
+    set((state) => ({
+      wiringState: {
+        ...state.wiringState,
+        snappedPin: snapped,
       },
     })),
 
@@ -279,6 +328,7 @@ void loop() {
             sourceComponentId: null,
             sourcePinId: null,
             currentTargetPos: null,
+            snappedPin: null,
           },
         };
       }
@@ -289,18 +339,22 @@ void loop() {
         sourcePinId,
         targetComponentId,
         targetPinId,
-        color: "#3b82f6", // Default color, can be changed later
+        color: state.activeWireColor || "#3b82f6",
       };
 
       return {
-        wires: state.wires.length < 500 && validWire(state.components, state.wires, newWire)
-          ? [...state.wires, newWire]
-          : state.wires,
+        wires:
+          state.wires.length < 500 &&
+          validWire(state.components, state.wires, newWire)
+            ? [...state.wires, newWire]
+            : state.wires,
+        selectedWireId: newWire.id,
         wiringState: {
           active: false,
           sourceComponentId: null,
           sourcePinId: null,
           currentTargetPos: null,
+          snappedPin: null,
         },
       };
     });
@@ -313,6 +367,7 @@ void loop() {
         sourceComponentId: null,
         sourcePinId: null,
         currentTargetPos: null,
+        snappedPin: null,
       },
     }),
 

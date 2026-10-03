@@ -118,6 +118,35 @@ export const hcsr04Pins: PinDefinition[] = [
   pin("GND", 1.5 * PITCH, 0, "ground", -0.6, [0, -1, 0]),
 ];
 
+// Omron CP1E-N20: 12 DC inputs and 8 relay outputs. Terminals are placed on
+// the upper face so field wiring exits naturally above the screw blocks.
+const plcTerminal = (
+  id: string,
+  x: number,
+  y: number,
+  type: PinDefinition["type"] = "digital",
+): PinDefinition => ({ id, name: id, type, position: [x, y, 3.62], direction: [0, 0, 1] });
+
+export const omronCp1ePins: PinDefinition[] = [
+  plcTerminal("24V", -3.75, 7.8, "power"),
+  plcTerminal("0V", -3.2, 7.8, "ground"),
+  plcTerminal("COMI", -2.65, 7.8, "ground"),
+  ...Array.from({ length: 12 }, (_, i) =>
+    plcTerminal(`X${i}`, -2.1 + i * 0.52, 7.8),
+  ),
+  plcTerminal("COMQ", -3.5, 1.15, "digital"),
+  ...Array.from({ length: 8 }, (_, i) =>
+    plcTerminal(`Y${i}`, -2.8 + i * 0.78, 1.15),
+  ),
+];
+
+export const nema17Pins: PinDefinition[] = [
+  pin("A+", -0.78, 2.35, "digital", 1.0, [0, 1, 0]),
+  pin("A-", -0.26, 2.35, "digital", 1.0, [0, 1, 0]),
+  pin("B+", 0.26, 2.35, "digital", 1.0, [0, 1, 0]),
+  pin("B-", 0.78, 2.35, "digital", 1.0, [0, 1, 0]),
+];
+
 export const physicalInfo: Record<string, ComponentDatasheet> = {
   esp32_wroom: {
     variant: "Espressif ESP32-DevKitC V4 / ESP32-WROOM-32",
@@ -351,5 +380,39 @@ export const physicalInfo: Record<string, ComponentDatasheet> = {
     limits:
       "Membutuhkan tegangan minimal 4.5V agar osilator transduser 40 kHz memancarkan daya akustik ultrasonik penuh.",
     source: "https://www.sparkfun.com/datasheets/Sensors/Proximity/HCSR04.pdf",
+  },
+  plc_omron_cp1e: {
+    variant: "Omron SYSMAC CP1E-N20DR",
+    manufacturer: "OMRON Industrial Automation",
+    dimensions: "86 × 90 × 85 mm (W × H × D), terminal screw M3",
+    operatingVoltage: "24 VDC control logic (CP1E DC model family)",
+    currentRating: "12 digital inputs · 8 relay outputs · 20 built-in I/O",
+    specs: [
+      "Stored-program PLC with cyclic scan and immediate I/O refresh",
+      "8K program steps and 8K words data memory on N-type CPU",
+      "12 digital inputs and 8 relay outputs",
+      "Built-in USB and serial communication on N-type CPU family",
+      "Input and output LEDs aligned with their field terminals",
+    ],
+    pinoutSummary: "24V, 0V, COMI, X0-X11 inputs, COMQ, Y0-Y7 relay outputs.",
+    limits: "Simulator implements 24 V input sensing, dry-contact relay outputs, live status LEDs, and manual output forcing for debugging.",
+    source: "https://assets.omron.com/m/555e9a5e7b4c8f0d/original/CP1E-Hardware-Users-Manual.pdf",
+  },
+  stepper_nema17: {
+    variant: "NEMA 17 Bipolar Stepper, 42 × 38 mm",
+    manufacturer: "SOYO / NEMA 17 standard frame",
+    dimensions: "42.3 mm square × 38 mm body · 5 mm D-shaft",
+    operatingVoltage: "2.8 V nominal per phase with current-limiting driver",
+    currentRating: "1.68 A/phase · 1.65 Ω · 3.2 mH",
+    specs: [
+      "1.8° full-step angle; 200 steps per revolution",
+      "Bipolar two-phase winding with four leads",
+      "Holding torque 3.7 kg·cm (51 oz·in)",
+      "Four-hole NEMA 17 mounting pattern and 5 mm output shaft",
+      "Realtime phase, direction, step count, angle, and winding-current diagnostics",
+    ],
+    pinoutSummary: "A+, A− (phase A) and B+, B− (phase B).",
+    limits: "A physical motor requires a bipolar current-limiting driver. Direct GPIO wiring is diagnosed as overcurrent/overvoltage.",
+    source: "https://www.pololu.com/product/2267/specs",
   },
 };

@@ -315,6 +315,17 @@ const api: Record<string, (...args: Value[]) => Value | Promise<Value>> = {
     return 0;
   },
 
+  // Arduino Stepper-compatible motion API.
+  "*.setSpeed": (rpm = 30) => {
+    stepperState.rpm = Math.max(1, Math.min(600, Number(rpm)));
+    updateStepperComponents(0);
+    return 0;
+  },
+  "*.step": (count = 0) => {
+    updateStepperComponents(Number(count));
+    return 0;
+  },
+
   // ─── LiquidCrystal_I2C (LCD 16x2) Emulation ───
   "lcd.init": () => {
     lcdState.line0 = "                ";
@@ -500,6 +511,27 @@ let servoState = {
   angle: 90,
   attachedPin: -1,
 };
+
+const stepperState = {
+  steps: 0,
+  rpm: 30,
+};
+
+function updateStepperComponents(delta = 0) {
+  const wholeSteps = Math.trunc(delta);
+  stepperState.steps += wholeSteps;
+  for (const c of components.filter((item) => item.typeId === "stepper_nema17")) {
+    const steps = Number(c.state.steps || 0) + wholeSteps;
+    c.state = {
+      ...c.state,
+      steps,
+      angle: steps * 1.8,
+      rpm: stepperState.rpm,
+      direction: wholeSteps > 0 ? "CW" : wholeSteps < 0 ? "CCW" : "idle",
+    };
+  }
+  dirty = true;
+}
 
 function updateServoComponents(angle?: number) {
   const servos = components.filter((c) => c.typeId === "servo_sg90");

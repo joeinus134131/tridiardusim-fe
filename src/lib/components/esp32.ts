@@ -8,7 +8,11 @@ export const esp32AnalogPins=[0,2,4,12,13,14,15,25,26,27,32,33,34,35,36,39];
 export const esp32Pins: PinDefinition[]=rows.flatMap((row,side)=>row.map((id,i)=>({
  id, name: id==='GPIO36'?'VP / GPIO36':id==='GPIO39'?'VN / GPIO39':id,
  type:id.startsWith('GND')?'ground':['5V','3V3'].includes(id)?'power':esp32AnalogPins.includes(Number(id.replace('GPIO','')))?'analog':'digital',
- position:[side===0?-2.54:2.54,-.6,(i-9)*.508],
+ // The simulator exposes the top of the female header.  The physical metal
+ // tail still extends below the PCB in the model, but jumper wires must leave
+ // from the socket above the board instead of passing through it.
+ position:[side===0?-2.54:2.54,.82,(i-9)*.508],
+ direction:[0,1,0],
 })));
 export const isMicrocontroller=(type:string)=>type==='arduino_uno'||type==='esp32_wroom';
 export function gpioPin(type:string, value:number, analog=false):string {

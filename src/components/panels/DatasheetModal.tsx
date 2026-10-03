@@ -23,6 +23,8 @@ const componentLabels: Record<string, { en: string; id: string }> = {
   lcd1602_i2c: { en: "16x2 LCD Display (I2C)", id: "LCD 16x2 Display (I2C)" },
   dht11: { en: "DHT11 Sensor (Temp & RH)", id: "Sensor DHT11 (Suhu & RH)" },
   hcsr04: { en: "HC-SR04 Ultrasonic Sensor", id: "Sensor Ultrasonik HC-SR04" },
+  plc_omron_cp1e: { en: "Omron CP1E-N20 PLC", id: "PLC Omron CP1E-N20" },
+  stepper_nema17: { en: "NEMA 17 Bipolar Stepper", id: "Motor Stepper Bipolar NEMA 17" },
   jumper: { en: "Jumper Wire (ZW-MM-10)", id: "Kabel Jumper (ZW-MM-10)" },
 };
 

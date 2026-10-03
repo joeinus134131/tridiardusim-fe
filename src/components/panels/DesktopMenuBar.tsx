@@ -2,7 +2,7 @@
 import React, { useState, useRef, useEffect } from "react";
 import { useSimulatorStore } from "@/store/useSimulatorStore";
 import { useLanguage } from "@/i18n/LanguageContext";
-import { Play, Pause, Square, Check } from "lucide-react";
+import { Play, Pause, Square, Check, Sparkles } from "lucide-react";
 
 interface DesktopMenuBarProps {
   onNewProject: () => void;
@@ -16,6 +16,7 @@ interface DesktopMenuBarProps {
   onClearAll: () => void;
   onOpenDatasheet: () => void;
   onOpenHelp: () => void;
+  onStartTour?: () => void;
   onLoadExample: (id: string) => void;
   isRightPanelOpen: boolean;
   onToggleRightPanel: () => void;
@@ -34,6 +35,7 @@ export function DesktopMenuBar({
   onClearAll,
   onOpenDatasheet,
   onOpenHelp,
+  onStartTour,
   onLoadExample,
   isRightPanelOpen,
   onToggleRightPanel,
@@ -365,6 +367,18 @@ export function DesktopMenuBar({
           </button>
           {activeMenu === "help" && (
             <div className="menu-dropdown">
+              {onStartTour && (
+                <button
+                  className="dropdown-item text-sky-400 font-semibold"
+                  onClick={() => actionAndClose(onStartTour)}
+                >
+                  <span className="flex items-center gap-1.5">
+                    <Sparkles size={12} />
+                    {t.menu.startTour}
+                  </span>
+                  <span className="shortcut">Tour</span>
+                </button>
+              )}
               <button
                 className="dropdown-item"
                 onClick={() => actionAndClose(onOpenHelp)}

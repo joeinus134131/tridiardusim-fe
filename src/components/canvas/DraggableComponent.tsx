@@ -4,6 +4,7 @@ import { ThreeEvent } from "@react-three/fiber";
 import { useRef, useState, useMemo, memo } from "react";
 import * as THREE from "three";
 import { useSimulatorStore } from "@/store/useSimulatorStore";
+import { findClosestPin } from "@/lib/components/wiringUtils";
 
 const groundPlane = new THREE.Plane(new THREE.Vector3(0, 1, 0), 0);
 const hitPoint = new THREE.Vector3();
@@ -70,10 +71,20 @@ export const DraggableComponent = memo(function DraggableComponent({
       onPointerDown={(e) => {
         // Allow right-click (pan) and middle-click (dolly) to pass through to OrbitControls freely
         if (e.button !== 0) return;
-        e.stopPropagation();
         const s = useSimulatorStore.getState();
+        if (s.wiringState.active) {
+          e.stopPropagation();
+          if (s.wiringState.snappedPin) {
+            s.finishWiring(
+              s.wiringState.snappedPin.componentId,
+              s.wiringState.snappedPin.pinId,
+            );
+          }
+          return;
+        }
+
+        e.stopPropagation();
         s.selectComponent(id);
-        if (s.wiringState.active) return;
 
         dragPlaneY.current = position[1];
         const p = getIntersect(e);
@@ -88,6 +99,29 @@ export const DraggableComponent = memo(function DraggableComponent({
         };
       }}
       onPointerMove={(e) => {
+        const s = useSimulatorStore.getState();
+        if (s.wiringState.active) {
+          e.stopPropagation();
+          const pt: [number, number, number] = [e.point.x, e.point.y, e.point.z];
+          const snapped = findClosestPin(
+            s.components,
+            s.wiringState.sourceComponentId,
+            s.wiringState.sourcePinId,
+            pt,
+            1.35,
+          );
+          if (snapped) {
+            s.setSnappedPin(snapped);
+            s.updateWiringTarget(snapped.position);
+          } else {
+            if (s.wiringState.snappedPin) {
+              s.setSnappedPin(null);
+            }
+            s.updateWiringTarget(pt);
+          }
+          return;
+        }
+
         // Check threshold if pending
         if (pendingDrag.current && !isDragging.current) {
           const dist = Math.hypot(

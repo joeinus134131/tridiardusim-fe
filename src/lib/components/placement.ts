@@ -19,6 +19,8 @@ export function localBounds(c: CircuitComponent): Bounds {
     dht11: [[-1.6, -0.6, -1.0], [1.6, 3.2, 1.0]],
     hcsr04: [[-4.5, -0.6, -1.5], [4.5, 2.5, 1.5]],
     capacitor_universal: [[-0.6, -0.6, -0.6], [0.6, 2.0, 0.6]],
+    plc_omron_cp1e: [[-4.7, 0, -3.5], [4.7, 9.8, 4.3]],
+    stepper_nema17: [[-2.2, 0, -2.2], [2.2, 5.85, 2.95]],
   };
   const b = c.typeId.startsWith('jumper_')
     ? ([[-3.7, 0, -Number(c.state.depth || 8) - 0.2], [3.7, Number(c.state.bendHeight || 0.3) + 0.2, 0.1]] as [Vec, Vec])

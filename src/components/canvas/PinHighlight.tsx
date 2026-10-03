@@ -4,9 +4,13 @@ import { Html } from "@react-three/drei";
 import * as THREE from "three";
 import type { PinDefinition } from "@/lib/components/componentTypes";
 import { useSimulatorStore } from "@/store/useSimulatorStore";
+import { getPinWorldPosition } from "@/lib/components/wiringUtils";
 
-// Shared geometry across all pin highlights to prevent geometry recreation
-const pinGeometry = new THREE.SphereGeometry(0.19, 8, 6);
+// Shared geometries
+const standardPinGeo = new THREE.SphereGeometry(0.2, 10, 8);
+const snappedPinGeo = new THREE.SphereGeometry(0.3, 12, 10);
+const invisibleHitGeo = new THREE.SphereGeometry(0.55, 8, 6);
+const snapRingGeo = new THREE.RingGeometry(0.32, 0.45, 16);
 
 export const PinHighlight = memo(function PinHighlight({
   componentId,
@@ -17,15 +21,17 @@ export const PinHighlight = memo(function PinHighlight({
 }) {
   const [hover, setHover] = useState(false);
 
-  // Specific primitive selectors avoid re-rendering on mousemove (currentTargetPos updates)
+  // Specific primitive selectors avoid unneeded re-renders
   const isWiringActive = useSimulatorStore((s) => s.wiringState.active);
   const isSource = useSimulatorStore(
     (s) =>
       s.wiringState.sourceComponentId === componentId &&
       s.wiringState.sourcePinId === pin.id,
   );
-  const isSelected = useSimulatorStore(
-    (s) => s.selectedComponentId === componentId,
+  const isSnapped = useSimulatorStore(
+    (s) =>
+      s.wiringState.snappedPin?.componentId === componentId &&
+      s.wiringState.snappedPin?.pinId === pin.id,
   );
 
   const handleClick = useCallback(
@@ -41,44 +47,116 @@ export const PinHighlight = memo(function PinHighlight({
     [componentId, pin.id],
   );
 
-  const opacity =
-    isSource || hover ? 0.9 : isWiringActive ? 0.4 : 0;
-  const color = isSource ? "#fbbf24" : hover ? "#38bdf8" : "#94c8ff";
+  const handlePointerOver = useCallback(
+    (e: { stopPropagation: () => void }) => {
+      e.stopPropagation();
+      setHover(true);
+      const s = useSimulatorStore.getState();
+      if (s.wiringState.active && !isSource) {
+        const comp = s.components.find((c) => c.id === componentId);
+        if (comp) {
+          const worldPos = getPinWorldPosition(comp, pin.position);
+          s.setSnappedPin({
+            componentId,
+            componentName: comp.name,
+            pinId: pin.id,
+            pinName: pin.name,
+            position: worldPos,
+          });
+          s.updateWiringTarget(worldPos);
+        }
+      }
+    },
+    [componentId, pin, isSource],
+  );
+
+  const handlePointerOut = useCallback(() => {
+    setHover(false);
+  }, []);
+
+  // Visual cues
+  const activeColor = isSource
+    ? "#fbbf24"
+    : isSnapped
+      ? "#10b981"
+      : hover
+        ? "#38bdf8"
+        : "#94c8ff";
+
+  const opacity = isSource || isSnapped
+    ? 0.95
+    : hover
+      ? 0.9
+      : isWiringActive
+        ? 0.5
+        : 0;
+
+  const currentGeo = isSnapped || isSource ? snappedPinGeo : standardPinGeo;
 
   return (
     <group position={pin.position}>
+      {/* 1. Large invisible hit area for effortless clicking and hover */}
       <mesh
-        geometry={pinGeometry}
-        onPointerOver={(e) => {
-          e.stopPropagation();
-          setHover(true);
-        }}
-        onPointerOut={() => setHover(false)}
+        geometry={invisibleHitGeo}
+        onPointerOver={handlePointerOver}
+        onPointerOut={handlePointerOut}
         onPointerDown={(e) => e.stopPropagation()}
         onClick={handleClick}
+        visible={false}
+      />
+
+      {/* 2. Visual Pin Indicator */}
+      <mesh
+        geometry={currentGeo}
+        onClick={handleClick}
       >
-        <meshBasicMaterial
-          color={color}
+        <meshStandardMaterial
+          color={activeColor}
+          emissive={activeColor}
+          emissiveIntensity={isSnapped ? 0.8 : isSource ? 0.6 : 0.25}
           transparent
           opacity={opacity}
-          depthTest={!isSource && !hover}
+          depthTest={!isSource && !isSnapped && !hover}
+          roughness={0.3}
         />
       </mesh>
-      {hover && (
+
+      {/* 3. Glowing Snap Target Ring */}
+      {isSnapped && (
+        <mesh rotation={[-Math.PI / 2, 0, 0]} geometry={snapRingGeo}>
+          <meshBasicMaterial
+            color="#10b981"
+            transparent
+            opacity={0.85}
+            side={THREE.DoubleSide}
+            depthTest={false}
+          />
+        </mesh>
+      )}
+
+      {/* Compact terminal label */}
+      {(hover || isSnapped || isSource) && (
         <Html
           center
-          position={[0, 0.4, 0]}
+          position={[0, 0.45, 0]}
           style={{
             pointerEvents: "none",
             whiteSpace: "nowrap",
             background: "#0d1829",
             color: "white",
             fontSize: 11,
-            padding: "3px 6px",
-            borderRadius: 4,
+            fontWeight: 500,
+            padding: "3px 8px",
+            borderRadius: 6,
+            border: "1px solid rgba(255,255,255,0.15)",
+            boxShadow: "0 4px 12px rgba(0,0,0,0.35)",
+            display: "flex",
+            alignItems: "center",
+            transform: "translateY(-10px)",
+            transition: "all 0.15s ease",
           }}
         >
-          {pin.name}
+          <span>{pin.name}</span>
         </Html>
       )}
     </group>

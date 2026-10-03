@@ -20,6 +20,7 @@ import {
   Play,
   Square,
   ExternalLink,
+  Sparkles,
 } from "lucide-react";
 import dynamic from "next/dynamic";
 import { useSimulatorStore } from "@/store/useSimulatorStore";
@@ -29,6 +30,8 @@ import { ComponentRegistry } from "@/lib/components/ComponentRegistry";
 import { CodeEditorPanel } from "@/components/panels/CodeEditorPanel";
 import { SerialMonitor } from "@/components/panels/SerialMonitor";
 import { ThemeToggle } from "@/components/ThemeToggle";
+import { InteractiveTour } from "@/components/panels/InteractiveTour";
+import { MobileWarningBanner } from "@/components/panels/MobileWarningBanner";
 import { parseProject, download, Project } from "@/lib/project/project";
 import { physicalInfo } from "@/lib/components/physical";
 import { example, instance } from "@/lib/project/examples";
@@ -110,7 +113,6 @@ export default function WorkspacePage() {
   const selectedComponentId = useSimulatorStore((s) => s.selectedComponentId);
   const selectedWireId = useSimulatorStore((s) => s.selectedWireId);
   const isWiringActive = useSimulatorStore((s) => s.wiringState.active);
-  const wiringSourcePinId = useSimulatorStore((s) => s.wiringState.sourcePinId);
   const cancelWiring = useSimulatorStore((s) => s.cancelWiring);
   const startSimulation = useSimulatorStore((s) => s.startSimulation);
   const pauseSimulation = useSimulatorStore((s) => s.pauseSimulation);
@@ -144,6 +146,7 @@ export default function WorkspacePage() {
   const [color, setColor] = useState("#2563eb");
   const [selectedExample, setSelectedExample] = useState("");
   const [help, setHelp] = useState(false);
+  const [tourOpen, setTourOpen] = useState(false);
   const [busy, setBusy] = useState(false);
   const [rightPanelOpen, setRightPanelOpen] = useState(true);
   const [datasheetOpen, setDatasheetOpen] = useState(false);
@@ -394,6 +397,7 @@ export default function WorkspacePage() {
           openDatasheetFor(activeKey);
         }}
         onOpenHelp={() => setHelp(true)}
+        onStartTour={() => setTourOpen(true)}
         onLoadExample={(exId) => guard(() => replace(example(exId)))}
         isRightPanelOpen={rightPanelOpen}
         onToggleRightPanel={() => setRightPanelOpen(!rightPanelOpen)}
@@ -427,6 +431,7 @@ export default function WorkspacePage() {
             className="btn-primary flex items-center gap-1.5"
             onClick={startSimulation}
             disabled={simulationState === "running"}
+            data-tour="run-button"
           >
             {simulationState === "paused" ? (
               t.toolbar.resume
@@ -476,8 +481,14 @@ export default function WorkspacePage() {
           <SlidersHorizontal size={13} />
           <span>{t.toolbar.properties}</span>
         </button>
-        <button className="small-button" onClick={() => setHelp(!help)}>
-          {t.toolbar.guide}
+        <button
+          className="small-button flex items-center gap-1 text-sky-400 font-semibold border-sky-500/30 hover:bg-sky-500/10"
+          onClick={() => setTourOpen(true)}
+          title={t.tour.startTour}
+          data-tour="guide-button"
+        >
+          <Sparkles size={12} className="text-sky-400" />
+          <span>{t.toolbar.guide}</span>
         </button>
         <LanguageSwitcher />
         <ThemeToggle />
@@ -544,8 +555,18 @@ export default function WorkspacePage() {
                 <p>- {t.helpModal.wiringEscPrefix} <kbd className="px-1 py-0.5 bg-slate-700 rounded">Esc</kbd> {t.helpModal.wiringEscSuffix}</p>
               </div>
             </div>
-            <div className="mt-4 pt-3 border-t border-slate-700 flex justify-end">
-              <button className="btn-primary" onClick={() => setHelp(false)}>
+            <div className="mt-4 pt-3 border-t border-slate-700 flex items-center justify-between">
+              <button
+                className="btn-primary flex items-center gap-1.5 text-xs font-semibold"
+                onClick={() => {
+                  setHelp(false);
+                  setTourOpen(true);
+                }}
+              >
+                <Sparkles size={13} />
+                <span>{t.helpModal.startTourBtn}</span>
+              </button>
+              <button className="small-button" onClick={() => setHelp(false)}>
                 {t.helpModal.gotIt}
               </button>
             </div>
@@ -563,7 +584,7 @@ export default function WorkspacePage() {
       {/* 5. MAIN WORKSPACE */}
       <main className="workspace-main">
         {/* Left Library Panel (Components & Connections) */}
-        <aside className="library-panel">
+        <aside className="library-panel" data-tour="library-panel">
           <div className="panel-heading">
             <button
               onClick={() => setTab("komponen")}
@@ -737,24 +758,40 @@ export default function WorkspacePage() {
               </button>
               <h3>{wires.length} {t.wiring.activeWires}</h3>
               {wires.map((w) => (
-                <div key={w.id} className="wire-row">
-                  <button onClick={() => selectWire(w.id)}>
-                    {components.find((c) => c.id === w.sourceComponentId)?.name}{" "}
-                    · {w.sourcePinId}
-                    <br />
-                    <span className="opacity-60 text-[11px]">{t.wiring.toWord} </span>
-                    {
-                      components.find((c) => c.id === w.targetComponentId)?.name
-                    }{" "}
-                    · {w.targetPinId}
+                <div key={w.id} className="wire-row flex items-center justify-between gap-1">
+                  <button onClick={() => selectWire(w.id)} className="flex-1 text-left">
+                    <span className="flex items-center gap-1.5">
+                      <span
+                        className="inline-block w-2.5 h-2.5 rounded-full border border-white/40 shrink-0"
+                        style={{ backgroundColor: w.color }}
+                      />
+                      <span className="font-medium text-slate-200 truncate">
+                        {components.find((c) => c.id === w.sourceComponentId)?.name || "Part"} · {w.sourcePinId}
+                      </span>
+                    </span>
+                    <span className="opacity-60 text-[11px] block pl-4">
+                      {t.wiring.toWord} {components.find((c) => c.id === w.targetComponentId)?.name || "Part"} · {w.targetPinId}
+                    </span>
                   </button>
-                  <button
-                    aria-label={t.wiring.deleteWireAria + w.id}
-                    onClick={() => removeWire(w.id)}
-                    className="flex items-center justify-center p-1 hover:text-red-400"
-                  >
-                    <X size={12} />
-                  </button>
+                  <div className="flex items-center gap-1 shrink-0">
+                    <input
+                      type="color"
+                      value={w.color}
+                      onChange={(e) => {
+                        useSimulatorStore.getState().updateWire(w.id, { color: e.target.value });
+                        useSimulatorStore.getState().setActiveWireColor(e.target.value);
+                      }}
+                      title="Ubah warna kabel ini"
+                      className="w-5 h-5 rounded-full cursor-pointer border border-white/30 bg-transparent p-0 overflow-hidden"
+                    />
+                    <button
+                      aria-label={t.wiring.deleteWireAria + w.id}
+                      onClick={() => removeWire(w.id)}
+                      className="flex items-center justify-center p-1 hover:text-red-400 text-slate-400"
+                    >
+                      <X size={12} />
+                    </button>
+                  </div>
                 </div>
               ))}
             </div>
@@ -762,7 +799,7 @@ export default function WorkspacePage() {
         </aside>
 
         {/* Center 3D Scene Panel */}
-        <section className="scene-panel">
+        <section className="scene-panel" data-tour="canvas-area">
           <SimulatorCanvas />
           <div className="camera-tools">
             <button
@@ -816,13 +853,8 @@ export default function WorkspacePage() {
               <span>{t.cameraTools.fit}</span>
             </button>
           </div>
-          <div className="scene-instruction">
-            {isWiringActive ? (
-              <>
-                <strong>{t.scene.wiringTarget} {wiringSourcePinId}</strong>
-                <button onClick={cancelWiring}>{t.scene.cancelEsc}</button>
-              </>
-            ) : (
+          {!isWiringActive && !selectedWireId && (
+            <div className="scene-instruction">
               <span>
                 {cameraMode === "pan"
                   ? t.scene.panHint
@@ -830,8 +862,8 @@ export default function WorkspacePage() {
                 {" · "}
                 {t.scene.clickPinHint}
               </span>
-            )}
-          </div>
+            </div>
+          )}
           {placementNotice && (
             <div className="diagnostics" role="status">
               {placementNotice}
@@ -1038,6 +1070,8 @@ export default function WorkspacePage() {
 
                   <PinVoltages component={selected} />
                 </div>
+              ) : selectedWireId ? (
+                <WireProperties />
               ) : (
                 <div className="inspector-empty-card">
                   <p className="font-semibold mb-1">{t.inspector.selectComponent}</p>
@@ -1053,14 +1087,12 @@ export default function WorkspacePage() {
                   </div>
                 </div>
               )}
-
-              <WireProperties />
             </div>
           )}
         </aside>
 
         {/* Code and Serial Monitor Panels */}
-        <aside className="program-panel">
+        <aside className="program-panel" data-tour="code-editor">
           <CodeEditorPanel />
           <SerialMonitor />
         </aside>
@@ -1079,6 +1111,15 @@ export default function WorkspacePage() {
           </button>
         </span>
       </footer>
+
+      {/* 7. INTERACTIVE TOUR ONBOARDING */}
+      <InteractiveTour
+        isOpen={tourOpen}
+        onClose={() => setTourOpen(false)}
+      />
+
+      {/* 8. MOBILE OPTIMAL EXPERIENCE WARNING */}
+      <MobileWarningBanner />
     </div>
   );
 }

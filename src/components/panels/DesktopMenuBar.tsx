@@ -15,6 +15,7 @@ interface DesktopMenuBarProps {
   onLoadServer: () => void;
   onClearAll: () => void;
   onOpenDatasheet: () => void;
+  onOpenSolderingWorkbench: () => void;
   onOpenHelp: () => void;
   onStartTour?: () => void;
   onLoadExample: (id: string) => void;
@@ -34,6 +35,7 @@ export function DesktopMenuBar({
   onLoadServer,
   onClearAll,
   onOpenDatasheet,
+  onOpenSolderingWorkbench,
   onOpenHelp,
   onStartTour,
   onLoadExample,
@@ -91,6 +93,8 @@ export function DesktopMenuBar({
   };
 
   const helpExamples: [string, string][] = [
+    ["pca9685", t.library.helpExamples.pca9685],
+    ["stepper_a4988", t.library.helpExamples.stepper_a4988],
     ["esp32_wifi", t.library.helpExamples.esp32_wifi],
     ["esp32", t.library.helpExamples.esp32],
     ["blink", t.library.helpExamples.blink],
@@ -351,6 +355,12 @@ export function DesktopMenuBar({
               >
                 <span>{t.menu.openDatasheet}</span>
                 <span className="shortcut">D</span>
+              </button>
+              <button
+                className="dropdown-item"
+                onClick={() => actionAndClose(onOpenSolderingWorkbench)}
+              >
+                <span>{t.menu.solderingWorkbench}</span>
               </button>
             </div>
           )}

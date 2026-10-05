@@ -25,6 +25,15 @@ import { DHT11Sensor } from "@/components/models/DHT11Sensor";
 import { HCSR04Sensor } from "@/components/models/HCSR04Sensor";
 import { OmronPLC } from "@/components/models/OmronPLC";
 import { StepperMotor } from "@/components/models/StepperMotor";
+import { EduArm } from "@/components/models/EduArm";
+import { AeroArm } from "@/components/models/AeroArm";
+import { RoverBot } from "@/components/models/RoverBot";
+import { IncrementalEncoder } from "@/components/models/IncrementalEncoder";
+import { A4988Driver, BatteryCharger, BatteryPack, DcDcConverter, DcMotorModel, L298NDriver, DcSupply } from "@/components/models/PowerComponents";
+import { RGBDCameraSensor } from "@/components/models/RGBDCameraSensor";
+import { PlanarLidarSensor } from "@/components/models/PlanarLidarSensor";
+import { ImuSensor } from "@/components/models/ImuSensor";
+import { PCA9685Board } from "@/components/models/PCA9685Board";
 import { WireRenderer } from "@/components/canvas/WireRenderer";
 import { ActiveWireRenderer } from "@/components/canvas/ActiveWireRenderer";
 
@@ -37,6 +46,36 @@ const ComponentRenderer = memo(function ComponentRenderer({
   typeId: string;
 }) {
   switch (typeId) {
+    case "edu_arm_3dof":
+      return <EduArm id={id} />;
+    case "aero_arm_6dof":
+      return <AeroArm id={id} />;
+    case "rover_bot_4wd":
+      return <RoverBot id={id} />;
+    case "incremental_encoder":
+      return <IncrementalEncoder id={id} />;
+    case "rgbd_camera":
+      return <RGBDCameraSensor id={id} />;
+    case "planar_lidar":
+      return <PlanarLidarSensor id={id} />;
+    case "imu_6axis":
+      return <ImuSensor id={id} />;
+    case "pca9685_i2c":
+      return <PCA9685Board id={id} />;
+    case "a4988_stepper_driver":
+      return <A4988Driver id={id} />;
+    case "l298n_dual_hbridge":
+      return <L298NDriver id={id} />;
+    case "dc_motor":
+      return <DcMotorModel id={id} />;
+    case "dc_supply":
+      return <DcSupply id={id} />;
+    case "battery_pack":
+      return <BatteryPack id={id} />;
+    case "dc_dc_converter":
+      return <DcDcConverter id={id} />;
+    case "battery_charger":
+      return <BatteryCharger id={id} />;
     case "plc_omron_cp1e":
       return <OmronPLC id={id} />;
     case "stepper_nema17":

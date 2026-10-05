@@ -1,0 +1,3 @@
+# Optional dependencies for the Modern Robotics reference comparison.
+numpy>=1.24,<3
+modern_robotics==1.1.1

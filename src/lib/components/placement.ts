@@ -21,6 +21,21 @@ export function localBounds(c: CircuitComponent): Bounds {
     capacitor_universal: [[-0.6, -0.6, -0.6], [0.6, 2.0, 0.6]],
     plc_omron_cp1e: [[-4.7, 0, -3.5], [4.7, 9.8, 4.3]],
     stepper_nema17: [[-2.2, 0, -2.2], [2.2, 5.85, 2.95]],
+    edu_arm_3dof: [[-4, 0, -4], [4, 13.6, 4]],
+    aero_arm_6dof: [[-6, 0, -6], [6, 21, 6]],
+    rover_bot_4wd: [[-18, 0, -16], [18, 10, 16]],
+    incremental_encoder: [[-1, -0.6, -1], [1, 1.2, 1]],
+    a4988_stepper_driver: [[-2.1, -0.5, -2.2], [2.1, 0.8, 2.2]],
+    dc_supply: [[-2.5, -0.4, -1.8], [2.5, 2.6, 1.8]],
+    battery_pack: [[-2.0, -0.5, -1.2], [2.0, 1.8, 2.0]],
+    battery_charger: [[-2.0, -0.5, -1.6], [2.0, 1.0, 1.6]],
+    dc_dc_converter: [[-1.8, -0.5, -1.4], [1.8, 0.8, 1.4]],
+    rgbd_camera: [[-0.9, -0.3, -0.6], [0.9, 0.8, 0.6]],
+    planar_lidar: [[-0.5, -0.2, -0.5], [0.5, 0.5, 0.5]],
+    imu_6axis: [[-0.35, -0.15, -0.35], [0.35, 0.4, 0.35]],
+    pca9685_i2c: [[-2.15, -0.5, -2.85], [2.15, 0.65, 2.85]],
+    l298n_dual_hbridge: [[-2.2, -0.5, -2.2], [2.2, 1, 2.2]],
+    dc_motor: [[-2.8, 0, -2.8], [2.8, 3.8, 4.2]],
   };
   const b = c.typeId.startsWith('jumper_')
     ? ([[-3.7, 0, -Number(c.state.depth || 8) - 0.2], [3.7, Number(c.state.bendHeight || 0.3) + 0.2, 0.1]] as [Vec, Vec])
@@ -55,7 +70,7 @@ export function worldBounds(c: CircuitComponent): Bounds {
 }
 
 export const mountable = (c: CircuitComponent) =>
-  ['resistor_220', 'led_red', 'potentiometer', 'push_button', 'esp32_wroom', 'oled_ssd1306', 'lcd1602_i2c', 'dht11', 'hcsr04', 'capacitor_universal'].includes(c.typeId);
+  ['resistor_220', 'led_red', 'potentiometer', 'push_button', 'esp32_wroom', 'oled_ssd1306', 'lcd1602_i2c', 'dht11', 'hcsr04', 'capacitor_universal', 'servo_sg90', 'incremental_encoder'].includes(c.typeId);
 
 export type Contact = { componentId: string; pinId: string; boardId: string; holeId: string };
 

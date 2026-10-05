@@ -72,6 +72,7 @@ export const DraggableComponent = memo(function DraggableComponent({
         // Allow right-click (pan) and middle-click (dolly) to pass through to OrbitControls freely
         if (e.button !== 0) return;
         const s = useSimulatorStore.getState();
+        if ((component?.state.physicsMode === "dynamic" || component?.state.physicsMode === "fixed") && s.simulationState !== "stopped") return;
         if (s.wiringState.active) {
           e.stopPropagation();
           if (s.wiringState.snappedPin) {

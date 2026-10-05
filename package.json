@@ -3,13 +3,18 @@
   "version": "0.1.0",
   "private": true,
   "scripts": {
+    "predev": "node scripts/copy-pyodide-assets.mjs && node scripts/copy-onnx-assets.mjs",
     "dev": "next dev --webpack",
+    "prebuild": "node scripts/copy-pyodide-assets.mjs && node scripts/copy-onnx-assets.mjs",
     "build": "next build",
+    "prestart": "node scripts/copy-pyodide-assets.mjs && node scripts/copy-onnx-assets.mjs",
     "start": "next start",
     "lint": "eslint",
-    "test": "node tests/run.cjs"
+    "test": "node tests/run.cjs",
+    "test:kinematics-reference": "python3 scripts/verify-kinematics-reference.py"
   },
   "dependencies": {
+    "@dimforge/rapier3d-compat": "0.21.0",
     "@mediapipe/tasks-vision": "^0.10.35",
     "@monaco-editor/react": "^4.7.0",
     "@react-three/drei": "^10.7.7",
@@ -20,6 +25,8 @@
     "lucide-react": "^1.16.0",
     "next": "16.2.6",
     "next-themes": "^0.4.6",
+    "onnxruntime-web": "1.30.0",
+    "pyodide": "^314.0.7",
     "react": "19.2.4",
     "react-dom": "19.2.4",
     "tailwind-merge": "^3.6.0",

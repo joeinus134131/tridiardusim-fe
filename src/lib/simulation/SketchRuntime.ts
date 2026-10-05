@@ -52,10 +52,12 @@ const types = new Set([
   "File",
   "Servo",
   "ESP32Servo",
+  "DifferentialDrive",
   "LiquidCrystal",
   "LiquidCrystal_I2C",
   "DHT",
   "Adafruit_SSD1306",
+  "Adafruit_PWMServoDriver",
   "Adafruit_GFX",
 ]);
 const precedence: Record<string, number> = {
@@ -399,6 +401,8 @@ class ReturnValue {
   constructor(readonly value: Value) {}
 }
 class BreakLoop {}
+const statefulPeripheralMethods = new Set(["attach", "write", "writeMicroseconds", "read", "attached", "detach", "begin", "setPWM", "setPWMFreq"]);
+const statefulRobotMethods = new Set(["drive", "setVelocity", "stop"]);
 export class SketchRuntime {
   private scope = new Scope();
   private steps = 0;
@@ -414,6 +418,9 @@ export class SketchRuntime {
       INPUT: 0,
       OUTPUT: 1,
       INPUT_PULLUP: 2,
+      CHANGE: 1,
+      FALLING: 2,
+      RISING: 3,
       LED_BUILTIN: 13,
       true: 1,
       false: 0,
@@ -467,11 +474,16 @@ export class SketchRuntime {
     this.resetBudget();
     await this.call("loop", []);
   }
+  /** Invoke an ISR registered through the worker's virtual interrupt table. */
+  async invoke(name: string) {
+    if (!this.parser.functions.has(name)) throw new Error(`ISR tidak dikenal: ${name}`);
+    return this.call(name, []);
+  }
   private async call(name: string, args: Value[]): Promise<Value> {
     this.tick();
     if (this.api[name]) {
       const v = await this.api[name](...args);
-      if (name === "delay") this.resetBudget();
+      if (name === "delay" || name === "delayMicroseconds") this.resetBudget();
       return v;
     }
     const dotIdx = name.indexOf(".");
@@ -479,7 +491,12 @@ export class SketchRuntime {
       const method = name.slice(dotIdx + 1);
       const wildcard = "*." + method;
       if (this.api[wildcard]) {
-        const v = await this.api[wildcard](...args);
+        // Preserve the sketch-side object name so stateful peripheral shims can
+        // keep one independent virtual device state per declared instance.
+        const instanceName = name.slice(0, dotIdx);
+        const v = statefulPeripheralMethods.has(method) || statefulRobotMethods.has(method)
+          ? await this.api[wildcard](...args, instanceName)
+          : await this.api[wildcard](...args);
         return v;
       }
     }
@@ -504,7 +521,7 @@ export class SketchRuntime {
       case "literal":
         return e.value;
       case "name":
-        return s.get(e.name);
+        return this.parser.functions.has(e.name) ? e.name : s.get(e.name);
       case "call": {
         const args: Value[] = [];
         for (const a of e.args) args.push(await this.expr(a, s));

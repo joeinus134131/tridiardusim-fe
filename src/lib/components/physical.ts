@@ -91,10 +91,97 @@ export const oledPins: PinDefinition[] = [
   pin("SDA", 1.5 * PITCH, -2.3, "digital", 0.4),
 ];
 
+export const mpu6050Pins: PinDefinition[] = [
+  pin("GND", -1.5 * PITCH, -2.3, "ground", 0.4),
+  pin("VCC", -0.5 * PITCH, -2.3, "power", 0.4),
+  pin("SCL", 0.5 * PITCH, -2.3, "digital", 0.4),
+  pin("SDA", 1.5 * PITCH, -2.3, "digital", 0.4),
+];
+
+export const pca9685Pins: PinDefinition[] = [
+  pin("GND", -1.27, -2.54, "ground", -0.4, [0, -1, 0]),
+  pin("VCC", -0.762, -2.54, "power", -0.4, [0, -1, 0]),
+  pin("SDA", -0.254, -2.54, "digital", -0.4, [0, -1, 0]),
+  pin("SCL", 0.254, -2.54, "digital", -0.4, [0, -1, 0]),
+  pin("OE", 0.762, -2.54, "digital", -0.4, [0, -1, 0]),
+  pin("V+", 1.27, -2.54, "power", -0.4, [0, -1, 0]),
+  ...Array.from({ length: 16 }, (_, channel) => {
+    const bank = Math.floor(channel / 8);
+    const index = channel % 8;
+    return pin(`PWM${channel}`, bank === 0 ? -1.778 : 1.778, -1.778 + index * 0.508, "pwm", -0.4, [0, -1, 0]);
+  }),
+];
+
 export const servoPins: PinDefinition[] = [
   pin("GND", -1 * PITCH, 2.0, "ground", 0.4),
   pin("VCC", 0, 2.0, "power", 0.4),
   pin("PWM", 1 * PITCH, 2.0, "pwm", 0.4),
+];
+
+export const quadratureEncoderPins: PinDefinition[] = [
+  pin("VCC", -0.3, 0.3, "power", -0.45, [0, -1, 0]),
+  pin("GND", 0.3, 0.3, "ground", -0.45, [0, -1, 0]),
+  pin("A", -0.3, -0.3, "digital", -0.45, [0, -1, 0]),
+  pin("B", 0.3, -0.3, "digital", -0.45, [0, -1, 0]),
+];
+
+const driverPin = (id: string, x: number, z: number, type: PinDefinition["type"] = "digital"): PinDefinition =>
+  pin(id, x, z, type, -0.4, [0, -1, 0]);
+export const a4988Pins: PinDefinition[] = [
+  ...["VMOT", "GND_MOTOR", "2B", "2A", "1A", "1B", "VDD", "GND_LOGIC"].map((id, i) =>
+    driverPin(id, -1.0, -1.778 + i * PITCH, id.includes("GND") ? "ground" : id.includes("V") ? "power" : "digital"),
+  ),
+  ...["ENABLE", "MS1", "MS2", "MS3", "RESET", "SLEEP", "STEP", "DIR"].map((id, i) =>
+    driverPin(id, 1.0, 1.778 - i * PITCH, "digital"),
+  ),
+];
+
+export const dcSupplyPins: PinDefinition[] = [
+  { id: "V+", name: "V+", type: "power", position: [-1.05, 0.25, 1.58], direction: [0, 0, 1] },
+  { id: "GND", name: "GND", type: "ground", position: [1.05, 0.25, 1.58], direction: [0, 0, 1] },
+];
+
+export const batteryPackPins: PinDefinition[] = [
+  { id: "V+", name: "+", type: "power", position: [-1.2, 0.2, 1.65], direction: [0, 0, 1] },
+  { id: "GND", name: "−", type: "ground", position: [1.2, 0.2, 1.65], direction: [0, 0, 1] },
+];
+
+export const dcDcConverterPins: PinDefinition[] = [
+  { id: "VIN", name: "VIN", type: "power", position: [-1.2, 0.2, 1.55], direction: [0, 0, 1] },
+  { id: "GND_IN", name: "GND IN", type: "ground", position: [-0.4, 0.2, 1.55], direction: [0, 0, 1] },
+  { id: "GND_OUT", name: "GND OUT", type: "ground", position: [0.4, 0.2, 1.55], direction: [0, 0, 1] },
+  { id: "VOUT", name: "VOUT", type: "power", position: [1.2, 0.2, 1.55], direction: [0, 0, 1] },
+];
+
+export const batteryChargerPins: PinDefinition[] = [
+  { id: "VIN", name: "VIN", type: "power", position: [-1.2, 0.2, 1.55], direction: [0, 0, 1] },
+  { id: "GND_IN", name: "GND IN", type: "ground", position: [-0.4, 0.2, 1.55], direction: [0, 0, 1] },
+  { id: "BAT+", name: "BAT+", type: "power", position: [0.4, 0.2, 1.55], direction: [0, 0, 1] },
+  { id: "BAT-", name: "BAT−", type: "ground", position: [1.2, 0.2, 1.55], direction: [0, 0, 1] },
+];
+
+const powerModulePin = (id: string, x: number, z: number, type: PinDefinition["type"] = "digital"): PinDefinition =>
+  pin(id, x, z, type, -0.4, [0, -1, 0]);
+
+export const l298nPins: PinDefinition[] = [
+  powerModulePin("ENA", -1.05, -1.778, "pwm"),
+  powerModulePin("IN1", -1.05, -1.27),
+  powerModulePin("IN2", -1.05, -0.762),
+  powerModulePin("OUT1", -1.05, -0.254),
+  powerModulePin("OUT2", -1.05, 0.254),
+  powerModulePin("VS", -1.05, 0.762, "power"),
+  powerModulePin("VSS", -1.05, 1.27, "power"),
+  powerModulePin("GND", -1.05, 1.778, "ground"),
+  powerModulePin("ENB", 1.05, 1.778, "pwm"),
+  powerModulePin("IN3", 1.05, 1.27),
+  powerModulePin("IN4", 1.05, 0.762),
+  powerModulePin("OUT3", 1.05, 0.254),
+  powerModulePin("OUT4", 1.05, -0.254),
+];
+
+export const dcMotorPins: PinDefinition[] = [
+  powerModulePin("M+", -0.55, 0, "digital"),
+  powerModulePin("M-", 0.55, 0, "digital"),
 ];
 
 const LCD_I2C_X = 4.3;

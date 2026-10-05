@@ -7,7 +7,9 @@ import {
   SerialMessage,
 } from "@/lib/components/componentTypes";
 import { generateId } from "@/lib/utils";
+import type { ImuFrame, PlanarLidarFrame, RGBDFrame } from "@/lib/simulation/sensors/types";
 import { arduinoEngine } from "@/lib/simulation/ArduinoInterpreter";
+import { pythonEngine } from "@/lib/simulation/PythonInterpreter";
 import {
   detectSmartWireColor,
   type SnappedPinInfo,
@@ -40,6 +42,12 @@ interface SimulatorState {
   diagnostics: string[];
   elapsedMs: number;
   voltages: Record<string, number>;
+  rgbdFrames: Record<string, RGBDFrame>;
+  setRGBDFrame: (id: string, frame: RGBDFrame) => void;
+  lidarFrames: Record<string, PlanarLidarFrame>;
+  setLidarFrame: (id: string, frame: PlanarLidarFrame) => void;
+  imuFrames: Record<string, ImuFrame>;
+  setImuFrame: (id: string, frame: ImuFrame) => void;
 
   // Actions - Workspace
   addComponent: (component: Omit<CircuitComponent, "id">) => string;
@@ -148,6 +156,12 @@ void loop() {
   diagnostics: [],
   elapsedMs: 0,
   voltages: {},
+  rgbdFrames: {},
+  setRGBDFrame: (id, frame) => set((state) => ({ rgbdFrames: { ...state.rgbdFrames, [id]: frame } })),
+  lidarFrames: {},
+  setLidarFrame: (id, frame) => set((state) => ({ lidarFrames: { ...state.lidarFrames, [id]: frame } })),
+  imuFrames: {},
+  setImuFrame: (id, frame) => set((state) => ({ imuFrames: { ...state.imuFrames, [id]: frame } })),
 
   wiringState: {
     active: false,
@@ -238,13 +252,20 @@ void loop() {
 
   removeComponent: (id) => {
     set((state) => ({
-      components: state.components.filter((c) => c.id !== id),
+      components: state.components
+        .filter((c) => c.id !== id)
+        .map((c) => c.typeId === "imu_6axis" && c.state.sourceComponentId === id
+          ? { ...c, state: { ...c.state, sourceComponentId: "" } }
+          : c),
       // Also remove connected wires
       wires: state.wires.filter(
         (w) => w.sourceComponentId !== id && w.targetComponentId !== id,
       ),
       selectedComponentId:
         state.selectedComponentId === id ? null : state.selectedComponentId,
+      rgbdFrames: Object.fromEntries(Object.entries(state.rgbdFrames).filter(([cameraId]) => cameraId !== id)),
+      lidarFrames: Object.fromEntries(Object.entries(state.lidarFrames).filter(([sensorId]) => sensorId !== id)),
+      imuFrames: Object.fromEntries(Object.entries(state.imuFrames).filter(([sensorId]) => sensorId !== id)),
     }));
   },
 
@@ -413,15 +434,22 @@ void loop() {
     }),
 
   startSimulation: () => {
+    if (get().activeFileName.toLowerCase().endsWith(".py")) {
+      pythonEngine.start();
+      return;
+    }
+    pythonEngine.stop(false);
     arduinoEngine.start();
   },
   stopSimulation: () => {
     set({ simulationState: "stopped" });
+    pythonEngine.stop(false);
     arduinoEngine.stop();
   },
   pauseSimulation: () => {
     set({ simulationState: "paused" });
     arduinoEngine.pause();
+    pythonEngine.pause();
   },
 
   addSerialMessage: (msg) => {

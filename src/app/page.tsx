@@ -27,6 +27,17 @@ import { useSimulatorStore } from "@/store/useSimulatorStore";
 import { useLanguage } from "@/i18n/LanguageContext";
 import { LanguageSwitcher } from "@/components/LanguageSwitcher";
 import { ComponentRegistry } from "@/lib/components/ComponentRegistry";
+import { RobotControlPanel } from "@/components/panels/RobotControlPanel";
+import { ActuatorJointPanel } from "@/components/panels/ActuatorJointPanel";
+import { RoverControlPanel } from "@/components/panels/RoverControlPanel";
+import { EncoderControlPanel } from "@/components/panels/EncoderControlPanel";
+import { RGBDCameraPanel } from "@/components/panels/RGBDCameraPanel";
+import { PlanarLidarPanel } from "@/components/panels/PlanarLidarPanel";
+import { ImuControlPanel } from "@/components/panels/ImuControlPanel";
+import { CloudAIGatewayPanel } from "@/components/panels/CloudAIGatewayPanel";
+import { OnnxInferencePanel } from "@/components/panels/OnnxInferencePanel";
+import { RigidBodyPanel } from "@/components/panels/RigidBodyPanel";
+import { A4988ControlPanel, BatteryChargerControlPanel, BatteryPackControlPanel, DcDcConverterControlPanel, DcMotorControlPanel, DcSupplyControlPanel, L298NControlPanel } from "@/components/panels/PowerControlPanels";
 import { CodeEditorPanel } from "@/components/panels/CodeEditorPanel";
 import { SerialMonitor } from "@/components/panels/SerialMonitor";
 import { ThemeToggle } from "@/components/ThemeToggle";
@@ -49,6 +60,10 @@ const SimulatorCanvas = dynamic(
     ssr: false,
     loading: () => <p className="p-5">Loading 3D space…</p>,
   },
+);
+const SolderingWorkbench = dynamic(
+  () => import("@/components/tools/SolderingWorkbench").then((m) => m.SolderingWorkbench),
+  { ssr: false, loading: () => <p className="p-5">Loading workbench…</p> },
 );
 const api = process.env.NEXT_PUBLIC_API_URL || "http://localhost:8080";
 
@@ -104,7 +119,7 @@ function PinVoltages({ component }: { component: CircuitComponent }) {
 }
 
 export default function WorkspacePage() {
-  const { t } = useLanguage();
+  const { t, lang } = useLanguage();
   const components = useSimulatorStore((s) => s.components);
   const wires = useSimulatorStore((s) => s.wires);
   const code = useSimulatorStore((s) => s.code);
@@ -144,21 +159,23 @@ export default function WorkspacePage() {
   const [from, setFrom] = useState("");
   const [to, setTo] = useState("");
   const [color, setColor] = useState("#2563eb");
-  const [selectedExample, setSelectedExample] = useState("");
   const [help, setHelp] = useState(false);
   const [tourOpen, setTourOpen] = useState(false);
   const [busy, setBusy] = useState(false);
   const [rightPanelOpen, setRightPanelOpen] = useState(true);
   const [datasheetOpen, setDatasheetOpen] = useState(false);
   const [datasheetKey, setDatasheetKey] = useState("esp32_wroom");
+  const [solderingWorkbenchOpen, setSolderingWorkbenchOpen] = useState(false);
   const file = useRef<HTMLInputElement>(null);
 
-  // Automatically expand panel when a component is selected
+  // Subscribe to external selection changes and reveal the inspector once.
   useEffect(() => {
-    if (selectedComponentId && !rightPanelOpen) {
-      setRightPanelOpen(true);
-    }
-  }, [selectedComponentId]);
+    return useSimulatorStore.subscribe((state, previousState) => {
+      if (state.selectedComponentId && state.selectedComponentId !== previousState.selectedComponentId) {
+        setRightPanelOpen(true);
+      }
+    });
+  }, []);
 
   const snapshot = (): Project => ({
     version: 1,
@@ -251,7 +268,7 @@ export default function WorkspacePage() {
     };
     window.addEventListener("keydown", handler);
     return () => window.removeEventListener("keydown", handler);
-  }, [selectedComponentId, selectedWireId, components, removeComponent, removeWire, updateComponentPosition, updateComponentRotation]);
+  }, [selectedComponentId, selectedWireId, components, removeComponent, removeWire, updateComponentPosition, updateComponentRotation, setCameraMode]);
 
   const guard = async (action: () => void | Promise<void>) => {
     setBusy(true);
@@ -397,6 +414,10 @@ export default function WorkspacePage() {
           openDatasheetFor(activeKey);
         }}
         onOpenHelp={() => setHelp(true)}
+        onOpenSolderingWorkbench={() => {
+          stopSimulation();
+          setSolderingWorkbenchOpen(true);
+        }}
         onStartTour={() => setTourOpen(true)}
         onLoadExample={(exId) => guard(() => replace(example(exId)))}
         isRightPanelOpen={rightPanelOpen}
@@ -675,9 +696,12 @@ export default function WorkspacePage() {
                 <div className="examples-scroll-container">
                   {(
                     [
+                      ["sensor_fusion", t.library.examples.sensor_fusion],
                       ["dht11", t.library.examples.dht11],
                       ["hcsr04", t.library.examples.hcsr04],
                       ["servo", t.library.examples.servo],
+                      ["stepper_a4988", t.library.examples.stepper_a4988],
+                      ["i2c_scan", t.library.examples.i2c_scan],
                       ["lcd1602", t.library.examples.lcd1602],
                       ["oled", t.library.examples.oled],
                       ["esp32_wifi", t.library.examples.esp32_wifi],
@@ -800,8 +824,12 @@ export default function WorkspacePage() {
 
         {/* Center 3D Scene Panel */}
         <section className="scene-panel" data-tour="canvas-area">
-          <SimulatorCanvas />
-          <div className="camera-tools">
+          {solderingWorkbenchOpen ? (
+            <SolderingWorkbench lang={lang} onClose={() => setSolderingWorkbenchOpen(false)} />
+          ) : (
+            <SimulatorCanvas />
+          )}
+          {!solderingWorkbenchOpen && <div className="camera-tools">
             <button
               className={`small-button flex items-center gap-1 ${cameraMode === "orbit" ? "active" : ""}`}
               onClick={() => setCameraMode("orbit")}
@@ -852,8 +880,8 @@ export default function WorkspacePage() {
               <Focus size={12} />
               <span>{t.cameraTools.fit}</span>
             </button>
-          </div>
-          {!isWiringActive && !selectedWireId && (
+          </div>}
+          {!solderingWorkbenchOpen && !isWiringActive && !selectedWireId && (
             <div className="scene-instruction">
               <span>
                 {cameraMode === "pan"
@@ -920,7 +948,7 @@ export default function WorkspacePage() {
                   <div className="inspector-card flex justify-between items-start">
                     <div>
                       <h3 className="inspector-title">{selected.name}</h3>
-                      <span className="inspector-subtitle">ID: {selected.id.slice(0, 8)}</span>
+                      <span className="inspector-subtitle font-mono break-all" title={selected.id}>ID: {selected.id}</span>
                     </div>
                     <button
                       aria-label={t.inspector.closeAria}
@@ -936,6 +964,59 @@ export default function WorkspacePage() {
                     component={selected}
                     onOpenDatasheet={(key) => openDatasheetFor(key)}
                   />
+                  <RigidBodyPanel component={selected} components={components} updateState={updateComponentState} simulationState={simulationState} />
+
+                  {(selected.typeId === "servo_sg90" || selected.typeId === "stepper_nema17" || selected.typeId === "dc_motor") && (
+                    <ActuatorJointPanel
+                      component={selected}
+                      robots={components.filter((item) => item.typeId === "edu_arm_3dof" || item.typeId === "aero_arm_6dof")}
+                      updateState={updateComponentState}
+                    />
+                  )}
+
+                  {(selected.typeId === "edu_arm_3dof" || selected.typeId === "aero_arm_6dof") && (
+                    <RobotControlPanel component={selected} updateState={updateComponentState} />
+                  )}
+                  {selected.typeId === "rover_bot_4wd" && (
+                    <RoverControlPanel component={selected} updateState={updateComponentState} />
+                  )}
+                  {selected.typeId === "incremental_encoder" && (
+                    <EncoderControlPanel
+                      component={selected}
+                      motors={components.filter((item) => item.typeId === "stepper_nema17" || item.typeId === "dc_motor")}
+                      updateState={updateComponentState}
+                    />
+                  )}
+                  {selected.typeId === "rgbd_camera" && (
+                    <RGBDCameraPanel component={selected} updateState={updateComponentState} />
+                  )}
+                  {selected.typeId === "planar_lidar" && (
+                    <PlanarLidarPanel component={selected} updateState={updateComponentState} />
+                  )}
+                  {selected.typeId === "imu_6axis" && (
+                    <ImuControlPanel component={selected} updateState={updateComponentState} />
+                  )}
+                  {selected.typeId === "a4988_stepper_driver" && (
+                    <A4988ControlPanel component={selected} updateState={updateComponentState} />
+                  )}
+                  {selected.typeId === "l298n_dual_hbridge" && (
+                    <L298NControlPanel component={selected} />
+                  )}
+                  {selected.typeId === "dc_motor" && (
+                    <DcMotorControlPanel component={selected} updateState={updateComponentState} />
+                  )}
+                  {selected.typeId === "dc_supply" && (
+                    <DcSupplyControlPanel component={selected} updateState={updateComponentState} />
+                  )}
+                  {selected.typeId === "battery_pack" && (
+                    <BatteryPackControlPanel component={selected} updateState={updateComponentState} />
+                  )}
+                  {selected.typeId === "dc_dc_converter" && (
+                    <DcDcConverterControlPanel component={selected} updateState={updateComponentState} />
+                  )}
+                  {selected.typeId === "battery_charger" && (
+                    <BatteryChargerControlPanel component={selected} updateState={updateComponentState} />
+                  )}
 
                   {/* Mechanical & Dimensions info */}
                   <div className="inspector-card text-xs flex flex-col gap-1">
@@ -1113,6 +1194,8 @@ export default function WorkspacePage() {
       </footer>
 
       {/* 7. INTERACTIVE TOUR ONBOARDING */}
+      <CloudAIGatewayPanel />
+      <OnnxInferencePanel />
       <InteractiveTour
         isOpen={tourOpen}
         onClose={() => setTourOpen(false)}

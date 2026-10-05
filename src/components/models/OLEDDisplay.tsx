@@ -14,7 +14,8 @@ interface OLEDState {
   image?: string;
   contrast?: number;
   inverted?: boolean;
-  pixels?: number[]; // Optional 128x64 bitmap buffer
+  displayOn?: boolean;
+  pixels?: string; // Packed row-major 128x64 monochrome framebuffer (one byte per 8 pixels)
 }
 
 export const OLEDDisplay = React.memo(function OLEDDisplay({ id }: { id: string }) {
@@ -24,6 +25,8 @@ export const OLEDDisplay = React.memo(function OLEDDisplay({ id }: { id: string 
   const text = state.text || "NEXFLUX LAB 3D\nOLED SSD1306\nI2C: 0x3C Ready";
   const imagePreset = state.image || "logo";
   const inverted = state.inverted || false;
+  const displayOn = state.displayOn !== false;
+  const pixels = state.pixels;
 
   const canvasRef = useRef<HTMLCanvasElement | null>(null);
   const textureRef = useRef<THREE.CanvasTexture | null>(null);
@@ -51,7 +54,7 @@ export const OLEDDisplay = React.memo(function OLEDDisplay({ id }: { id: string 
     const h = canvas.height;
 
     // Background
-    if (!isPowered) {
+    if (!isPowered || !displayOn) {
       // Off / Unpowered state: deep dark glossy glass
       ctx.fillStyle = "#050811";
       ctx.fillRect(0, 0, w, h);
@@ -65,6 +68,20 @@ export const OLEDDisplay = React.memo(function OLEDDisplay({ id }: { id: string 
 
     ctx.fillStyle = bg;
     ctx.fillRect(0, 0, w, h);
+
+    if (pixels?.length === (128 * 64) / 8) {
+      ctx.fillStyle = fg;
+      for (let byteIndex = 0; byteIndex < pixels.length; byteIndex++) {
+        const byte = pixels.charCodeAt(byteIndex);
+        const y = Math.floor(byteIndex / 16);
+        const firstX = (byteIndex % 16) * 8;
+        for (let bit = 0; bit < 8; bit++) if (byte & (0x80 >> bit)) {
+          ctx.fillRect((firstX + bit) * 2, y * 2, 2, 2);
+        }
+      }
+      texture.needsUpdate = true;
+      return;
+    }
 
     // Subtle OLED pixel grid pattern
     ctx.fillStyle = inverted ? "rgba(0,0,0,0.06)" : "rgba(56, 189, 248, 0.04)";
@@ -179,7 +196,7 @@ export const OLEDDisplay = React.memo(function OLEDDisplay({ id }: { id: string 
     }
 
     texture.needsUpdate = true;
-  }, [canvas, texture, isPowered, text, imagePreset, inverted]);
+  }, [canvas, texture, isPowered, displayOn, text, imagePreset, inverted, pixels]);
 
   return (
     <group>
@@ -250,8 +267,8 @@ export const OLEDDisplay = React.memo(function OLEDDisplay({ id }: { id: string 
         <meshStandardMaterial
           map={texture}
           emissiveMap={texture}
-          emissive={isPowered ? "#ffffff" : "#000000"}
-          emissiveIntensity={isPowered ? 1.6 : 0}
+          emissive={isPowered && displayOn ? "#ffffff" : "#000000"}
+          emissiveIntensity={isPowered && displayOn ? 1.6 : 0}
           roughness={0.1}
           metalness={0.2}
         />

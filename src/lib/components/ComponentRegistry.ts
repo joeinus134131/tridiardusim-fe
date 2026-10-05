@@ -2,11 +2,21 @@ import { esp32Pins } from "./esp32";
 import {
   dht11Pins,
   hcsr04Pins,
+  a4988Pins,
   lcd1602Pins,
   nema17Pins,
+  quadratureEncoderPins,
   oledPins,
+  mpu6050Pins,
+  pca9685Pins,
   omronCp1ePins,
   servoPins,
+  dcSupplyPins,
+  batteryPackPins,
+  dcDcConverterPins,
+  batteryChargerPins,
+  dcMotorPins,
+  l298nPins,
   unoPins,
 } from "./physical";
 import { ComponentType, PinDefinition } from "./componentTypes";
@@ -17,7 +27,7 @@ export interface ComponentRegistration {
   type: ComponentType;
   description: string;
   category:
-    "Boards" | "Basic" | "Sensors" | "Actuators" | "Displays" | "Wiring";
+    "Boards" | "Basic" | "Sensors" | "Actuators" | "Displays" | "Wiring" | "Robotics";
   defaultState: Record<string, number | string | boolean>;
   pins: PinDefinition[];
 }
@@ -43,6 +53,237 @@ class Registry {
 }
 
 export const ComponentRegistry = new Registry();
+
+ComponentRegistry.register({
+  typeId: "edu_arm_3dof",
+  name: "EduArm-3DOF",
+  type: "actuator",
+  category: "Robotics",
+  description: "Lengan robot RRR untuk eksperimen FK PoE, IK DLS, dan kontrol joint.",
+  defaultState: { joint0: 0, joint1: 0, joint2: 0 },
+  pins: [],
+});
+
+ComponentRegistry.register({
+  typeId: "aero_arm_6dof",
+  name: "AeroArm-6DOF",
+  type: "actuator",
+  category: "Robotics",
+  description: "Lengan articulated enam sumbu dengan spherical wrist untuk pick-and-place.",
+  defaultState: { joint0: 0, joint1: 0, joint2: 0, joint3: 0, joint4: 0, joint5: 0 },
+  pins: [],
+});
+
+ComponentRegistry.register({
+  typeId: "rover_bot_4wd",
+  name: "RoverBot-4WD",
+  type: "actuator",
+  category: "Robotics",
+  description: "Robot differential-drive empat roda dengan gimbal kamera 2-DOF.",
+  defaultState: {
+    x: 0,
+    z: 0,
+    heading: 0,
+    leftSpeed: 0,
+    rightSpeed: 0,
+    leftWheelPhase: 0,
+    rightWheelPhase: 0,
+    gimbalPan: 0,
+    gimbalTilt: 0,
+  },
+  pins: [],
+});
+
+ComponentRegistry.register({
+  typeId: "rgbd_camera",
+  name: "Kamera Virtual RGB-D",
+  type: "sensor",
+  category: "Sensors",
+  description: "Kamera scene 3D dengan frame RGB dan buffer depth Float32 dalam meter.",
+  defaultState: { width: 320, height: 240, fov: 70, near: 0.1, far: 30 },
+  pins: [],
+});
+
+ComponentRegistry.register({
+  typeId: "planar_lidar",
+  name: "LiDAR Planar 2D",
+  type: "sensor",
+  category: "Sensors",
+  description: "Pemindai jarak 360° pada scene 3D dengan 360 atau 720 sampel.",
+  defaultState: { sampleCount: 360, maxRangeMeters: 12 },
+  pins: [],
+});
+
+ComponentRegistry.register({
+  typeId: "imu_6axis",
+  name: "IMU Virtual 6-Axis",
+  type: "sensor",
+  category: "Sensors",
+  description: "MPU-6050 6-axis sintetis dengan akselerometer dan giroskop melalui I2C 0x68.",
+  defaultState: { sourceComponentId: "", sampleRateHz: 100, accelNoise: 0.02, gyroNoise: 0.001 },
+  pins: mpu6050Pins,
+});
+
+ComponentRegistry.register({
+  typeId: "pca9685_i2c",
+  name: "PCA9685 16-Channel PWM (I2C)",
+  type: "actuator",
+  category: "Actuators",
+  description: "Driver PWM 12-bit 16 kanal melalui I2C 0x40, dengan keluaran PWM0–PWM15.",
+  defaultState: {
+    address: "0x40",
+    frequencyHz: 50,
+    isPowered: false,
+    ...Object.fromEntries(Array.from({ length: 16 }, (_, channel) => [`pwm${channel}`, 0])),
+  },
+  pins: pca9685Pins,
+});
+
+ComponentRegistry.register({
+  typeId: "incremental_encoder",
+  name: "Incremental Encoder A/B",
+  type: "sensor",
+  category: "Sensors",
+  description: "Encoder incremental dua fase kuadratur, keluaran digital A/B dan hitungan x4.",
+  defaultState: { angle: 0, pulsesPerRevolution: 100, coupledMotorId: "", count: 0, channelA: 0, channelB: 0, isPowered: false },
+  pins: quadratureEncoderPins,
+});
+
+ComponentRegistry.register({
+  typeId: "a4988_stepper_driver",
+  name: "Stepper Driver A4988",
+  type: "actuator",
+  category: "Actuators",
+  description: "Driver STEP/DIR A4988 dengan microstep 1/1–1/16 dan pembatas arus Vref.",
+  defaultState: {
+    vref: 1.0,
+    senseResistance: 0.1,
+    microstepResolution: 1,
+    stepHigh: false,
+    riseMicros: 0,
+    positionPulses: 0,
+    angleDegrees: 0,
+    currentLimitA: 1.25,
+    isLogicPowered: false,
+    isMotorPowered: false,
+    isEnabled: false,
+    temperatureC: 25,
+    isThermalShutdown: false,
+    isOvercurrentFault: false,
+    isUvlo: true,
+    sleepHigh: true,
+    phaseACurrentA: 0,
+    phaseBCurrentA: 0,
+    powerLossW: 0,
+    motorId: "",
+  },
+  pins: a4988Pins,
+});
+
+ComponentRegistry.register({
+  typeId: "dc_supply",
+  name: "Catu Daya DC Adjustable",
+  type: "board",
+  category: "Boards",
+  description: "Catu virtual DC 0–24 V dengan terminal V+ dan GND untuk driver motor.",
+  defaultState: { voltage: 12, isOn: true },
+  pins: dcSupplyPins,
+});
+
+ComponentRegistry.register({
+  typeId: "battery_pack",
+  name: "Paket Baterai",
+  type: "board",
+  category: "Boards",
+  description: "Baterai dengan kurva OCV, resistansi internal, kapasitas dan state of charge.",
+  defaultState: {
+    profile: "liion_18650",
+    isOn: true,
+    socPercent: 100,
+    socRevision: 0,
+    internalResistanceOhms: 0.085,
+    capacityAh: 2.5,
+    maxDischargeCurrentA: 5,
+    openCircuitVoltageV: 4.2,
+    terminalVoltageV: 4.2,
+    currentA: 0,
+    powerW: 0,
+  },
+  pins: batteryPackPins,
+});
+
+ComponentRegistry.register({
+  typeId: "dc_dc_converter",
+  name: "Regulator DC-DC Buck-Boost",
+  type: "board",
+  category: "Boards",
+  description: "Konverter virtual buck-boost 2.5–24 V ke rail teratur 3.3/5/9/12 V dengan efisiensi dan batas arus keluaran.",
+  defaultState: {
+    isOn: true,
+    outputVoltage: 5,
+    maxOutputCurrentA: 2,
+    efficiency: 0.9,
+    outputResistanceOhms: 0.05,
+    inputCurrentA: 0,
+    outputCurrentA: 0,
+    outputVoltageV: 0,
+    inputVoltageV: 0,
+    powerLossW: 0,
+    isRegulating: false,
+    isCurrentLimited: false,
+  },
+  pins: dcDcConverterPins,
+});
+
+ComponentRegistry.register({
+  typeId: "battery_charger",
+  name: "Pengisi Baterai CC/CV",
+  type: "board",
+  category: "Boards",
+  description: "Charger virtual CC/CV untuk paket Li-ion 1S dan LiPo 2S dengan batas arus, timer keselamatan edukasional, dan proteksi termal/polaritas.",
+  defaultState: { isOn: true, maxChargeCurrentA: 0.5, efficiency: 0.9, inputCurrentA: 0, chargeCurrentA: 0, isCharging: false, isConstantVoltage: false, isChargeComplete: false, chargeElapsedSeconds: 0, safetyTimerLimitSeconds: 10 * 60 * 60, isSafetyTimerExpired: false, tailCurrentLimitA: 0.125, inputVoltageV: 0, targetVoltageV: 4.2, powerLossW: 0, temperatureC: 25, isThermalShutdown: false, isReverseConnected: false },
+  pins: batteryChargerPins,
+});
+
+ComponentRegistry.register({
+  typeId: "l298n_dual_hbridge",
+  name: "Driver Motor L298N",
+  type: "actuator",
+  category: "Actuators",
+  description: "Dual H-bridge dengan kendali arah/PWM dan drop tegangan bipolar.",
+  defaultState: { isLogicPowered: false, isMotorPowered: false, isThermalShutdown: false, temperatureC: 25, motorIdA: "", motorIdB: "", outputVoltageA: 0, outputVoltageB: 0, currentA: 0, currentB: 0, freewheelCurrentA: 0, freewheelLossW: 0, powerLossW: 0 },
+  pins: l298nPins,
+});
+
+ComponentRegistry.register({
+  typeId: "dc_motor",
+  name: "Motor DC Gearbox TT",
+  type: "actuator",
+  category: "Actuators",
+  description: "Motor DC brushed dengan gearbox 1:48, back-EMF dan inersia stateful.",
+  defaultState: {
+    resistanceOhms: 6,
+    inductanceH: 0.002,
+    torqueConstantNmPerA: 0.006,
+    backEmfConstantVsPerRad: 0.006,
+    rotorInertiaKgM2: 0.00001,
+    viscousFrictionNmPerRadS: 0.000001,
+    gearRatio: 48,
+    gearEfficiency: 0.72,
+    loadTorqueNm: 0,
+    armatureCurrentA: 0,
+    backEmfV: 0,
+    omegaRadS: 0,
+    angleRad: 0,
+    isPowered: false,
+    motorDriverId: "",
+    coupledRobotId: "",
+    coupledJointIndex: 0,
+    jointOffsetDeg: 0,
+    jointDirection: 1,
+  },
+  pins: dcMotorPins,
+});
 
 // ═══════════════════════════════════════════════════
 // BOARDS
@@ -218,7 +459,15 @@ ComponentRegistry.register({
     angle: 90,
     targetAngle: 90,
     isPowered: false,
+    isCommanded: false,
+    currentDrawA: 0,
+    lastCommandMicros: 0,
+    servoSketchInstance: "",
     hornType: "single",
+    coupledRobotId: "",
+    coupledJointIndex: 0,
+    jointOffsetDeg: 0,
+    jointDirection: 1,
   },
   pins: servoPins,
 });
@@ -237,6 +486,10 @@ ComponentRegistry.register({
     isPowered: false,
     phaseIndex: -1,
     currentMa: 0,
+    coupledRobotId: "",
+    coupledJointIndex: 0,
+    jointOffsetDeg: 0,
+    jointDirection: 1,
   },
   pins: nema17Pins,
 });

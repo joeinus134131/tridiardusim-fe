@@ -34,3 +34,14 @@ You can check out [the Next.js GitHub repository](https://github.com/vercel/next
 The easiest way to deploy your Next.js app is to use the [Vercel Platform](https://vercel.com/new?utm_medium=default-template&filter=next.js&utm_source=create-next-app&utm_campaign=create-next-app-readme) from the creators of Next.js.
 
 Check out our [Next.js deployment documentation](https://nextjs.org/docs/app/building-your-application/deploying) for more details.
+
+## Kinematics reference check
+
+The optional golden comparison checks the TypeScript kinematics implementation against ModernRoboticsPython. Install the pinned reference dependencies in your Python environment, then run the check from this directory:
+
+```bash
+python3 -m pip install -r requirements-kinematics-reference.txt
+npm run test:kinematics-reference
+```
+
+The comparison covers 10,000 deterministic FK/SE(3)/Jacobian samples and 250 reachable IK targets. It reports the maximum numeric errors and DLS execution times for the current host. `npm test` remains usable without the optional Python packages; it includes the FABRIK geometry invariants.

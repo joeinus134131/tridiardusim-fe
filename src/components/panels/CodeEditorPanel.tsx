@@ -529,6 +529,8 @@ export function CodeEditorPanel() {
       initialContent = `#ifndef ${guardName}\n#define ${guardName}\n\n// ${t.editor.newFileGuardComment}\n\n#endif\n`;
     } else if (name.endsWith(".cpp") || name.endsWith(".c")) {
       initialContent = `// ${t.editor.newFileImplComment}\n\n`;
+    } else if (name.endsWith(".py")) {
+      initialContent = `import Jetson.GPIO as GPIO\n\n# V-SBC menjalankan Python pada Web Worker Pyodide.\nGPIO.setmode(GPIO.BCM)\nGPIO.setup(13, GPIO.OUT)\nGPIO.output(13, GPIO.HIGH)\nprint("V-SBC Python siap")\n`;
     }
 
     addFile(name, initialContent);
@@ -626,12 +628,12 @@ export function CodeEditorPanel() {
             <input
               hidden
               type="file"
-              accept=".ino,.cpp,.h,.c,.txt"
+              accept=".ino,.cpp,.h,.c,.py,.txt"
               onChange={async (e) => {
                 const f = e.target.files?.[0];
                 if (f && f.size <= 64000) {
                   const content = await f.text();
-                  if (f.name.endsWith(".h") || f.name.endsWith(".cpp")) {
+                  if (f.name.endsWith(".h") || f.name.endsWith(".cpp") || f.name.endsWith(".py")) {
                     addFile(f.name, content);
                   } else {
                     setCode(content);
@@ -961,7 +963,7 @@ export function CodeEditorPanel() {
       <div className="flex-1 w-full min-h-[160px] relative overflow-hidden">
         <MonacoEditor
           height="100%"
-          language="cpp"
+          language={activeFileName.toLowerCase().endsWith(".py") ? "python" : "cpp"}
           theme={activeTheme}
           value={code}
           onChange={(val) => setCode(val ?? "")}

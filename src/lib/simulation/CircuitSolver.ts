@@ -444,7 +444,7 @@ export function solveCircuit(
     const outputResistanceOhms = Math.max(0.005, Math.min(1, Number(converter.state.outputResistanceOhms) || 0.05));
     const maxOutputCurrentA = Math.max(0.1, Math.min(10, Number(converter.state.maxOutputCurrentA) || 2));
     const isOn = converter.state.isOn !== false;
-    const inRange = inputVoltageV >= 4.5 && inputVoltageV <= 40 && inputVoltageV >= targetVoltageV + 1.5;
+    const inRange = inputVoltageV >= 2.5 && inputVoltageV <= 24;
     converterParameters.set(converter.id, { inputVoltageV, targetVoltageV, efficiency, outputResistanceOhms, maxOutputCurrentA, isOn: isOn && inRange });
     if (isOn && inRange) {
       sources.push({
@@ -623,7 +623,7 @@ export function solveCircuit(
       const parameters = converterParameters.get(c.id)!;
       const inputVoltageV = (voltage.get(node(c, "VIN")) || 0) - (voltage.get(node(c, "GND_IN")) || 0);
       const outputVoltageV = (voltage.get(node(c, "VOUT")) || 0) - (voltage.get(node(c, "GND_OUT")) || 0);
-      const isRegulating = parameters.isOn && inputVoltageV >= 4.5 && inputVoltageV <= 40 && inputVoltageV >= parameters.targetVoltageV + 1.5;
+      const isRegulating = parameters.isOn && inputVoltageV >= 2.5 && inputVoltageV <= 24;
       const isCurrentLimited = isRegulating && currentLimited.has(c.id);
       const outputCurrentA = !isRegulating ? 0 : isCurrentLimited
         ? parameters.maxOutputCurrentA
@@ -646,7 +646,7 @@ export function solveCircuit(
       if (isCurrentLimited)
         warnings.add(`${c.name}: batas arus keluaran ${parameters.maxOutputCurrentA.toFixed(2)} A aktif; tegangan rail turun untuk melindungi regulator.`);
       if (c.state.isOn !== false && !isRegulating)
-        warnings.add(`${c.name}: LM2596 memerlukan VIN 4.5–40 V dan setidaknya 1.5 V di atas setelan keluaran pada model kuasistatik ini.`);
+        warnings.add(`${c.name}: input ${inputVoltageV.toFixed(2)} V di luar rentang kerja 2.5–24 V.`);
       if (outputVoltageV > parameters.targetVoltageV * 1.05)
         warnings.add(`${c.name}: tegangan keluaran melebihi setelan; periksa kemungkinan backfeed dari sumber lain.`);
     }

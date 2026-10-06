@@ -1,4 +1,5 @@
 "use client";
+import { useMemo } from "react";
 import { useSimulatorStore } from "@/store/useSimulatorStore";
 import { ComponentRegistry } from "@/lib/components/ComponentRegistry";
 import { PinHighlight } from "@/components/canvas/PinHighlight";

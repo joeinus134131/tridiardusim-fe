@@ -50,14 +50,10 @@ export function ServoMotor({ id }: ServoProps) {
   // Materials
   const materials = useMemo(
     () => ({
-      casing: new THREE.MeshPhysicalMaterial({
+      casing: new THREE.MeshStandardMaterial({
         color: "#1e6091",
-        transmission: 0.6,
-        opacity: 0.88,
-        transparent: true,
-        roughness: 0.25,
-        metalness: 0.1,
-        clearcoat: 0.5,
+        roughness: 0.34,
+        metalness: 0.02,
       }),
       solidPlastic: new THREE.MeshStandardMaterial({
         color: "#0f4c81",
@@ -110,41 +106,41 @@ export function ServoMotor({ id }: ServoProps) {
       <group position={[0, 1.2, 0]}>
         {/* ─── MAIN SERVO BODY (SG90 translucent blue casing) ─── */}
         {/* Lower motor & gear box */}
-      <mesh material={materials.casing} position={[0, 0, 0]}>
-        <boxGeometry args={[4.5, 2.4, 2.4]} />
+      <mesh material={materials.casing} position={[0, 1.05, 0]}>
+        <boxGeometry args={[4.5, 4.5, 2.4]} />
       </mesh>
 
       {/* Center case seam band */}
-      <mesh material={materials.solidPlastic} position={[0, 0, 0]}>
+      <mesh material={materials.solidPlastic} position={[0, 1.05, 0]}>
         <boxGeometry args={[4.55, 0.15, 2.45]} />
       </mesh>
 
       {/* Top Gear Tower Step 1 */}
-      <mesh material={materials.casing} position={[0.7, 1.45, 0]}>
+      <mesh material={materials.casing} position={[0.7, 3.55, 0]}>
         <boxGeometry args={[2.7, 0.5, 2.2]} />
       </mesh>
 
       {/* Top Gear Dome Step 2 (Over output spline) */}
       <mesh
         material={materials.casing}
-        position={[1.2, 1.8, 0]}
+        position={[1.2, 3.95, 0]}
         rotation={[0, 0, 0]}
       >
         <cylinderGeometry args={[1.0, 1.05, 0.4, 24]} />
       </mesh>
 
       {/* Idler Gear Dome (Smaller back hump) */}
-      <mesh material={materials.casing} position={[-0.1, 1.75, 0]}>
+      <mesh material={materials.casing} position={[-0.1, 3.85, 0]}>
         <cylinderGeometry args={[0.65, 0.7, 0.3, 20]} />
       </mesh>
 
       {/* Output Spline Brass Shaft Center */}
-      <mesh material={materials.screwBrass} position={[1.2, 2.05, 0]}>
+      <mesh material={materials.screwBrass} position={[1.2, 4.35, 0]}>
         <cylinderGeometry args={[0.3, 0.3, 0.25, 16]} />
       </mesh>
 
       {/* Center Retaining Screw */}
-      <mesh material={materials.screwBrass} position={[1.2, 2.25, 0]}>
+      <mesh material={materials.screwBrass} position={[1.2, 4.55, 0]}>
         <cylinderGeometry args={[0.16, 0.16, 0.08, 12]} />
       </mesh>
 
@@ -180,7 +176,7 @@ export function ServoMotor({ id }: ServoProps) {
       </group>
 
       {/* ─── DYNAMIC ROTATING SERVO HORN (Lengan Putar 0°-180°) ─── */}
-      <group position={[1.2, 2.15, 0]} ref={hornRef}>
+      <group position={[1.2, 4.45, 0]} ref={hornRef}>
         {/* Hub Disc */}
         <mesh material={materials.nylonHorn} position={[0, 0, 0]}>
           <cylinderGeometry args={[0.55, 0.55, 0.16, 24]} />

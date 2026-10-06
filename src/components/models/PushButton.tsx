@@ -14,12 +14,12 @@ export function PushButton({ id }: { id: string }) {
     <group>
       {/* Plastic Base Body */}
       <mesh position={[0, 0.31, 0]} castShadow>
-        <boxGeometry args={[1.3, 0.62, 1.3]} />
+        <boxGeometry args={[1.2, 0.62, 1.2]} />
         <meshStandardMaterial color="#1e293b" roughness={0.7} />
       </mesh>
       {/* Top Metal Bracket */}
       <mesh position={[0, 0.64, 0]}>
-        <boxGeometry args={[1.24, 0.05, 1.24]} />
+        <boxGeometry args={[1.16, 0.05, 1.16]} />
         <meshStandardMaterial
           color="#cbd5e1"
           metalness={0.85}
@@ -42,23 +42,30 @@ export function PushButton({ id }: { id: string }) {
         <cylinderGeometry args={[0.36, 0.36, 0.2, 24]} />
         <meshStandardMaterial color="#fef08a" roughness={0.5} />
       </mesh>
-      {/* 4 Corner Rivets */}
-      {[-0.48, 0.48].flatMap((x) =>
-        [-0.48, 0.48].map((z) => (
-          <mesh key={x + ":" + z} position={[x, 0.68, z]}>
-            <cylinderGeometry args={[0.06, 0.06, 0.04, 8]} />
-            <meshStandardMaterial color="#475569" />
-          </mesh>
-        )),
-      )}
+      {/* Four folded metal tabs at the corners of the 6 mm switch body. */}
+      {ComponentRegistry.get("push_button")!.pins.map((p) => {
+        const dx = Math.sign(p.position[0]);
+        const dz = Math.sign(p.position[2]);
+        return (
+          <group key={`terminal:${p.id}`}>
+            <mesh position={[p.position[0], -0.03, p.position[2]]}>
+              <boxGeometry args={[0.1, 0.08, 0.1]} />
+              <meshStandardMaterial color="#cbd5e1" metalness={0.85} roughness={0.25} />
+            </mesh>
+            <mesh position={[p.position[0], 0.015, p.position[2] - dz * 0.17]}>
+              <boxGeometry args={[0.1, 0.06, 0.34]} />
+              <meshStandardMaterial color="#cbd5e1" metalness={0.85} roughness={0.25} />
+            </mesh>
+            <mesh position={[p.position[0] - dx * 0.14, -0.3, p.position[2]]}>
+              <boxGeometry args={[0.08, 0.6, 0.08]} />
+              <meshStandardMaterial color="#cbd5e1" metalness={0.85} roughness={0.25} />
+            </mesh>
+          </group>
+        );
+      })}
       {/* Pins and Leads */}
       {ComponentRegistry.get("push_button")!.pins.map((p) => (
         <group key={p.id}>
-          {/* Vertical pin shank going down into breadboard */}
-          <mesh position={[p.position[0], -0.3, p.position[2]]}>
-            <boxGeometry args={[0.08, 0.6, 0.08]} />
-            <meshStandardMaterial color="#cbd5e1" metalness={0.85} roughness={0.25} />
-          </mesh>
           <PinHighlight componentId={id} pin={p} />
         </group>
       ))}

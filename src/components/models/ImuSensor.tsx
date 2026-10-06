@@ -7,6 +7,8 @@ import type { CircuitComponent } from "@/lib/components/componentTypes";
 import { forwardKinematics } from "@/lib/robotics/kinematics";
 import { aeroArm6Dof, eduArm3Dof } from "@/lib/robotics/robots";
 import { useSimulatorStore } from "@/store/useSimulatorStore";
+import { PinHighlight } from "@/components/canvas/PinHighlight";
+import { Label } from "./Label";
 
 function seedFromId(id: string) {
   let seed = 2166136261;
@@ -142,18 +144,38 @@ export function ImuSensor({ id }: { id: string }) {
 
   return (
     <group>
-      <mesh castShadow>
-        <boxGeometry args={[0.72, 0.16, 0.56]} />
-        <meshStandardMaterial color="#176b62" metalness={0.35} roughness={0.48} />
+      {/* GY-521 breakout board, nominal 20.3 x 15.25 mm. */}
+      <mesh position={[0, 0.08, 0]} castShadow receiveShadow>
+        <boxGeometry args={[4.06, 0.16, 3.05]} />
+        <meshStandardMaterial color="#176b62" metalness={0.25} roughness={0.52} />
       </mesh>
-      <mesh position={[0, 0.09, 0]}>
-        <boxGeometry args={[0.24, 0.06, 0.22]} />
+      <mesh position={[0, 0.2, 0.05]} castShadow>
+        <boxGeometry args={[0.8, 0.18, 0.8]} />
         <meshStandardMaterial color="#1e293b" metalness={0.25} roughness={0.35} />
       </mesh>
-      <mesh position={[0.26, 0.1, -0.18]}>
+      {/* Low-noise 3.3 V regulator and decoupling parts. */}
+      <mesh position={[-1.38, 0.2, 0.38]}><boxGeometry args={[0.38, 0.12, 0.28]} /><meshStandardMaterial color="#111827" metalness={0.28} roughness={0.4} /></mesh>
+      {[-0.88, 0.92, 1.42].map((x, index) => <mesh key={x} position={[x, 0.19, index % 2 ? 0.82 : 0.45]}><boxGeometry args={[0.18, 0.08, 0.14]} /><meshStandardMaterial color="#cbd5e1" metalness={0.7} roughness={0.3} /></mesh>)}
+      {/* Eight-pin 0.1 inch header along the board's short edge. */}
+      {Array.from({ length: 8 }, (_, index) => {
+        const x = -1.778 + index * 0.508;
+        const pinLabels = ["VCC", "GND", "SCL", "SDA", "XDA", "XCL", "AD0", "INT"];
+        return <group key={index} position={[x, 0.31, -1.4]}>
+          <mesh><boxGeometry args={[0.22, 0.22, 0.22]} /><meshStandardMaterial color="#111827" /></mesh>
+          <mesh position={[0, 0.22, 0]}><cylinderGeometry args={[0.045, 0.045, 0.28, 8]} /><meshStandardMaterial color="#d4a843" metalness={0.82} roughness={0.22} /></mesh>
+          <Label text={pinLabels[index]} position={[0, -0.13, 0.36]} size={0.065} color="#e5e7eb" />
+        </group>;
+      })}
+      {/* X/Y/Z axes, shown as a compact silkscreen orientation mark. */}
+      {[[1.45, "#ef4444"], [1.65, "#22c55e"], [1.85, "#3b82f6"]].map(([x, color]) => (
+        <mesh key={String(x)} position={[Number(x), 0.175, -0.48]}><boxGeometry args={[0.1, 0.018, 0.46]} /><meshBasicMaterial color={String(color)} /></mesh>
+      ))}
+      <mesh position={[0.72, 0.2, 0.78]}>
         <sphereGeometry args={[0.035, 12, 8]} />
         <meshStandardMaterial color="#f59e0b" emissive="#78350f" />
       </mesh>
+      <mesh position={[0, 0.205, 0]}><boxGeometry args={[0.26, 0.025, 0.22]} /><meshBasicMaterial color="#e2e8f0" /></mesh>
+      {component?.pins.map((pin) => <PinHighlight key={pin.id} componentId={id} pin={pin} />)}
     </group>
   );
 }

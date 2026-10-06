@@ -80,6 +80,22 @@ export function ESP32Wroom({ id }: { id: string }) {
         <boxGeometry args={[0.95, 0.2, 0.95]} />
         <meshStandardMaterial color="#1e293b" roughness={0.7} />
       </mesh>
+      {/* USB-UART reference crystal and small passives around the bridge. */}
+      <mesh position={[0.78, 0.44, 2.15]} castShadow>
+        <boxGeometry args={[0.62, 0.18, 0.38]} />
+        <meshStandardMaterial color="#cbd5e1" metalness={0.78} roughness={0.28} />
+      </mesh>
+      <Label text="12.0" position={[0.78, 0.54, 2.15]} size={0.1} color="#334155" />
+      {[
+        [-1.2, 2.08, "#111827"], [-1.2, 3.48, "#111827"],
+        [0.82, 2.85, "#334155"], [1.58, 2.45, "#111827"],
+        [1.48, 3.12, "#cbd5e1"], [-0.12, 3.48, "#cbd5e1"],
+      ].map(([x, z, color], index) => (
+        <mesh key={`smd:${index}`} position={[Number(x), 0.39, Number(z)]} castShadow>
+          <boxGeometry args={[0.38, 0.13, 0.28]} />
+          <meshStandardMaterial color={String(color)} metalness={color === "#cbd5e1" ? 0.45 : 0.12} roughness={0.52} />
+        </mesh>
+      ))}
 
       {/* 6. AMS1117 3.3V Voltage Regulator */}
       <mesh position={[-1.2, 0.44, 2.7]} castShadow>

@@ -824,12 +824,13 @@ export default function WorkspacePage() {
 
         {/* Center 3D Scene Panel */}
         <section className="scene-panel" data-tour="canvas-area">
-          {solderingWorkbenchOpen ? (
-            <SolderingWorkbench lang={lang} onClose={() => setSolderingWorkbenchOpen(false)} />
-          ) : (
-            <SimulatorCanvas />
-          )}
-          {!solderingWorkbenchOpen && <div className="camera-tools">
+          <div className="scene-canvas-area">
+            {solderingWorkbenchOpen ? (
+              <SolderingWorkbench lang={lang} onClose={() => setSolderingWorkbenchOpen(false)} />
+            ) : (
+              <SimulatorCanvas />
+            )}
+            {!solderingWorkbenchOpen && <div className="camera-tools">
             <button
               className={`small-button flex items-center gap-1 ${cameraMode === "orbit" ? "active" : ""}`}
               onClick={() => setCameraMode("orbit")}
@@ -880,30 +881,32 @@ export default function WorkspacePage() {
               <Focus size={12} />
               <span>{t.cameraTools.fit}</span>
             </button>
-          </div>}
-          {!solderingWorkbenchOpen && !isWiringActive && !selectedWireId && (
-            <div className="scene-instruction">
-              <span>
-                {cameraMode === "pan"
-                  ? t.scene.panHint
-                  : t.scene.orbitHint}
-                {" · "}
-                {t.scene.clickPinHint}
-              </span>
-            </div>
-          )}
-          {placementNotice && (
-            <div className="diagnostics" role="status">
-              {placementNotice}
-            </div>
-          )}
-          {diagnostics.length > 0 && (
-            <div className="diagnostics" role="alert">
-              {diagnostics.map((d, i) => (
-                <p key={i}>{d}</p>
-              ))}
-            </div>
-          )}
+            </div>}
+            {!solderingWorkbenchOpen && !isWiringActive && !selectedWireId && (
+              <div className="scene-instruction">
+                <span>
+                  {cameraMode === "pan"
+                    ? t.scene.panHint
+                    : t.scene.orbitHint}
+                  {" · "}
+                  {t.scene.clickPinHint}
+                </span>
+              </div>
+            )}
+            {placementNotice && (
+              <div className="diagnostics" role="status">
+                {placementNotice}
+              </div>
+            )}
+            {diagnostics.length > 0 && (
+              <div className="diagnostics" role="alert">
+                {diagnostics.map((d, i) => (
+                  <p key={i}>{d}</p>
+                ))}
+              </div>
+            )}
+          </div>
+          {!solderingWorkbenchOpen && <CloudAIGatewayPanel />}
         </section>
 
         {/* Right Collapsible Inspector & Properties Panel */}
@@ -1194,7 +1197,6 @@ export default function WorkspacePage() {
       </footer>
 
       {/* 7. INTERACTIVE TOUR ONBOARDING */}
-      <CloudAIGatewayPanel />
       <OnnxInferencePanel />
       <InteractiveTour
         isOpen={tourOpen}

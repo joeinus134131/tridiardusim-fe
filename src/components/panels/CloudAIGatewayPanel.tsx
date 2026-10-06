@@ -213,13 +213,13 @@ export function CloudAIGatewayPanel() {
   };
 
   if (!open) return (
-    <button className="fixed left-4 top-20 z-[var(--z-panel)] flex items-center gap-2 rounded-full border border-[var(--border)] bg-[var(--bg-elevated)] px-3 py-2 text-xs shadow-lg hover:border-[var(--accent)]" onClick={() => setOpen(true)} title={t.aiGateway.open}>
+    <button className="absolute right-3 top-3 z-[var(--z-panel)] flex items-center gap-2 rounded-full border border-[var(--border)] bg-[var(--bg-elevated)] px-3 py-2 text-xs shadow-lg hover:border-[var(--accent)]" onClick={() => setOpen(true)} title={t.aiGateway.open}>
       <Bot size={16} className="text-[var(--accent)]" /> {t.aiGateway.open}
     </button>
   );
 
   return (
-    <section className="fixed left-4 top-20 z-[var(--z-panel)] flex max-h-[calc(100vh-6rem)] w-[min(22rem,calc(100vw-2rem))] flex-col gap-3 overflow-y-auto rounded-xl border border-[var(--border)] bg-[var(--bg-surface)] p-4 shadow-2xl">
+    <section className="cloud-ai-gateway-panel z-[var(--z-panel)] flex flex-col gap-3 p-4">
       <header className="flex items-center justify-between">
         <div className="flex items-center gap-2"><Bot size={18} className="text-[var(--accent)]" /><strong className="text-sm">{t.aiGateway.title}</strong></div>
         <button className="btn-icon p-1.5" onClick={() => { disconnect(); setOpen(false); }} aria-label={t.common.close}><X size={15} /></button>

@@ -2,6 +2,7 @@
 
 import { useEffect, useRef } from "react";
 import * as THREE from "three";
+import { RoundedBox } from "@react-three/drei";
 import type { ThreeEvent } from "@react-three/fiber";
 import { useSimulatorStore } from "@/store/useSimulatorStore";
 import { forwardKinematics } from "@/lib/robotics/kinematics";
@@ -17,6 +18,12 @@ export function AeroArm({ id }: { id: string }) {
   const solver = useRef<Worker | null>(null);
   const requestId = useRef(0);
   const pose = forwardKinematics(aeroArm6Dof.joints, angles, aeroArm6Dof.home);
+  const flangeEuler = new THREE.Euler().setFromRotationMatrix(new THREE.Matrix4().set(
+    pose[0], pose[1], pose[2], 0,
+    pose[4], pose[5], pose[6], 0,
+    pose[8], pose[9], pose[10], 0,
+    0, 0, 0, 1,
+  ));
 
   useEffect(() => {
     const worker = new Worker(new URL("../../lib/robotics/kinematics.worker.ts", import.meta.url));
@@ -68,29 +75,37 @@ export function AeroArm({ id }: { id: string }) {
   };
 
   return (
-    <group ref={rootRef} scale={50}>
+    <group ref={rootRef} scale={200}>
+      {/* Robot joint coordinates are metres; 200 scene units per metre matches the 5 mm component scale. */}
       <mesh position={[0, 0.016, 0]} castShadow receiveShadow>
-        <cylinderGeometry args={[0.043, 0.05, 0.032, 32]} />
+        <cylinderGeometry args={[0.064, 0.064, 0.032, 40]} />
         <meshStandardMaterial color="#334155" {...metal} />
       </mesh>
+      {/* Four Ø6.6 mm M6 mounting holes on the UR3e Ø110 mm, 45° pattern. */}
+      {[-1, 1].flatMap((sx) => [-1, 1].map((sz) => (
+        [sx * 0.03889, sz * 0.03889]
+      )).map(([x, z]) => (
+        <group key={`base-bolt:${x}:${z}`} position={[x, 0.001, z]}>
+          <mesh rotation={[Math.PI / 2, 0, 0]}><torusGeometry args={[0.0031, 0.00025, 6, 16]} /><meshStandardMaterial color="#cbd5e1" metalness={0.88} roughness={0.22} /></mesh>
+          <mesh position={[0, -0.0003, 0]}><cylinderGeometry args={[0.0026, 0.0026, 0.0005, 12]} /><meshStandardMaterial color="#090b0e" metalness={0.18} roughness={0.68} /></mesh>
+        </group>
+      )))}
       <mesh position={[0, 0.04, 0]}>
         <cylinderGeometry args={[0.024, 0.03, 0.016, 28]} />
         <meshStandardMaterial color="#0ea5e9" {...metal} />
       </mesh>
       <group position={[0, 0.048, 0]} rotation={[0, angles[0], 0]}>
-        <mesh position={[0, 0.04, 0]} castShadow>
-          <boxGeometry args={[0.048, 0.08, 0.05]} />
-          <meshStandardMaterial color="#0284c7" {...metal} />
-        </mesh>
+        <RoundedBox args={[0.048, 0.08, 0.05]} radius={0.006} smoothness={3} position={[0, 0.04, 0]} castShadow>
+          <meshStandardMaterial color="#e5e7eb" {...metal} />
+        </RoundedBox>
         <mesh position={[0, 0.08, 0]}>
           <cylinderGeometry args={[0.022, 0.026, 0.018, 24]} />
           <meshStandardMaterial color="#475569" {...metal} />
         </mesh>
         <group position={[0, 0.08, 0]} rotation={[0, 0, angles[1]]}>
-          <mesh position={[0, 0.06, 0]} castShadow>
-            <boxGeometry args={[0.027, 0.12, 0.026]} />
-            <meshStandardMaterial color="#0284c7" {...metal} />
-          </mesh>
+          <RoundedBox args={[0.027, 0.12, 0.026]} radius={0.005} smoothness={3} position={[0, 0.06, 0]} castShadow>
+            <meshStandardMaterial color="#e5e7eb" {...metal} />
+          </RoundedBox>
           <mesh position={[0, 0.12, 0]}>
             <cylinderGeometry args={[0.019, 0.022, 0.018, 24]} />
             <meshStandardMaterial color="#64748b" {...metal} />
@@ -106,17 +121,17 @@ export function AeroArm({ id }: { id: string }) {
             </mesh>
             <group position={[0, 0.10, 0]} rotation={[0, angles[3], 0]}>
               <mesh position={[0, 0.0175, 0]} castShadow>
-                <cylinderGeometry args={[0.014, 0.016, 0.035, 20]} />
-                <meshStandardMaterial color="#0ea5e9" {...metal} />
+              <cylinderGeometry args={[0.014, 0.016, 0.035, 20]} />
+              <meshStandardMaterial color="#64748b" {...metal} />
               </mesh>
               <group position={[0, 0.035, 0]} rotation={[0, 0, angles[4]]}>
                 <mesh position={[0, 0.0175, 0]} castShadow>
                   <cylinderGeometry args={[0.012, 0.014, 0.035, 20]} />
-                  <meshStandardMaterial color="#38bdf8" {...metal} />
+                  <meshStandardMaterial color="#64748b" {...metal} />
                 </mesh>
                 <group position={[0, 0.035, 0]} rotation={[0, angles[5], 0]}>
                   <mesh position={[0, 0.015, 0]} castShadow>
-                    <cylinderGeometry args={[0.008, 0.01, 0.03, 20]} />
+                    <cylinderGeometry args={[0.008, 0.01, 0.13, 24]} />
                     <meshStandardMaterial color="#f8fafc" {...metal} />
                   </mesh>
                   <mesh position={[0, 0.03, 0]}>
@@ -128,6 +143,21 @@ export function AeroArm({ id }: { id: string }) {
             </group>
           </group>
         </group>
+      </group>
+      {/* ISO-style tool flange with a centered bore and six mounting bolts. */}
+      <group position={[pose[3], pose[7], pose[11]]} rotation={[flangeEuler.x, flangeEuler.y, flangeEuler.z]}>
+        <mesh castShadow><cylinderGeometry args={[0.0315, 0.0315, 0.0085, 40]} /><meshStandardMaterial color="#cbd5e1" metalness={0.82} roughness={0.22} /></mesh>
+        {/* UR tool interface: Ø31.5 pilot, Ø6 H7 locator and M8 electrical connector. */}
+        <mesh position={[0, 0.0045, 0]}><cylinderGeometry args={[0.01575, 0.01575, 0.001, 40]} /><meshStandardMaterial color="#94a3b8" metalness={0.82} roughness={0.24} /></mesh>
+        <mesh position={[0, 0.0052, 0]}><cylinderGeometry args={[0.003, 0.003, 0.0014, 24]} /><meshStandardMaterial color="#111827" metalness={0.28} roughness={0.55} /></mesh>
+        <mesh position={[0, 0.0054, -0.008]}><cylinderGeometry args={[0.004, 0.004, 0.0015, 20]} /><meshStandardMaterial color="#111827" metalness={0.32} roughness={0.48} /></mesh>
+        {/* Four M6 mounting holes on the Ø50 mm pitch circle. */}
+        {Array.from({ length: 4 }, (_, i) => {
+          const angle = Math.PI / 4 + i * Math.PI / 2;
+          const x = Math.cos(angle) * 0.025;
+          const z = Math.sin(angle) * 0.025;
+          return <group key={i} position={[x, 0.005, z]}><mesh><cylinderGeometry args={[0.003, 0.003, 0.0015, 16]} /><meshStandardMaterial color="#111827" metalness={0.24} roughness={0.55} /></mesh><mesh position={[0, 0.0008, 0]}><torusGeometry args={[0.0032, 0.00025, 6, 16]} /><meshStandardMaterial color="#64748b" metalness={0.84} roughness={0.26} /></mesh></group>;
+        })}
       </group>
       <mesh
         position={[pose[3], pose[7], pose[11]]}

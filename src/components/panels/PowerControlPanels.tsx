@@ -190,7 +190,7 @@ export function DcDcConverterControlPanel({ component, updateState }: { componen
   const regulating = component.state.isRegulating === true;
   const currentLimited = component.state.isCurrentLimited === true;
   return (
-    <section className="inspector-card" aria-label="Kontrol regulator buck-boost">
+    <section className="inspector-card" aria-label="Kontrol regulator LM2596 edukasional">
       <div className="flex items-center justify-between mb-2">
         <strong className="text-xs">Regulator DC-DC</strong>
         <button className="small-button text-[10px] px-2 py-1" aria-pressed={isOn} onClick={() => updateState(component.id, { isOn: !isOn })}>
@@ -216,7 +216,7 @@ export function DcDcConverterControlPanel({ component, updateState }: { componen
         <div>Rugi {Number(component.state.powerLossW || 0).toFixed(2)} W</div>
       </div>
       <p className={`mt-1 text-[10px] ${currentLimited ? "text-amber-600" : regulating ? "text-emerald-600" : "opacity-60"}`}>
-        {currentLimited ? "Batas arus aktif; rail turun sampai beban kembali dalam batas." : regulating ? "Rail teratur." : "Input di luar rentang kerja 2.5–24 V atau regulator mati."}
+        {currentLimited ? "Batas arus aktif; rail turun sampai beban kembali dalam batas." : regulating ? "Rail teratur pada model kuasistatik." : "Untuk buck LM2596, VIN harus 4.5–40 V dan minimal 1.5 V di atas setelan keluaran."}
       </p>
     </section>
   );

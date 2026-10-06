@@ -3,7 +3,9 @@
 import { useFrame } from "@react-three/fiber";
 import { useEffect, useMemo, useRef } from "react";
 import * as THREE from "three";
+import { RoundedBox } from "@react-three/drei";
 import { useSimulatorStore } from "@/store/useSimulatorStore";
+import { Label } from "./Label";
 
 const DEPTH_VERTEX = `
   varying float vViewDepth;
@@ -144,21 +146,51 @@ export function RGBDCameraSensor({ id }: { id: string }) {
 
   return (
     <group>
+      {/* D435 nominal housing: 90 x 25 x 25 mm at 5 mm per scene unit. */}
       <mesh castShadow receiveShadow>
-        <boxGeometry args={[1.25, 0.62, 0.62]} />
-        <meshStandardMaterial color="#27364a" metalness={0.72} roughness={0.32} />
+        <boxGeometry args={[18, 5, 5]} />
+        <meshStandardMaterial color="#27364a" metalness={0.62} roughness={0.38} />
       </mesh>
-      <mesh position={[0, 0.2, -0.32]} rotation={[Math.PI / 2, 0, 0]}>
-        <cylinderGeometry args={[0.17, 0.17, 0.12, 32]} />
-        <meshStandardMaterial color="#0b1320" metalness={0.55} roughness={0.2} />
-      </mesh>
-      <mesh position={[0, 0.2, -0.39]}>
-        <sphereGeometry args={[0.075, 24, 16]} />
-        <meshPhysicalMaterial color="#2276b9" roughness={0.08} metalness={0.2} clearcoat={1} />
-      </mesh>
+      {/* Front fascia and inset optical panel separate the glass apertures from the case. */}
+      <RoundedBox args={[17.3, 4.35, 0.18]} radius={0.24} smoothness={3} position={[0, 0.08, -2.47]}>
+        <meshStandardMaterial color="#172334" metalness={0.45} roughness={0.3} />
+      </RoundedBox>
+      {[-1, 1].flatMap((x) => [-1, 1].map((y) => <mesh key={`front-screw:${x}:${y}`} position={[x * 8.12, y * 1.82, -2.575]} rotation={[Math.PI / 2, 0, 0]}>
+        <cylinderGeometry args={[0.085, 0.085, 0.045, 10]} />
+        <meshStandardMaterial color="#94a3b8" metalness={0.88} roughness={0.2} />
+      </mesh>))}
+      {[
+        [-5.0, 0.4, "#121a27", 0.46], // Left IR imager
+        [0, 0.4, "#312e81", 0.36], // Pattern projector
+        [5.0, 0.4, "#121a27", 0.46], // Right IR imager
+        [0, -0.9, "#111827", 0.38], // RGB imager, below the IR baseline
+      ].map(([x, y, color, radius]) => (
+        <group key={String(x) + String(y)} position={[Number(x), Number(y), -2.38]}>
+          <mesh rotation={[Math.PI / 2, 0, 0]}>
+            <cylinderGeometry args={[Number(radius) + 0.16, Number(radius) + 0.16, 0.3, 28]} />
+            <meshStandardMaterial color="#111827" metalness={0.72} roughness={0.22} />
+          </mesh>
+          <mesh position={[0, 0.035, -0.18]}>
+            <sphereGeometry args={[Number(radius), 24, 16]} />
+            <meshPhysicalMaterial color={String(color)} roughness={0.08} metalness={0.18} clearcoat={1} />
+          </mesh>
+        </group>
+      ))}
+      {/* Three underside threaded mounts: two M3 and one 1/4-20. */}
+      {[-1.5, 1.5].map((x) => <group key={x} position={[x, -2.56, 0.1]}><mesh><cylinderGeometry args={[0.3, 0.3, 0.12, 20]} /><meshStandardMaterial color="#94a3b8" metalness={0.78} roughness={0.28} /></mesh><mesh position={[0, -0.07, 0]}><cylinderGeometry args={[0.11, 0.11, 0.02, 16]} /><meshStandardMaterial color="#111827" /></mesh></group>)}
+      <group position={[0, -2.56, 0.1]}><mesh><cylinderGeometry args={[0.48, 0.48, 0.12, 24]} /><meshStandardMaterial color="#94a3b8" metalness={0.78} roughness={0.28} /></mesh><mesh position={[0, -0.07, 0]}><cylinderGeometry args={[0.22, 0.22, 0.02, 18]} /><meshStandardMaterial color="#111827" /></mesh></group>
+      {/* Side ventilation and top identification marks found on the D435 family housing. */}
+      {[-1, 1].flatMap((side) => Array.from({ length: 7 }, (_, index) => <mesh key={`vent:${side}:${index}`} position={[side * 9.02, -0.4 + index * 0.15, 0.65]}>
+        <boxGeometry args={[0.035, 0.055, 1.05]} />
+        <meshStandardMaterial color="#101923" roughness={0.82} />
+      </mesh>))}
+      <Label text="Intel RealSense D435" position={[0, 2.53, 0.35]} size={0.22} color="#dbeafe" />
+      <mesh position={[-7.7, 2.53, 1.55]}><boxGeometry args={[0.5, 0.035, 0.5]} /><meshStandardMaterial color="#64748b" metalness={0.45} roughness={0.42} /></mesh>
+      {/* USB-C connector on the rear face. */}
+      <group position={[0, 0.1, 2.55]}><mesh><boxGeometry args={[1.15, 0.68, 0.44]} /><meshStandardMaterial color="#cbd5e1" metalness={0.82} roughness={0.24} /></mesh><mesh position={[0, 0, 0.23]}><boxGeometry args={[0.72, 0.32, 0.04]} /><meshStandardMaterial color="#111827" /></mesh></group>
       <perspectiveCamera
         ref={cameraRef}
-        position={[0, 0.2, -0.34]}
+        position={[0, 0.4, -2.62]}
         fov={fov}
         near={near}
         far={far}

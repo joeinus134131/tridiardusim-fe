@@ -38,7 +38,7 @@ export const aeroArm6Dof: RobotModel = {
     { type: "revolute", axis: [0, 0, 1], point: [0, 0.335, 0], min: -2.1, max: 2.1 },
     { type: "revolute", axis: [0, 1, 0], point: [0, 0.37, 0], min: -Math.PI, max: Math.PI },
   ],
-  home: [1,0,0,0, 0,1,0,0.4, 0,0,1,0, 0,0,0,1],
+  home: [1,0,0,0, 0,1,0,0.5, 0,0,1,0, 0,0,0,1],
   homeJoints: [0, 0, 0, 0, 0, 0],
-  linkLengths: [0.08, 0.12, 0.10, 0.035, 0.035, 0.03],
+  linkLengths: [0.08, 0.12, 0.10, 0.035, 0.035, 0.13],
 };

@@ -157,7 +157,17 @@ export function solveCircuit(
       edges.push(
         { a: node(c, "VCC"), b: node(c, "GND"), r: 660, vf: 0 },
         { a: node(c, "VCC"), b: node(c, "OE"), r: 10_000, vf: 0 },
+        // The external servo rail is separate from logic VCC, but J1 and both
+        // six-pin pass-through headers share the same V+ and GND copper planes.
+        { a: node(c, "SERVO_V+"), b: node(c, "V+"), r: 0.001, vf: 0 },
+        { a: node(c, "SERVO_GND"), b: node(c, "GND"), r: 0.001, vf: 0 },
       );
+      for (let channel = 0; channel < 16; channel++) {
+        edges.push(
+          { a: node(c, "SERVO_V+"), b: node(c, `V+_PWM${channel}`), r: 0.01, vf: 0 },
+          { a: node(c, "SERVO_GND"), b: node(c, `GND_PWM${channel}`), r: 0.01, vf: 0 },
+        );
+      }
     }
     if (c.typeId === "servo_sg90")
       edges.push({
@@ -177,8 +187,13 @@ export function solveCircuit(
       const currentA = Math.max(0, Number(c.state.currentDrawA) || 0);
       if (hasSupply && currentA > 0) currentLoads.push({ node: node(c, "VCC"), amps: currentA });
     }
-    if (c.typeId === "incremental_encoder")
+    if (c.typeId === "incremental_encoder") {
       edges.push({ a: node(c, "VCC"), b: node(c, "GND"), r: 1000, vf: 0 });
+      if (c.state.isPressed === true) {
+        // KY-040 push switch is normally open and shorts SW to ground while held.
+        edges.push({ a: node(c, "SW"), b: node(c, "GND"), r: 0.05, vf: 0 });
+      }
+    }
     if (c.typeId === "a4988_stepper_driver") {
       edges.push(
         { a: node(c, "VDD"), b: node(c, "GND_LOGIC"), r: 10000, vf: 0 },
@@ -252,6 +267,8 @@ export function solveCircuit(
       const logicVoltage = vcc >= 4.5 ? 5 : Math.max(0, vcc);
       sources.push({ node: node(c, "A"), voltage: signal.channelA ? logicVoltage : 0, resistance: 50 });
       sources.push({ node: node(c, "B"), voltage: signal.channelB ? logicVoltage : 0, resistance: 50 });
+      // The KY-040 SW output has an onboard pull-up and is shorted to GND while pressed.
+      sources.push({ node: node(c, "SW"), voltage: logicVoltage, resistance: 10_000 });
     }
   }
   const driverMotors = new Map<string, CircuitComponent>();
@@ -427,7 +444,7 @@ export function solveCircuit(
     const outputResistanceOhms = Math.max(0.005, Math.min(1, Number(converter.state.outputResistanceOhms) || 0.05));
     const maxOutputCurrentA = Math.max(0.1, Math.min(10, Number(converter.state.maxOutputCurrentA) || 2));
     const isOn = converter.state.isOn !== false;
-    const inRange = inputVoltageV >= 2.5 && inputVoltageV <= 24;
+    const inRange = inputVoltageV >= 4.5 && inputVoltageV <= 40 && inputVoltageV >= targetVoltageV + 1.5;
     converterParameters.set(converter.id, { inputVoltageV, targetVoltageV, efficiency, outputResistanceOhms, maxOutputCurrentA, isOn: isOn && inRange });
     if (isOn && inRange) {
       sources.push({
@@ -606,7 +623,7 @@ export function solveCircuit(
       const parameters = converterParameters.get(c.id)!;
       const inputVoltageV = (voltage.get(node(c, "VIN")) || 0) - (voltage.get(node(c, "GND_IN")) || 0);
       const outputVoltageV = (voltage.get(node(c, "VOUT")) || 0) - (voltage.get(node(c, "GND_OUT")) || 0);
-      const isRegulating = parameters.isOn && inputVoltageV >= 2.5 && inputVoltageV <= 24;
+      const isRegulating = parameters.isOn && inputVoltageV >= 4.5 && inputVoltageV <= 40 && inputVoltageV >= parameters.targetVoltageV + 1.5;
       const isCurrentLimited = isRegulating && currentLimited.has(c.id);
       const outputCurrentA = !isRegulating ? 0 : isCurrentLimited
         ? parameters.maxOutputCurrentA
@@ -629,7 +646,7 @@ export function solveCircuit(
       if (isCurrentLimited)
         warnings.add(`${c.name}: batas arus keluaran ${parameters.maxOutputCurrentA.toFixed(2)} A aktif; tegangan rail turun untuk melindungi regulator.`);
       if (c.state.isOn !== false && !isRegulating)
-        warnings.add(`${c.name}: input ${inputVoltageV.toFixed(2)} V di luar rentang kerja 2.5–24 V.`);
+        warnings.add(`${c.name}: LM2596 memerlukan VIN 4.5–40 V dan setidaknya 1.5 V di atas setelan keluaran pada model kuasistatik ini.`);
       if (outputVoltageV > parameters.targetVoltageV * 1.05)
         warnings.add(`${c.name}: tegangan keluaran melebihi setelan; periksa kemungkinan backfeed dari sumber lain.`);
     }

@@ -36,7 +36,7 @@ export function JumperWire({ id }: { id: string }) {
             <meshStandardMaterial color="#171b21" />
           </mesh>
           <mesh position={[x, 0.23, -0.35]}>
-            <boxGeometry args={[0.128, 0.128, 0.7]} />
+            <boxGeometry args={[0.128, 0.128, 1.2]} />
             <meshStandardMaterial
               color="#bfc6cb"
               metalness={0.8}

@@ -14,9 +14,6 @@ export function DHT11Sensor({ id }: DHT11Props) {
   const component = useSimulatorStore((state) =>
     state.components.find((c) => c.id === id),
   );
-  const selectedId = useSimulatorStore((state) => state.selectedComponentId);
-  const isSelected = selectedId === id;
-
   const isPowered = component?.state?.isPowered !== false;
 
   // Realistic materials
@@ -95,16 +92,16 @@ export function DHT11Sensor({ id }: DHT11Props) {
         <PinHighlight key={pin.id} componentId={id} pin={pin} />
       ))}
 
-      {/* ─── 1. BREAKOUT PCB BASE (Dimensions: ~3.0 × 1.4 × 0.2 units) ─── */}
+      {/* ─── 1. BREAKOUT PCB BASE (32 × 14 × 1 mm) ─── */}
       <group position={[0, 0.2, 0]}>
         {/* PCB Board Substrate */}
         <mesh material={materials.pcbSubstrate} position={[0, 0, 0]}>
-          <boxGeometry args={[3.0, 0.18, 1.5]} />
+          <boxGeometry args={[6.4, 0.18, 2.8]} />
         </mesh>
 
         {/* 2 Corner Brass Mounting Holes */}
-        {[-1.2, 1.2].map((x, idx) => (
-          <mesh key={idx} material={materials.pcbGoldPads} position={[x, 0, -0.45]}>
+        {[-2.7, 2.7].map((x, idx) => (
+          <mesh key={idx} material={materials.pcbGoldPads} position={[x, 0, -1.0]}>
             <cylinderGeometry args={[0.2, 0.2, 0.2, 16]} />
           </mesh>
         ))}
@@ -142,17 +139,17 @@ export function DHT11Sensor({ id }: DHT11Props) {
       <group position={[0, 1.45, 0]}>
         {/* Main Blue Polymer Body */}
         <mesh material={materials.casingBlue} position={[0, 0, 0]}>
-          <boxGeometry args={[2.4, 2.3, 1.1]} />
+          <boxGeometry args={[3.1, 2.4, 1.1]} />
         </mesh>
 
         {/* Top Chamfer Bevel Cap */}
         <mesh material={materials.casingBlue} position={[0, 1.15, 0]}>
-          <boxGeometry args={[2.2, 0.08, 0.95]} />
+          <boxGeometry args={[2.9, 0.08, 0.95]} />
         </mesh>
 
         {/* Recessed Louver Window on Front Face */}
         <mesh material={materials.casingGrillDark} position={[0, 0.25, 0.56]}>
-          <planeGeometry args={[1.8, 1.3]} />
+          <planeGeometry args={[2.5, 1.3]} />
         </mesh>
 
         {/* 4 Horizontal Air Ventilation Louver Slits */}
@@ -160,11 +157,11 @@ export function DHT11Sensor({ id }: DHT11Props) {
           <group key={i} position={[0, 0.25 + yOffset, 0.57]}>
             {/* Dark air void inside slit */}
             <mesh material={materials.blackPlastic}>
-              <boxGeometry args={[1.65, 0.12, 0.04]} />
+              <boxGeometry args={[2.35, 0.12, 0.04]} />
             </mesh>
             {/* Louver slat fin */}
             <mesh material={materials.casingBlue} position={[0, 0.04, 0.02]}>
-              <boxGeometry args={[1.65, 0.05, 0.03]} />
+              <boxGeometry args={[2.35, 0.05, 0.03]} />
             </mesh>
           </group>
         ))}
@@ -217,8 +214,8 @@ export function DHT11Sensor({ id }: DHT11Props) {
       </group>
 
       {/* ─── 3. 3-PIN CONNECTOR TERMINAL HEADER (VCC, DATA, GND) ─── */}
-      {/* Terminal pins are centered at Y = 0.0, Z = 0.0, matching physical.ts pins exactly */}
-      <group position={[0, 0.0, 0]}>
+      {/* Header contacts sit at the front end of the module PCB. */}
+      <group position={[0, 0.0, 1.1]}>
         {/* Black Header Base Block / Spacer */}
         <mesh material={materials.blackPlastic} position={[0, 0.1, 0]}>
           <boxGeometry args={[1.8, 0.18, 0.5]} />

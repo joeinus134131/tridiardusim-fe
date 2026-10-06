@@ -637,7 +637,29 @@ body {
 .scene-panel {
   flex: 1;
   min-width: 220px;
+  min-height: 0;
   position: relative;
+  display: flex;
+  overflow: hidden;
+}
+.scene-canvas-area {
+  position: relative;
+  flex: 1 1 0%;
+  min-width: 0;
+  min-height: 0;
+  overflow: hidden;
+}
+.cloud-ai-gateway-panel {
+  flex: 0 0 min(22rem, 45%);
+  width: min(22rem, 45%);
+  max-width: 45%;
+  min-width: 0;
+  height: 100%;
+  max-height: 100%;
+  overflow-y: auto;
+  border-left: 1px solid var(--border);
+  background: var(--bg-surface);
+  color: var(--text-primary);
 }
 .soldering-workbench {
   position: absolute;

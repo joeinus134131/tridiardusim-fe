@@ -60,7 +60,7 @@ ComponentRegistry.register({
   type: "actuator",
   category: "Robotics",
   description: "Lengan robot RRR untuk eksperimen FK PoE, IK DLS, dan kontrol joint.",
-  defaultState: { joint0: 0, joint1: 0, joint2: 0 },
+  defaultState: { joint0: 0, joint1: 0, joint2: 0, gripperOpen: 0.7 },
   pins: [],
 });
 
@@ -99,8 +99,8 @@ ComponentRegistry.register({
   name: "Kamera Virtual RGB-D",
   type: "sensor",
   category: "Sensors",
-  description: "Kamera scene 3D dengan frame RGB dan buffer depth Float32 dalam meter.",
-  defaultState: { width: 320, height: 240, fov: 70, near: 0.1, far: 30 },
+  description: "Kamera scene 3D bergaya RealSense D435 dengan keluaran RGB dan depth Float32 dalam meter.",
+  defaultState: { width: 640, height: 480, fov: 58, near: 0.28, far: 10 },
   pins: [],
 });
 
@@ -144,8 +144,8 @@ ComponentRegistry.register({
   name: "Incremental Encoder A/B",
   type: "sensor",
   category: "Sensors",
-  description: "Encoder incremental dua fase kuadratur, keluaran digital A/B dan hitungan x4.",
-  defaultState: { angle: 0, pulsesPerRevolution: 100, coupledMotorId: "", count: 0, channelA: 0, channelB: 0, isPowered: false },
+  description: "Modul encoder mekanis kuadratur gaya KY-040: keluaran CLK/DT (A/B), tombol tekan SW aktif-rendah, dan hitungan x4.",
+  defaultState: { angle: 0, pulsesPerRevolution: 20, coupledMotorId: "", count: 0, channelA: 0, channelB: 0, isPowered: false, isPressed: false },
   pins: quadratureEncoderPins,
 });
 
@@ -185,7 +185,7 @@ ComponentRegistry.register({
   name: "Catu Daya DC Adjustable",
   type: "board",
   category: "Boards",
-  description: "Catu virtual DC 0–24 V dengan terminal V+ dan GND untuk driver motor.",
+  description: "Referensi visual Siglent SPD3303X-E dengan tiga kanal; solver menyediakan satu keluaran virtual 0–24 V melalui terminal CH1 V+/GND.",
   defaultState: { voltage: 12, isOn: true },
   pins: dcSupplyPins,
 });
@@ -214,10 +214,10 @@ ComponentRegistry.register({
 
 ComponentRegistry.register({
   typeId: "dc_dc_converter",
-  name: "Regulator DC-DC Buck-Boost",
+  name: "Modul Regulator LM2596 Buck",
   type: "board",
   category: "Boards",
-  description: "Konverter virtual buck-boost 2.5–24 V ke rail teratur 3.3/5/9/12 V dengan efisiensi dan batas arus keluaran.",
+  description: "Carrier visual LM2596 buck 43 × 21 mm; solver memakai regulator ideal edukasional 2.5–24 V ke rail 3.3/5/9/12 V, bukan switching LM2596.",
   defaultState: {
     isOn: true,
     outputVoltage: 5,
@@ -240,7 +240,7 @@ ComponentRegistry.register({
   name: "Pengisi Baterai CC/CV",
   type: "board",
   category: "Boards",
-  description: "Charger virtual CC/CV untuk paket Li-ion 1S dan LiPo 2S dengan batas arus, timer keselamatan edukasional, dan proteksi termal/polaritas.",
+  description: "Visual carrier TP4056 Micro-USB untuk sel 1S; solver charger edukasional mendukung state Li-ion 1S dan LiPo 2S, bukan ekuivalen IC TP4056.",
   defaultState: { isOn: true, maxChargeCurrentA: 0.5, efficiency: 0.9, inputCurrentA: 0, chargeCurrentA: 0, isCharging: false, isConstantVoltage: false, isChargeComplete: false, chargeElapsedSeconds: 0, safetyTimerLimitSeconds: 10 * 60 * 60, isSafetyTimerExpired: false, tailCurrentLimitA: 0.125, inputVoltageV: 0, targetVoltageV: 4.2, powerLossW: 0, temperatureC: 25, isThermalShutdown: false, isReverseConnected: false },
   pins: batteryChargerPins,
 });
@@ -260,7 +260,7 @@ ComponentRegistry.register({
   name: "Motor DC Gearbox TT",
   type: "actuator",
   category: "Actuators",
-  description: "Motor DC brushed dengan gearbox 1:48, back-EMF dan inersia stateful.",
+  description: "Motor TT brushed 1:48 3–6V dengan casing 70 × 22 × 18 mm dan dua kabel 200 mm; back-EMF dan inersia dimodelkan.",
   defaultState: {
     resistanceOhms: 6,
     inductanceH: 0.002,
@@ -391,9 +391,9 @@ ComponentRegistry.register({
 
 ComponentRegistry.register({
   typeId: "led_red",
-  name: "LED (5mm Multi-Color)",
+  name: "LED 5mm Difus (Warna Visual)",
   type: "actuator",
-  description: "LED 5mm difus standar dengan pilihan warna dinamis.",
+  description: "Envelope fisik mengacu pada Kingbright WP7113ID merah difus; pilihan warna adalah opsi visual simulator, bukan LED RGB fisik.",
   category: "Basic",
   defaultState: { isOn: false, brightness: 0, color: "#ef4444" },
   pins: [
@@ -559,7 +559,7 @@ ComponentRegistry.register({
 
 ComponentRegistry.register({
   typeId: "potentiometer",
-  name: "Potentiometer",
+  name: "Alps RK09L 10kΩ Potentiometer",
   type: "sensor",
   description: "A 10kΩ rotary potentiometer for analog input.",
   category: "Basic",

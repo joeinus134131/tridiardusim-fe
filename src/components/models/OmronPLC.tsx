@@ -8,7 +8,9 @@ export function OmronPLC({ id }: { id: string }) {
   const inputs = Number(c?.state.inputMask || 0);
   const outputs = Number(c?.state.outputMask || 0);
   const powered = c?.state.isPowered === true;
-  return <group>
+  // The source geometry is authored at roughly half-width/half-depth of an
+  // 86 × 90 × 85 mm CP1E-N20 enclosure. Convert it to the shared 0.2 unit/mm scene scale.
+  return <group scale={[2, 1.85, 2.5]}>
     <mesh position={[0,4.5,0]} castShadow receiveShadow><boxGeometry args={[8.65,9,6.8]}/><meshStandardMaterial color="#252a2f" roughness={.76}/></mesh>
     <mesh position={[0,4.48,3.42]}><boxGeometry args={[8.15,8.5,.18]}/><meshStandardMaterial color="#15191d" roughness={.64}/></mesh>
 
@@ -37,6 +39,6 @@ export function OmronPLC({ id }: { id: string }) {
     {Array.from({length:12},(_,i)=><mesh key={`i${i}`} position={[-1.2+i*.42,4.98,3.84]} rotation={[Math.PI/2,0,0]}><cylinderGeometry args={[.075,.075,.08,12]}/><meshStandardMaterial color={inputs&(1<<i)?"#f59e0b":"#36404a"} emissive={inputs&(1<<i)?"#f59e0b":"#000"} emissiveIntensity={1.4}/></mesh>)}
     {Array.from({length:8},(_,i)=><mesh key={`o${i}`} position={[-.35+i*.48,4.48,3.84]} rotation={[Math.PI/2,0,0]}><cylinderGeometry args={[.075,.075,.08,12]}/><meshStandardMaterial color={outputs&(1<<i)?"#22c55e":"#36404a"} emissive={outputs&(1<<i)?"#22c55e":"#000"} emissiveIntensity={1.4}/></mesh>)}
     <mesh position={[0,1,-3.52]}><boxGeometry args={[4.5,.72,.3]}/><meshStandardMaterial color="#0b0e11"/></mesh>
-    {c?.pins.map(p=><PinHighlight key={p.id} componentId={id} pin={p}/>)}
+    {c?.pins.map(p=><group key={p.id} scale={[0.5, 1 / 1.85, 0.4]}><PinHighlight componentId={id} pin={p}/></group>)}
   </group>;
 }

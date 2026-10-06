@@ -49,12 +49,12 @@ export function LED({ id }: { id: string }) {
   return (
     <group>
       {/* LED Lens Body */}
-      <mesh position={[0, 0.5, 0]} castShadow>
-        <cylinderGeometry args={[0.5, 0.5, 0.8, 32]} />
+      <mesh position={[0, 0.68, 0]} castShadow>
+        <cylinderGeometry args={[0.5, 0.5, 1.2, 32]} />
         {material}
       </mesh>
       {/* Dome Top */}
-      <mesh position={[0, 0.9, 0]}>
+      <mesh position={[0, 1.28, 0]}>
         <sphereGeometry args={[0.5, 32, 16, 0, Math.PI * 2, 0, Math.PI / 2]} />
         {material}
       </mesh>
@@ -63,14 +63,14 @@ export function LED({ id }: { id: string }) {
         <extrudeGeometry args={[flange, { depth: 0.12, bevelEnabled: false, curveSegments: 32 }]} />
         {material}
       </mesh>
-      {/* Anode Lead (-) Pin */}
-      <mesh position={[-0.254, -0.3, 0]}>
-        <boxGeometry args={[0.06, 0.6, 0.06]} />
+      {/* Longer anode (+) lead. */}
+      <mesh position={[-0.254, -0.26, 0]}>
+        <boxGeometry args={[0.06, 0.68, 0.06]} />
         <meshStandardMaterial color="#cbd5e1" metalness={0.85} roughness={0.25} />
       </mesh>
-      {/* Cathode Lead (+) Pin (slightly shorter physically) */}
-      <mesh position={[0.254, -0.27, 0]}>
-        <boxGeometry args={[0.06, 0.54, 0.06]} />
+      {/* Shorter cathode (-) lead. */}
+      <mesh position={[0.254, -0.21, 0]}>
+        <boxGeometry args={[0.06, 0.58, 0.06]} />
         <meshStandardMaterial color="#cbd5e1" metalness={0.85} roughness={0.25} />
       </mesh>
       {brightness > 0 && (

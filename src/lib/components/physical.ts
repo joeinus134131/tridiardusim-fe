@@ -92,25 +92,32 @@ export const oledPins: PinDefinition[] = [
 ];
 
 export const mpu6050Pins: PinDefinition[] = [
-  pin("GND", -1.5 * PITCH, -2.3, "ground", 0.4),
-  pin("VCC", -0.5 * PITCH, -2.3, "power", 0.4),
-  pin("SCL", 0.5 * PITCH, -2.3, "digital", 0.4),
-  pin("SDA", 1.5 * PITCH, -2.3, "digital", 0.4),
+  ...["VCC", "GND", "SCL", "SDA", "XDA", "XCL", "AD0", "INT"].map((id, i) =>
+    pin(id, -1.778 + i * PITCH, -1.4, id === "VCC" ? "power" : id === "GND" ? "ground" : "digital", 0.4),
+  ),
 ];
 
 export const pca9685Pins: PinDefinition[] = [
-  pin("GND", -1.27, -2.54, "ground", -0.4, [0, -1, 0]),
-  pin("VCC", -0.762, -2.54, "power", -0.4, [0, -1, 0]),
-  pin("SDA", -0.254, -2.54, "digital", -0.4, [0, -1, 0]),
-  pin("SCL", 0.254, -2.54, "digital", -0.4, [0, -1, 0]),
-  pin("OE", 0.762, -2.54, "digital", -0.4, [0, -1, 0]),
-  pin("V+", 1.27, -2.54, "power", -0.4, [0, -1, 0]),
+  // Adafruit rev C board origin is the center of its 62.23 x 25.4 mm outline.
+  ...(["V+", "VCC", "SDA", "SCL", "OE", "GND"] as const).map((id, i) =>
+    pin(id, -5.842, -1.245 + i * PITCH, id === "GND" ? "ground" : id === "V+" || id === "VCC" ? "power" : "digital", -0.4, [0, -1, 0]),
+  ),
+  // External servo supply terminal pads from the Adafruit rev C layout.
+  pin("SERVO_V+", -0.36, 1.778, "power", 0.82, [0, 1, 0]),
+  pin("SERVO_GND", 0.34, 1.778, "ground", 0.82, [0, 1, 0]),
   ...Array.from({ length: 16 }, (_, channel) => {
-    const bank = Math.floor(channel / 8);
-    const index = channel % 8;
-    return pin(`PWM${channel}`, bank === 0 ? -1.778 : 1.778, -1.778 + index * 0.508, "pwm", -0.4, [0, -1, 0]);
+    const group = Math.floor(channel / 4);
+    const index = channel % 4;
+    const groupCenterMm = [8.89, 21.59, 36.83, 49.53][group];
+    const xMm = groupCenterMm + [3.81, 1.27, -1.27, -3.81][index];
+    const x = (xMm - 29.21) * MM;
+    return [
+      pin(`PWM${channel}`, x, -1.245, "pwm", -0.4, [0, -1, 0]),
+      pin(`V+_PWM${channel}`, x, -1.753, "power", -0.4, [0, -1, 0]),
+      pin(`GND_PWM${channel}`, x, -2.261, "ground", -0.4, [0, -1, 0]),
+    ];
   }),
-];
+].flat();
 
 export const servoPins: PinDefinition[] = [
   pin("GND", -1 * PITCH, 2.0, "ground", 0.4),
@@ -119,14 +126,21 @@ export const servoPins: PinDefinition[] = [
 ];
 
 export const quadratureEncoderPins: PinDefinition[] = [
-  pin("VCC", -0.3, 0.3, "power", -0.45, [0, -1, 0]),
-  pin("GND", 0.3, 0.3, "ground", -0.45, [0, -1, 0]),
-  pin("A", -0.3, -0.3, "digital", -0.45, [0, -1, 0]),
-  pin("B", 0.3, -0.3, "digital", -0.45, [0, -1, 0]),
+  // Five KY-040 breakout contacts in one 2.54 mm pitch row.
+  ...([
+    ["GND", "ground"],
+    ["VCC", "power"],
+    ["SW", "digital"],
+    ["B", "digital"],
+    ["A", "digital"],
+  ] as const).map(([id, type], i) => ({
+    ...pin(id, (i - 2) * PITCH, 1.2, type, -0.6, [0, -1, 0]),
+    name: ({ GND: "GND", VCC: "VCC", SW: "SW", B: "DT / B", A: "CLK / A" } as const)[id],
+  })),
 ];
 
 const driverPin = (id: string, x: number, z: number, type: PinDefinition["type"] = "digital"): PinDefinition =>
-  pin(id, x, z, type, -0.4, [0, -1, 0]);
+  pin(id, x, z, type, -0.51, [0, -1, 0]);
 export const a4988Pins: PinDefinition[] = [
   ...["VMOT", "GND_MOTOR", "2B", "2A", "1A", "1B", "VDD", "GND_LOGIC"].map((id, i) =>
     driverPin(id, -1.0, -1.778 + i * PITCH, id.includes("GND") ? "ground" : id.includes("V") ? "power" : "digital"),
@@ -137,51 +151,48 @@ export const a4988Pins: PinDefinition[] = [
 ];
 
 export const dcSupplyPins: PinDefinition[] = [
-  { id: "V+", name: "V+", type: "power", position: [-1.05, 0.25, 1.58], direction: [0, 0, 1] },
-  { id: "GND", name: "GND", type: "ground", position: [1.05, 0.25, 1.58], direction: [0, 0, 1] },
+  { id: "V+", name: "V+", type: "power", position: [-1.2, 3.8, 28.93], direction: [0, 0, 1] },
+  { id: "GND", name: "GND", type: "ground", position: [1.2, 3.8, 28.93], direction: [0, 0, 1] },
 ];
 
 export const batteryPackPins: PinDefinition[] = [
-  { id: "V+", name: "+", type: "power", position: [-1.2, 0.2, 1.65], direction: [0, 0, 1] },
-  { id: "GND", name: "−", type: "ground", position: [1.2, 0.2, 1.65], direction: [0, 0, 1] },
+  { id: "V+", name: "+", type: "power", position: [-1.2, 0.2, 17], direction: [0, 0, 1] },
+  { id: "GND", name: "−", type: "ground", position: [1.2, 0.2, 17], direction: [0, 0, 1] },
 ];
 
 export const dcDcConverterPins: PinDefinition[] = [
-  { id: "VIN", name: "VIN", type: "power", position: [-1.2, 0.2, 1.55], direction: [0, 0, 1] },
-  { id: "GND_IN", name: "GND IN", type: "ground", position: [-0.4, 0.2, 1.55], direction: [0, 0, 1] },
-  { id: "GND_OUT", name: "GND OUT", type: "ground", position: [0.4, 0.2, 1.55], direction: [0, 0, 1] },
-  { id: "VOUT", name: "VOUT", type: "power", position: [1.2, 0.2, 1.55], direction: [0, 0, 1] },
+  { id: "VIN", name: "VIN", type: "power", position: [-1.2, 0.42, 1.95], direction: [0, 0, 1] },
+  { id: "GND_IN", name: "GND IN", type: "ground", position: [-0.4, 0.42, 1.95], direction: [0, 0, 1] },
+  { id: "GND_OUT", name: "GND OUT", type: "ground", position: [0.4, 0.42, 1.95], direction: [0, 0, 1] },
+  { id: "VOUT", name: "VOUT", type: "power", position: [1.2, 0.42, 1.95], direction: [0, 0, 1] },
 ];
 
 export const batteryChargerPins: PinDefinition[] = [
-  { id: "VIN", name: "VIN", type: "power", position: [-1.2, 0.2, 1.55], direction: [0, 0, 1] },
-  { id: "GND_IN", name: "GND IN", type: "ground", position: [-0.4, 0.2, 1.55], direction: [0, 0, 1] },
-  { id: "BAT+", name: "BAT+", type: "power", position: [0.4, 0.2, 1.55], direction: [0, 0, 1] },
-  { id: "BAT-", name: "BAT−", type: "ground", position: [1.2, 0.2, 1.55], direction: [0, 0, 1] },
+  { id: "VIN", name: "VIN", type: "power", position: [-1.2, 0.41, 1.75], direction: [0, 0, 1] },
+  { id: "GND_IN", name: "GND IN", type: "ground", position: [-0.4, 0.41, 1.75], direction: [0, 0, 1] },
+  { id: "BAT+", name: "BAT+", type: "power", position: [0.4, 0.41, 1.75], direction: [0, 0, 1] },
+  { id: "BAT-", name: "BAT−", type: "ground", position: [1.2, 0.41, 1.75], direction: [0, 0, 1] },
 ];
 
-const powerModulePin = (id: string, x: number, z: number, type: PinDefinition["type"] = "digital"): PinDefinition =>
-  pin(id, x, z, type, -0.4, [0, -1, 0]);
+const powerModulePin = (id: string, x: number, z: number, type: PinDefinition["type"] = "digital", screwTerminal = false): PinDefinition =>
+  pin(id, x, z, type, screwTerminal ? 0.82 : -0.4, screwTerminal ? [0, 1, 0] : [0, -1, 0]);
 
 export const l298nPins: PinDefinition[] = [
-  powerModulePin("ENA", -1.05, -1.778, "pwm"),
-  powerModulePin("IN1", -1.05, -1.27),
-  powerModulePin("IN2", -1.05, -0.762),
-  powerModulePin("OUT1", -1.05, -0.254),
-  powerModulePin("OUT2", -1.05, 0.254),
-  powerModulePin("VS", -1.05, 0.762, "power"),
-  powerModulePin("VSS", -1.05, 1.27, "power"),
-  powerModulePin("GND", -1.05, 1.778, "ground"),
-  powerModulePin("ENB", 1.05, 1.778, "pwm"),
-  powerModulePin("IN3", 1.05, 1.27),
-  powerModulePin("IN4", 1.05, 0.762),
-  powerModulePin("OUT3", 1.05, 0.254),
-  powerModulePin("OUT4", 1.05, -0.254),
+  ...["ENA", "IN1", "IN2", "IN3", "IN4", "ENB"].map((id, i) =>
+    powerModulePin(id, -1.27 + i * 0.508, -1.778, ["ENA", "ENB"].includes(id) ? "pwm" : "digital"),
+  ),
+  powerModulePin("OUT1", -3.15, -1.208, "power", true),
+  powerModulePin("OUT2", -3.15, -0.192, "power", true),
+  powerModulePin("OUT3", 3.15, -1.208, "power", true),
+  powerModulePin("OUT4", 3.15, -0.192, "power", true),
+  powerModulePin("VS", -0.508, 3.0, "power", true),
+  powerModulePin("VSS", 0.0, 3.0, "power", true),
+  powerModulePin("GND", 0.508, 3.0, "ground", true),
 ];
 
 export const dcMotorPins: PinDefinition[] = [
-  powerModulePin("M+", -0.55, 0, "digital"),
-  powerModulePin("M-", 0.55, 0, "digital"),
+  { id: "M+", name: "M+", type: "digital", position: [-0.55, 1.8, 50.4], direction: [0, 0, 1] },
+  { id: "M-", name: "M-", type: "digital", position: [0.55, 1.8, 50.4], direction: [0, 0, 1] },
 ];
 
 const LCD_I2C_X = 4.3;
@@ -193,9 +204,9 @@ export const lcd1602Pins: PinDefinition[] = [
 ];
 
 export const dht11Pins: PinDefinition[] = [
-  pin("VCC", -1 * PITCH, 0, "power", -0.6, [0, -1, 0]),
-  pin("DATA", 0, 0, "digital", -0.6, [0, -1, 0]),
-  pin("GND", 1 * PITCH, 0, "ground", -0.6, [0, -1, 0]),
+  pin("VCC", -1 * PITCH, 1.1, "power", -0.6, [0, -1, 0]),
+  pin("DATA", 0, 1.1, "digital", -0.6, [0, -1, 0]),
+  pin("GND", 1 * PITCH, 1.1, "ground", -0.6, [0, -1, 0]),
 ];
 
 export const hcsr04Pins: PinDefinition[] = [
@@ -212,7 +223,7 @@ const plcTerminal = (
   x: number,
   y: number,
   type: PinDefinition["type"] = "digital",
-): PinDefinition => ({ id, name: id, type, position: [x, y, 3.62], direction: [0, 0, 1] });
+): PinDefinition => ({ id, name: id, type, position: [x * 2, y * 1.85, 3.98 * 2.5], direction: [0, 0, 1] });
 
 export const omronCp1ePins: PinDefinition[] = [
   plcTerminal("24V", -3.75, 7.8, "power"),
@@ -221,20 +232,115 @@ export const omronCp1ePins: PinDefinition[] = [
   ...Array.from({ length: 12 }, (_, i) =>
     plcTerminal(`X${i}`, -2.1 + i * 0.52, 7.8),
   ),
-  plcTerminal("COMQ", -3.5, 1.15, "digital"),
+  plcTerminal("COMQ", -3.5, 1.28, "digital"),
   ...Array.from({ length: 8 }, (_, i) =>
-    plcTerminal(`Y${i}`, -2.8 + i * 0.78, 1.15),
+    plcTerminal(`Y${i}`, -2.8 + i * 0.78, 1.28),
   ),
 ];
 
 export const nema17Pins: PinDefinition[] = [
-  pin("A+", -0.78, 2.35, "digital", 1.0, [0, 1, 0]),
-  pin("A-", -0.26, 2.35, "digital", 1.0, [0, 1, 0]),
-  pin("B+", 0.26, 2.35, "digital", 1.0, [0, 1, 0]),
-  pin("B-", 0.78, 2.35, "digital", 1.0, [0, 1, 0]),
+  pin("A+", -0.75, 64.2, "digital", 3.8, [0, 0, 1]),
+  pin("A-", -0.25, 64.2, "digital", 3.8, [0, 0, 1]),
+  pin("B+", 0.25, 64.2, "digital", 3.8, [0, 0, 1]),
+  pin("B-", 0.75, 64.2, "digital", 3.8, [0, 0, 1]),
 ];
 
 export const physicalInfo: Record<string, ComponentDatasheet> = {
+  dc_dc_converter: {
+    variant: "LM2596 adjustable buck carrier (visual reference; module clones vary)",
+    manufacturer: "LM2596 by Texas Instruments; carrier module vendor varies",
+    dimensions: "Typical carrier PCB 43 × 21 mm; four input/output solder pads",
+    operatingVoltage: "LM2596 regulator: 4.5–40 V input; adjustable output starts at 1.2 V",
+    currentRating: "Regulator IC rated up to 3 A subject to thermal limits",
+    specs: [
+      "Non-isolated step-down (buck) conversion",
+      "Typical carrier includes a drum inductor, trimmer, filter capacitors, and four edge pads",
+      "The 3 A rating depends on cooling and conversion conditions",
+    ],
+    pinoutSummary: "VIN, GND IN, GND OUT, VOUT, along the module edge.",
+    limits: "Carrier outline varies by vendor. Simulator uses a quasi-static CV/CC model: VIN 4.5–40 V, output target at least 1.5 V below VIN, no switching ripple or startup transient.",
+    source: "https://akizukidenshi.com/goodsaffix/MBC2596-01.pdf",
+  },
+  battery_charger: {
+    variant: "TP4056 Micro-USB single-cell charger carrier",
+    manufacturer: "TP4056 by Nanjing Top Power ASIC; carrier vendor varies",
+    dimensions: "Typical carrier PCB about 26.5 × 17.5 mm, plus Micro-USB shell; clone outlines vary",
+    operatingVoltage: "5 V USB input; fixed 4.2 V single-cell charge termination",
+    currentRating: "Up to 1 A IC capability; module charge current is set by its PROG resistor and thermal conditions",
+    specs: [
+      "Linear constant-current/constant-voltage charger for one Li-ion cell",
+      "Micro-USB input with CHRG and STDBY status indicators",
+      "Four edge contacts for input and battery connections",
+    ],
+    pinoutSummary: "VIN, GND IN, BAT+, BAT− on four edge pads.",
+    limits: "The physical TP4056 reference is 1S only. The simulator's educational charger model also accepts 2S state and is not equivalent to this chip.",
+    source: "https://cdn.sparkfun.com/datasheets/Prototyping/TP4056.pdf",
+  },
+  battery_pack: {
+    variant: "Single 18650 holder / 2S LiPo / 9V alkaline profile references",
+    manufacturer: "Panasonic cell dimensions; Typhon 2S pack; Duracell MN1604",
+    dimensions: "18650 cell 18.24 × 65.10 mm; 2S pack 160 × 46 × 15 mm; MN1604 26.5 × 17.5 × 48.5 mm",
+    operatingVoltage: "Profile-dependent: 4.2 V single cell, 7.4 V nominal 2S LiPo, or 9 V alkaline",
+    currentRating: "Simulator defaults are educational battery profiles and do not represent a universal pack rating",
+    specs: ["Single-cell 18650 shown in a holder", "Two-cell LiPo pouch pack with XT60/JST-XH connectors", "9V snap-terminal alkaline battery"],
+    pinoutSummary: "Red V+ and black GND pigtails; displayed wire endpoints are the simulator contacts.",
+    limits: "Geometry follows representative product references; chemistry, protection, and connectors vary across real packs.",
+    source: "https://api.pim.na.industrial.panasonic.com/file_stream/main/fileversion/3446",
+  },
+  dc_motor: {
+    variant: "Adafruit TT DC Gearbox Motor 200 RPM, 1:48, with 200 mm leads",
+    manufacturer: "Adafruit Industries / TT motor OEM",
+    dimensions: "Nominal body 70 × 22 × 18 mm (including output shaft); 200 mm red/black leads",
+    operatingVoltage: "3–6 V DC",
+    currentRating: "Varies with load; stall current is high and requires a motor driver",
+    specs: ["1:48 plastic spur gearbox", "Approximately 200 RPM at nominal voltage", "Dual output shaft style varies by production batch", "Two 28 AWG power leads"],
+    pinoutSummary: "M+ red and M− black; polarity reverses direction.",
+    limits: "Representative TT housing, shaft, and lead dimensions; gearbox tooling and shaft details vary by supplier.",
+    source: "https://www.adafruit.com/product/3777",
+  },
+  dc_supply: {
+    variant: "Siglent SPD3303X-E programmable bench DC power supply (visual reference)",
+    manufacturer: "Siglent Technologies",
+    dimensions: "225 × 143 × 278 mm (W × H × D); approximately 8 kg",
+    operatingVoltage: "CH1/CH2: 0–32 V; CH3: selectable 2.5/3.3/5 V",
+    currentRating: "CH1/CH2: 0–3.2 A; CH3: up to 3.2 A",
+    specs: [
+      "Three isolated output channels and a 4.3-inch color TFT display",
+      "Two adjustable channels plus a fixed/selectable logic-supply channel",
+      "Front-panel voltage/current controls and individual output binding posts",
+      "Rear cooling fan and mains input",
+    ],
+    pinoutSummary: "Visual model shows three output pairs; simulator wire contacts currently expose only the CH1 V+/GND pair.",
+    limits: "The housing is dimensioned from SPD3303X-E. The solver still models a single adjustable 0–24 V output rather than three isolated channels.",
+    source: "https://siglentna.com/wp-content/uploads/dlm_uploads/2017/10/SPD3303X_DataSheet_DS0503X-E02C.pdf",
+  },
+  incremental_encoder: {
+    variant: "KY-040 style mechanical quadrature rotary encoder module",
+    manufacturer: "Generic module; dimensions vary by supplier",
+    dimensions: "PCB nominal 29 × 17 mm; overall height about 30 mm; 5-pin header pitch 2.54 mm",
+    operatingVoltage: "3.3–5 V DC",
+    currentRating: "Less than 10 mA typical including onboard pull-ups",
+    specs: [
+      "Mechanical incremental quadrature outputs CLK and DT (A/B)",
+      "Momentary normally-open push switch on SW, active low to GND",
+      "Typical encoder resolution around 20 pulses per revolution; variants differ",
+      "Continuous rotation with detents; contact bounce requires debounce in physical firmware",
+    ],
+    pinoutSummary: "GND, VCC, SW, DT (B), CLK (A), in the common KY-040 header order.",
+    limits: "The visual model uses a common KY-040 form factor. Vendor clones vary in PCB outline, shaft, detent count, and onboard pull-ups.",
+    source: "https://mysii.gorriens.net/arduino/pdf/ky-040_rotary_encoder_module_eng.pdf",
+  },
+  imu_6axis: {
+    variant: "GY-521 breakout using InvenSense MPU-6050",
+    manufacturer: "InvenSense (TDK) sensor; breakout-board vendor varies",
+    dimensions: "Representative PCB 20.3 × 15.25 mm; 8-pin 2.54 mm header; dimensions vary by clone",
+    operatingVoltage: "GY-521 module 3.3–5 V input via onboard regulator; MPU-6050 silicon 2.375–3.46 V",
+    currentRating: "MPU-6050 silicon up to 3.9 mA in full operation; breakout consumption depends on regulator and pull-ups",
+    specs: ["3-axis accelerometer and 3-axis gyroscope", "16-bit ADC per motion axis", "I2C address 0x68 (AD0 low) or 0x69 (AD0 high)", "Auxiliary I2C pass-through and interrupt output", "Breakout includes a regulator and passive components"],
+    pinoutSummary: "VCC, GND, SCL, SDA, XDA, XCL, AD0, INT.",
+    limits: "Breakout geometry follows the common GY-521 outline; clone component placement varies. Motion simulation is kinematic and does not emulate chip noise/bandwidth unless configured.",
+    source: "https://www.electronotics.com/static/datasheets/gy-521_mpu-6050_3-axis_gyroscope_and_acceleration_sensor_en_3.pdf",
+  },
   esp32_wroom: {
     variant: "Espressif ESP32-DevKitC V4 / ESP32-WROOM-32",
     manufacturer: "Espressif Systems",
@@ -308,22 +414,21 @@ export const physicalInfo: Record<string, ComponentDatasheet> = {
     source: "https://www.busboard.com/BB400",
   },
   led_red: {
-    variant: "Kingbright 5mm Through-Hole LED (Customizable Color)",
-    manufacturer: "Kingbright / Generic Opto",
-    dimensions: "Lensa Ø5.0 mm; Flange Ø5.9 mm; Panjang Kaki Anoda 27 mm, Katoda 25.4 mm",
-    operatingVoltage: "Tegangan maju (Vf) nominal 1.8V - 3.2V (tergantung warna: Merah ~2.0V, Hijau/Biru ~3.0V)",
-    currentRating: "Arus kerja nominal 20 mA (Maks kontinyu 30 mA, peak 140 mA)",
+    variant: "Kingbright WP7113ID red diffused LED (geometry reference)",
+    manufacturer: "Kingbright",
+    dimensions: "Lens Ø5.0 mm; flange Ø5.9 mm; cathode/anode PCB pitch 2.54 mm. The rendered leads are trimmed for insertion.",
+    operatingVoltage: "Red LED Vf 1.9 V typical / 2.3 V maximum at 10 mA",
+    currentRating: "30 mA continuous maximum; 160 mA peak under the datasheet pulse condition",
     specs: [
-      "Pilihan Warna: Merah, Hijau, Biru, Kuning, Oranye, Putih, Ungu, Cyan",
-      "Lensa Epoksi Difus 5mm dengan flange dasar standar",
-      "Intensitas Cahaya: 20 - 80 mcd pada If = 20 mA",
-      "Sudut Pandang (Viewing Angle): 60 derajat difus",
-      "Reverse Breakdown Voltage (Vr): 5V",
+      "T-1 3/4 (5 mm) red diffused package with flat cathode indicator",
+      "Package flange Ø5.9 mm and 2.54 mm recommended lead pitch",
+      "Luminous intensity 25–50 mcd at 10 mA",
+      "Viewing angle 30°",
+      "Color selection in the simulator is a visual option, not an RGB physical LED package",
     ],
     pinoutSummary: "2 Terminal: Anoda (+ lead panjang), Katoda (- lead pendek dengan tepi bodi datar).",
-    limits:
-      "Model DC piecewise dengan tegangan ambang Vf dan resistansi internal 10 Ohm; warna emisi dapat dipilih dinamis.",
-    source: "https://www.kingbrightusa.com/images/catalog/SPEC/WP7113ID.pdf",
+    limits: "The circuit model uses a color-dependent forward-drop approximation; the reference package is the red WP7113ID.",
+    source: "https://www.kingbrightusa.com/images/catalog/spec/wp7113id.pdf",
   },
   push_button: {
     variant: "Omron B3F-1000 Tactile Key Switch",
@@ -345,21 +450,20 @@ export const physicalInfo: Record<string, ComponentDatasheet> = {
       "https://components.omron.com/sites/default/files/datasheet_pdf/A070-E1.pdf",
   },
   potentiometer: {
-    variant: "Alps Alpine RK09K1130A6S 10kΩ Rotary Potentiometer",
+    variant: "Alps Alpine RK09L1120A5F 10kΩ metal-shaft rotary potentiometer",
     manufacturer: "Alps Alpine",
-    dimensions: "Lebar Bodi 9.8 mm; Panjang Shaft 15 mm; Pitch Terminal 2.54 mm",
+    dimensions: "Seri ukuran 9 mm; shaft datar 15 mm; bushing M9 × 0.75; tiga terminal PCB",
     operatingVoltage: "Tegangan kerja maks 50V AC / 20V DC",
     currentRating: "Daya pengenal (Power rating) 0.05 W pada 50°C",
     specs: [
       "Resistansi Total: 10 kΩ ±20%",
       "Karakteristik Taper: 1B (Linear Taper)",
       "Sudut Rotasi Total: 280° ±5°",
-      "Terminal: 3 pin melalui lubang PCB, pitch 2.54 mm",
+      "Terminal: 3 pin through-hole; model memakai pitch nominal 2.54 mm",
     ],
     pinoutSummary: "3 Terminal: Pin 1 (Sisi CW), Pin 2 (Wiper Tengah W), Pin 3 (Sisi CCW).",
     limits: "Pembagi tegangan kontinu linear Vw = V1 + (V3 - V1) * pos.",
-    source:
-      "https://tech.alpsalpine.com/e/products/category/potentiometers/sub/02/series/rk09k/",
+    source: "https://tech.alpsalpine.com/e/products/category/potentiometers/sub/01/series/rk09l/",
   },
   resistor_220: {
     variant: "Yageo CFR-25 Carbon Film Fixed Resistor 220Ω",
@@ -398,7 +502,7 @@ export const physicalInfo: Record<string, ComponentDatasheet> = {
   servo_sg90: {
     variant: "TowerPro SG90 9g Micro Servo Motor",
     manufacturer: "TowerPro / Standard RC",
-    dimensions: "Bodi 22.8 × 12.2 × 28.5 mm; Berat 9 gram; Pitch Kabel 2.54 mm",
+    dimensions: "Envelope 23 × 12.2 × 29 mm (lebar × kedalaman × tinggi); lebar tab mounting 32.3 mm; berat 9 g",
     operatingVoltage: "4.8V hingga 6.0V DC (Rekomendasi 5.0V)",
     currentRating: "Arus Diam ~50 mA; Arus Kerja ~150-250 mA; Stall Current ~650 mA",
     specs: [
@@ -434,7 +538,7 @@ export const physicalInfo: Record<string, ComponentDatasheet> = {
   dht11: {
     variant: "Aosong DHT11 Humidity & Temperature Digital Sensor Module",
     manufacturer: "Aosong Electronics",
-    dimensions: "Bodi 15.5 × 12.0 × 5.5 mm; Modul 32.0 × 14.0 × 8.0 mm; Pitch 2.54 mm",
+    dimensions: "Housing 15.5 × 12.0 × 5.5 mm; PCB breakout 32.0 × 14.0 × 1.0 mm; header pitch 2.54 mm",
     operatingVoltage: "3.3V hingga 5.5V DC (Kompatibel 3.3V ESP32 & 5V Arduino)",
     currentRating: "Arus Pengukuran 0.5 - 2.5 mA; Standby 100 - 150 µA",
     specs: [
@@ -488,7 +592,7 @@ export const physicalInfo: Record<string, ComponentDatasheet> = {
   stepper_nema17: {
     variant: "NEMA 17 Bipolar Stepper, 42 × 38 mm",
     manufacturer: "SOYO / NEMA 17 standard frame",
-    dimensions: "42.3 mm square × 38 mm body · 5 mm D-shaft",
+    dimensions: "42.3 mm square × 38 mm body · 5 mm D-shaft × 24 mm · 300 mm bare leads",
     operatingVoltage: "2.8 V nominal per phase with current-limiting driver",
     currentRating: "1.68 A/phase · 1.65 Ω · 3.2 mH",
     specs: [
@@ -501,5 +605,16 @@ export const physicalInfo: Record<string, ComponentDatasheet> = {
     pinoutSummary: "A+, A− (phase A) and B+, B− (phase B).",
     limits: "A physical motor requires a bipolar current-limiting driver. Direct GPIO wiring is diagnosed as overcurrent/overvoltage.",
     source: "https://www.pololu.com/product/2267/specs",
+  },
+  aero_arm_6dof: {
+    variant: "AeroArm 6DOF, UR3e envelope reference",
+    manufacturer: "AeroArm simulator model; dimensions referenced to Universal Robots UR3e",
+    dimensions: "500 mm maximum reach; 128 mm base footprint; six rotary axes",
+    operatingVoltage: "Virtual kinematic model; no physical drive supply is represented",
+    currentRating: "3 kg payload is a UR3e reference value, not a simulator load rating",
+    specs: ["Six revolute joints", "500 mm reference reach", "128 mm reference base flange"],
+    pinoutSummary: "No electrical pins; robot joints are controlled through the kinematics panel.",
+    limits: "Procedural visual shell only; not a dimensionally complete UR3e CAD model.",
+    source: "https://www.universal-robots.com/media/1807464/ur3e_e-series_datasheets_web.pdf",
   },
 };

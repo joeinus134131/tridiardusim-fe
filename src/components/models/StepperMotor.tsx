@@ -9,6 +9,7 @@ import { PinHighlight } from "@/components/canvas/PinHighlight";
 import { Label } from "./Label";
 
 const leadColors = ["#111827", "#22c55e", "#dc2626", "#2563eb"];
+const motorScale = 0.2; // 0.2 scene units per millimetre.
 
 export function StepperMotor({ id }: { id: string }) {
   const component = useSimulatorStore((s) => s.components.find((c) => c.id === id));
@@ -24,72 +25,82 @@ export function StepperMotor({ id }: { id: string }) {
   });
 
   return (
-    <group>
-      {/* 42.3 mm square hybrid NEMA 17 frame with a 38 mm stack. */}
-      <RoundedBox args={[4.23, 3.45, 4.23]} radius={0.22} smoothness={4} position={[0, 1.9, 0]} castShadow>
+    <group scale={motorScale}>
+      {/* 42.3 mm NEMA-17 frame and the configured 38 mm motor body. */}
+      <RoundedBox args={[42.3, 38, 42.3]} radius={1.1} smoothness={4} position={[0, 19, 0]} castShadow receiveShadow>
         <meshStandardMaterial color="#20242a" metalness={0.55} roughness={0.42} />
       </RoundedBox>
-      {/* Visible stator laminations around the black motor stack. */}
+
+      {/* Thin visible laminations span the complete stator stack. */}
       {Array.from({ length: 17 }, (_, i) => (
-        <RoundedBox key={i} args={[4.27, 0.055, 4.27]} radius={0.16} smoothness={2} position={[0, 0.35 + i * 0.195, 0]}>
-          <meshStandardMaterial color={i % 2 ? "#171a1f" : "#2b2f35"} metalness={0.5} roughness={0.48} />
-        </RoundedBox>
-      ))}
-      {[0.16, 3.64].map((y) => (
-        <mesh key={y} position={[0, y, 0]}>
-          <boxGeometry args={[4.32, 0.28, 4.32]} />
-          <meshStandardMaterial color="#111827" metalness={0.62} roughness={0.34} />
+        <mesh key={i} position={[0, 2.5 + i * 2.05, 0]}>
+          <boxGeometry args={[42.8, 0.22, 42.8]} />
+          <meshStandardMaterial color={i % 2 ? "#171a1f" : "#343a40"} metalness={0.58} roughness={0.46} />
         </mesh>
       ))}
-      {/* Front aluminium face and four NEMA mounting holes. */}
-      <RoundedBox args={[4.28, 0.32, 4.28]} radius={0.24} smoothness={4} position={[0, 3.82, 0]}>
+
+      {/* Front face, 31 mm mounting pattern, 22 mm pilot and 5 mm D shaft. */}
+      <RoundedBox args={[43, 1.8, 43]} radius={1.1} smoothness={4} position={[0, 38.7, 0]}>
         <meshStandardMaterial color="#c9cdd1" metalness={0.86} roughness={0.25} />
       </RoundedBox>
-      <mesh position={[0, 4.03, 0]}>
-        <cylinderGeometry args={[0.78, 0.78, 0.18, 40]} />
-        <meshStandardMaterial color="#d7dadd" metalness={0.9} roughness={0.18} />
-      </mesh>
-      <mesh position={[0, 4.14, 0]}>
-        <torusGeometry args={[0.49, 0.12, 12, 32]} />
-        <meshStandardMaterial color="#aeb4b9" metalness={0.92} roughness={0.2} />
-      </mesh>
-      {[-1.55, 1.55].flatMap((x) => [-1.55, 1.55].map((z) => (
-        <mesh key={`${x}:${z}`} position={[x, 3.94, z]}>
-          <cylinderGeometry args={[0.16, 0.16, 0.12, 16]} />
-          <meshStandardMaterial color="#17191c" roughness={0.6} />
+      {[-15.5, 15.5].flatMap((x) => [-15.5, 15.5].map((z) => (
+        <mesh key={`${x}:${z}`} position={[x, 39.65, z]} rotation={[Math.PI / 2, 0, 0]}>
+          <cylinderGeometry args={[1.55, 1.55, 0.3, 20]} />
+          <meshStandardMaterial color="#121619" metalness={0.28} roughness={0.62} />
         </mesh>
       )))}
+      <mesh position={[0, 39.85, 0]}>
+        <cylinderGeometry args={[11, 11, 1.2, 40]} />
+        <meshStandardMaterial color="#d7dadd" metalness={0.9} roughness={0.18} />
+      </mesh>
+      <mesh position={[0, 40.5, 0]}>
+        <torusGeometry args={[8.2, 0.6, 12, 32]} />
+        <meshStandardMaterial color="#aeb4b9" metalness={0.92} roughness={0.2} />
+      </mesh>
 
-      <group ref={rotor} position={[0, 4.95, 0]}>
+      <group ref={rotor} position={[0, 52, 0]}>
         <mesh>
-          <cylinderGeometry args={[0.25, 0.25, 1.75, 32]} />
+          <cylinderGeometry args={[2.5, 2.5, 24, 32]} />
           <meshStandardMaterial color="#d8dde2" metalness={0.92} roughness={0.18} />
         </mesh>
-        <mesh position={[0.23, 0.35, 0]}>
-          <boxGeometry args={[0.08, 0.78, 0.25]} />
-          <meshStandardMaterial color="#334155" />
+        {/* Flat cut along one side of the shaft. */}
+        <mesh position={[2.25, 0, 0]}>
+          <boxGeometry args={[0.5, 23, 5]} />
+          <meshStandardMaterial color="#aeb7bf" metalness={0.9} roughness={0.22} />
         </mesh>
       </group>
 
-      <mesh position={[0, 2.0, 2.14]}><planeGeometry args={[2.8, 1.15]} /><meshStandardMaterial color="#d5d8d9" roughness={0.7} /></mesh>
-      <Label text="NEMA 17" position={[0, 2.18, 2.16]} rotation={[0,0,0]} size={0.28} color="#111827" />
-      <Label text="1.8°  200 STEP" position={[0, 1.75, 2.16]} rotation={[0,0,0]} size={0.16} color="#334155" />
+      {/* Side label and 300 mm bare phase leads (SOYO SY42STH38-1684A). */}
+      <mesh position={[0, 32, -21.25]} rotation={[0, Math.PI, 0]}>
+        <planeGeometry args={[28, 11]} />
+        <meshStandardMaterial color="#d5d8d9" roughness={0.7} />
+      </mesh>
+      <Label text="NEMA 17" position={[0, 33.5, -21.4]} rotation={[0, Math.PI, 0]} size={2.6} color="#111827" />
+      <Label text="1.8°  200 STEP" position={[0, 29.2, -21.4]} rotation={[0, Math.PI, 0]} size={1.5} color="#334155" />
 
-      {/* White JST-style motor connector on its small breakout tab. */}
-      <mesh position={[0, 0.38, 2.42]}><boxGeometry args={[2.05, 0.16, 0.85]} /><meshStandardMaterial color="#166534" roughness={0.65} /></mesh>
-      <mesh position={[0, 0.62, 2.55]}><boxGeometry args={[1.82, 0.48, 0.62]} /><meshStandardMaterial color="#e8e9e5" roughness={0.55} /></mesh>
-      {[-0.57,-0.19,0.19,0.57].map((x) => <mesh key={x} position={[x,0.7,2.88]}><boxGeometry args={[0.18,0.18,0.08]} /><meshStandardMaterial color="#7c858d" metalness={0.65} /></mesh>)}
-
-      {/* Four phase leads and terminal points. */}
-      {component?.pins.map((p, i) => (
-        <group key={p.id}>
-          <mesh position={[p.position[0], 1.0, 2.2]}>
-            <cylinderGeometry args={[0.07, 0.07, 0.75, 10]} />
-            <meshStandardMaterial color={leadColors[i]} roughness={0.72} />
-          </mesh>
-          <PinHighlight componentId={id} pin={p} />
-        </group>
-      ))}
+      <mesh position={[0, 19, 21.25]}>
+        <boxGeometry args={[5.5, 3.2, 1.2]} />
+        <meshStandardMaterial color="#111827" roughness={0.72} />
+      </mesh>
+      {component?.pins.map((pin, i) => {
+        const color = leadColors[i % leadColors.length];
+        return (
+          <group key={pin.id}>
+            <mesh position={[pin.position[0] / motorScale, pin.position[1] / motorScale, 171]} rotation={[Math.PI / 2, 0, 0]}>
+              <cylinderGeometry args={[0.42, 0.42, 300, 12]} />
+              <meshStandardMaterial color={color} roughness={0.72} />
+            </mesh>
+            <mesh position={[pin.position[0] / motorScale, pin.position[1] / motorScale, pin.position[2] / motorScale - 0.5]} rotation={[Math.PI / 2, 0, 0]}>
+              <cylinderGeometry args={[0.16, 0.16, 5, 10]} />
+              <meshStandardMaterial color="#d1d5db" metalness={0.86} roughness={0.2} />
+            </mesh>
+            {/* Pin positions are stored in world scene units; cancel this model's mm scaling. */}
+            <group scale={1 / motorScale}>
+              <PinHighlight componentId={id} pin={pin} />
+            </group>
+          </group>
+        );
+      })}
     </group>
   );
 }

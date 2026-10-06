@@ -170,7 +170,7 @@ export class RigidBodyWorld {
   }
 
   step(count = 1) {
-    for (let i = 0; i < Math.max(0, Math.min(100, Math.trunc(count))); i++) this.world.step();
+    for (let i = 0; i < Math.max(0, Math.min(1000, Math.trunc(count))); i++) this.world.step();
   }
 
   transforms(): Record<string, RigidTransform> {

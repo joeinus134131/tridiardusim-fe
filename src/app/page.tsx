@@ -630,50 +630,66 @@ export default function WorkspacePage() {
                 onChange={(e) => setQuery(e.target.value)}
               />
               <div className="library-list">
-                {ComponentRegistry.getAll()
-                  .filter(
-                    (c) =>
-                      !c.typeId.startsWith("jumper_") &&
-                      (c.name + " " + c.description)
-                        .toLowerCase()
-                        .includes(query.toLowerCase()),
-                  )
-                  .map((c) => (
-                    <button
-                      key={c.typeId}
-                      className="component-card"
-                      onClick={() => {
-                        if (components.length >= 100) {
-                          setNotice(t.wiring.maxComponents);
-                          return;
-                        }
-                        const n = components.length;
-                        const item = instance(c.typeId, crypto.randomUUID(), [
-                          (n % 4) * 6 - 8,
-                          c.typeId === "led_red"
-                            ? 0.8
-                            : c.typeId === "push_button"
-                              ? 0.6
-                              : c.typeId === "potentiometer"
+                {(() => {
+                  const showExp = process.env.NEXT_PUBLIC_SHOW_EXPERIMENTAL === 'true';
+                  return ComponentRegistry.getAll()
+                    .filter(
+                      (c) =>
+                        !c.typeId.startsWith("jumper_") &&
+                        (!c.experimental || showExp) &&
+                        (c.name + " " + c.description)
+                          .toLowerCase()
+                          .includes(query.toLowerCase()),
+                    )
+                    .map((c) => (
+                      <button
+                        key={c.typeId}
+                        className="component-card"
+                        onClick={() => {
+                          if (components.length >= 100) {
+                            setNotice(t.wiring.maxComponents);
+                            return;
+                          }
+                          const n = components.length;
+                          const item = instance(c.typeId, crypto.randomUUID(), [
+                            (n % 4) * 6 - 8,
+                            c.typeId === "led_red"
+                              ? 0.8
+                              : c.typeId === "push_button"
                                 ? 0.6
-                                : c.typeId === "resistor_220"
+                                : c.typeId === "potentiometer"
                                   ? 0.6
-                                  : c.typeId === "capacitor_universal"
+                                  : c.typeId === "resistor_220"
                                     ? 0.6
-                                    : 0,
-                          Math.floor(n / 4) * 6 - 4,
-                        ]);
-                        const id = addComponent(item);
-                        selectComponent(id);
-                      }}
-                    >
-                      <strong>{c.name}</strong>
-                      <small>
-                        {c.pins.length} {t.library.pinsUnit} · {c.category}
-                      </small>
-                      <p>{c.description}</p>
-                    </button>
-                  ))}
+                                    : c.typeId === "capacitor_universal"
+                                      ? 0.6
+                                      : 0,
+                            Math.floor(n / 4) * 6 - 4,
+                          ]);
+                          const id = addComponent(item);
+                          selectComponent(id);
+                        }}
+                      >
+                        <strong>{c.name}</strong>
+                        <span
+                          className={`fidelity-badge fidelity-${c.fidelity}`}
+                          title={
+                            c.fidelity === 'ideal'
+                              ? 'Model edukasi ideal — bukan ekuivalen hardware'
+                              : c.fidelity === 'quasi-static'
+                                ? 'Kuasi-statik — mendekati behavior hardware'
+                                : 'Mengacu datasheet — parameter dari spesifikasi resmi'
+                          }
+                        >
+                          {c.fidelity === 'ideal' ? 'Ideal' : c.fidelity === 'quasi-static' ? 'Kuasi-Statik' : 'Datasheet'}
+                        </span>
+                        <small>
+                          {c.pins.length} {t.library.pinsUnit} · {c.category}
+                        </small>
+                        <p>{c.description}</p>
+                      </button>
+                    ));
+                })()}
               </div>
               <div className="examples">
                 <details>

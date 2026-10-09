@@ -21,6 +21,9 @@ import {
   Square,
   ExternalLink,
   Sparkles,
+  ChevronDown,
+  Bot,
+  Cpu,
 } from "lucide-react";
 import dynamic from "next/dynamic";
 import { useSimulatorStore } from "@/store/useSimulatorStore";
@@ -166,7 +169,26 @@ export default function WorkspacePage() {
   const [datasheetOpen, setDatasheetOpen] = useState(false);
   const [datasheetKey, setDatasheetKey] = useState("esp32_wroom");
   const [solderingWorkbenchOpen, setSolderingWorkbenchOpen] = useState(false);
+  const [aiMenuOpen, setAiMenuOpen] = useState(false);
+  const [activeAiPanel, setActiveAiPanel] = useState<"gateway" | "onnx" | null>(null);
   const file = useRef<HTMLInputElement>(null);
+  const aiMenuRef = useRef<HTMLDivElement>(null);
+
+  useEffect(() => {
+    if (!aiMenuOpen) return;
+    const closeOnOutsideClick = (event: PointerEvent) => {
+      if (!aiMenuRef.current?.contains(event.target as Node)) setAiMenuOpen(false);
+    };
+    const closeOnEscape = (event: KeyboardEvent) => {
+      if (event.key === "Escape") setAiMenuOpen(false);
+    };
+    document.addEventListener("pointerdown", closeOnOutsideClick);
+    document.addEventListener("keydown", closeOnEscape);
+    return () => {
+      document.removeEventListener("pointerdown", closeOnOutsideClick);
+      document.removeEventListener("keydown", closeOnEscape);
+    };
+  }, [aiMenuOpen]);
 
   // Subscribe to external selection changes and reveal the inspector once.
   useEffect(() => {
@@ -494,6 +516,42 @@ export default function WorkspacePage() {
           <FileText size={13} />
           <span>{t.toolbar.datasheet}</span>
         </button>
+        <div className="ai-tools-navigation" ref={aiMenuRef}>
+          <button
+            type="button"
+            className="small-button flex items-center gap-1.5 border-[var(--accent)]/40 text-[var(--accent)]"
+            onClick={() => setAiMenuOpen((open) => !open)}
+            aria-haspopup="menu"
+            aria-expanded={aiMenuOpen}
+            aria-controls="ai-tools-dropdown"
+          >
+            <Sparkles size={13} />
+            <span>{t.toolbar.aiFeatures}</span>
+            <ChevronDown size={13} className={aiMenuOpen ? "rotate-180 transition-transform" : "transition-transform"} />
+          </button>
+          {aiMenuOpen && (
+            <div className="ai-tools-dropdown" id="ai-tools-dropdown" role="menu" aria-label={t.toolbar.aiFeatures}>
+              <button
+                type="button"
+                role="menuitem"
+                className={activeAiPanel === "gateway" ? "active" : ""}
+                onClick={() => { setActiveAiPanel("gateway"); setAiMenuOpen(false); }}
+              >
+                <Bot size={15} />
+                <span>{t.toolbar.cloudGateway}</span>
+              </button>
+              <button
+                type="button"
+                role="menuitem"
+                className={activeAiPanel === "onnx" ? "active" : ""}
+                onClick={() => { setActiveAiPanel("onnx"); setAiMenuOpen(false); }}
+              >
+                <Cpu size={15} />
+                <span>{t.toolbar.localOnnx}</span>
+              </button>
+            </div>
+          )}
+        </div>
         <button
           className="small-button flex items-center gap-1.5"
           onClick={() => setRightPanelOpen(!rightPanelOpen)}
@@ -922,7 +980,12 @@ export default function WorkspacePage() {
               </div>
             )}
           </div>
-          {!solderingWorkbenchOpen && <CloudAIGatewayPanel />}
+          {!solderingWorkbenchOpen && activeAiPanel === "gateway" && (
+            <CloudAIGatewayPanel onClose={() => setActiveAiPanel(null)} />
+          )}
+          {!solderingWorkbenchOpen && activeAiPanel === "onnx" && (
+            <OnnxInferencePanel onClose={() => setActiveAiPanel(null)} />
+          )}
         </section>
 
         {/* Right Collapsible Inspector & Properties Panel */}
@@ -1213,7 +1276,6 @@ export default function WorkspacePage() {
       </footer>
 
       {/* 7. INTERACTIVE TOUR ONBOARDING */}
-      <OnnxInferencePanel />
       <InteractiveTour
         isOpen={tourOpen}
         onClose={() => setTourOpen(false)}

@@ -30,6 +30,10 @@ export interface ComponentRegistration {
     "Boards" | "Basic" | "Sensors" | "Actuators" | "Displays" | "Wiring" | "Robotics";
   defaultState: Record<string, number | string | boolean>;
   pins: PinDefinition[];
+  /** Tingkat fidelity model simulasi komponen ini. */
+  fidelity: 'ideal' | 'quasi-static' | 'datasheet';
+  /** Jika true, komponen disembunyikan dari library panel kecuali NEXT_PUBLIC_SHOW_EXPERIMENTAL=true. */
+  experimental: boolean;
 }
 
 class Registry {
@@ -62,6 +66,8 @@ ComponentRegistry.register({
   description: "Lengan robot RRR untuk eksperimen FK PoE, IK DLS, dan kontrol joint.",
   defaultState: { joint0: 0, joint1: 0, joint2: 0, gripperOpen: 0.7 },
   pins: [],
+  fidelity: 'ideal',
+  experimental: true,
 });
 
 ComponentRegistry.register({
@@ -72,6 +78,8 @@ ComponentRegistry.register({
   description: "Lengan articulated enam sumbu dengan spherical wrist untuk pick-and-place.",
   defaultState: { joint0: 0, joint1: 0, joint2: 0, joint3: 0, joint4: 0, joint5: 0 },
   pins: [],
+  fidelity: 'ideal',
+  experimental: true,
 });
 
 ComponentRegistry.register({
@@ -92,6 +100,8 @@ ComponentRegistry.register({
     gimbalTilt: 0,
   },
   pins: [],
+  fidelity: 'ideal',
+  experimental: true,
 });
 
 ComponentRegistry.register({
@@ -102,6 +112,8 @@ ComponentRegistry.register({
   description: "Kamera scene 3D bergaya RealSense D435 dengan keluaran RGB dan depth Float32 dalam meter.",
   defaultState: { width: 640, height: 480, fov: 58, near: 0.28, far: 10 },
   pins: [],
+  fidelity: 'ideal',
+  experimental: true,
 });
 
 ComponentRegistry.register({
@@ -112,6 +124,8 @@ ComponentRegistry.register({
   description: "Pemindai jarak 360° pada scene 3D dengan 360 atau 720 sampel.",
   defaultState: { sampleCount: 360, maxRangeMeters: 12 },
   pins: [],
+  fidelity: 'ideal',
+  experimental: true,
 });
 
 ComponentRegistry.register({
@@ -122,6 +136,8 @@ ComponentRegistry.register({
   description: "MPU-6050 6-axis sintetis dengan akselerometer dan giroskop melalui I2C 0x68.",
   defaultState: { sourceComponentId: "", sampleRateHz: 100, accelNoise: 0.02, gyroNoise: 0.001 },
   pins: mpu6050Pins,
+  fidelity: 'ideal',
+  experimental: true,
 });
 
 ComponentRegistry.register({
@@ -137,6 +153,8 @@ ComponentRegistry.register({
     ...Object.fromEntries(Array.from({ length: 16 }, (_, channel) => [`pwm${channel}`, 0])),
   },
   pins: pca9685Pins,
+  fidelity: 'quasi-static',
+  experimental: true,
 });
 
 ComponentRegistry.register({
@@ -147,6 +165,8 @@ ComponentRegistry.register({
   description: "Modul encoder mekanis kuadratur gaya KY-040: keluaran CLK/DT (A/B), tombol tekan SW aktif-rendah, dan hitungan x4.",
   defaultState: { angle: 0, pulsesPerRevolution: 20, coupledMotorId: "", count: 0, channelA: 0, channelB: 0, isPowered: false, isPressed: false },
   pins: quadratureEncoderPins,
+  fidelity: 'quasi-static',
+  experimental: true,
 });
 
 ComponentRegistry.register({
@@ -178,6 +198,8 @@ ComponentRegistry.register({
     motorId: "",
   },
   pins: a4988Pins,
+  fidelity: 'quasi-static',
+  experimental: true,
 });
 
 ComponentRegistry.register({
@@ -188,6 +210,8 @@ ComponentRegistry.register({
   description: "Referensi visual Siglent SPD3303X-E dengan tiga kanal; solver menyediakan satu keluaran virtual 0–24 V melalui terminal CH1 V+/GND.",
   defaultState: { voltage: 12, isOn: true },
   pins: dcSupplyPins,
+  fidelity: 'ideal',
+  experimental: true,
 });
 
 ComponentRegistry.register({
@@ -210,6 +234,8 @@ ComponentRegistry.register({
     powerW: 0,
   },
   pins: batteryPackPins,
+  fidelity: 'quasi-static',
+  experimental: true,
 });
 
 ComponentRegistry.register({
@@ -233,6 +259,8 @@ ComponentRegistry.register({
     isCurrentLimited: false,
   },
   pins: dcDcConverterPins,
+  fidelity: 'quasi-static',
+  experimental: true,
 });
 
 ComponentRegistry.register({
@@ -243,6 +271,8 @@ ComponentRegistry.register({
   description: "Visual carrier TP4056 Micro-USB untuk sel 1S; solver charger edukasional mendukung state Li-ion 1S dan LiPo 2S, bukan ekuivalen IC TP4056.",
   defaultState: { isOn: true, maxChargeCurrentA: 0.5, efficiency: 0.9, inputCurrentA: 0, chargeCurrentA: 0, isCharging: false, isConstantVoltage: false, isChargeComplete: false, chargeElapsedSeconds: 0, safetyTimerLimitSeconds: 10 * 60 * 60, isSafetyTimerExpired: false, tailCurrentLimitA: 0.125, inputVoltageV: 0, targetVoltageV: 4.2, powerLossW: 0, temperatureC: 25, isThermalShutdown: false, isReverseConnected: false },
   pins: batteryChargerPins,
+  fidelity: 'quasi-static',
+  experimental: true,
 });
 
 ComponentRegistry.register({
@@ -253,6 +283,8 @@ ComponentRegistry.register({
   description: "Dual H-bridge dengan kendali arah/PWM dan drop tegangan bipolar.",
   defaultState: { isLogicPowered: false, isMotorPowered: false, isThermalShutdown: false, temperatureC: 25, motorIdA: "", motorIdB: "", outputVoltageA: 0, outputVoltageB: 0, currentA: 0, currentB: 0, freewheelCurrentA: 0, freewheelLossW: 0, powerLossW: 0 },
   pins: l298nPins,
+  fidelity: 'quasi-static',
+  experimental: true,
 });
 
 ComponentRegistry.register({
@@ -283,6 +315,8 @@ ComponentRegistry.register({
     jointDirection: 1,
   },
   pins: dcMotorPins,
+  fidelity: 'quasi-static',
+  experimental: true,
 });
 
 // ═══════════════════════════════════════════════════
@@ -300,11 +334,15 @@ ComponentRegistry.register({
   category: "Boards",
   defaultState: {},
   pins: unoPins,
+  fidelity: 'datasheet',
+  experimental: false,
 });
 
 ComponentRegistry.register({
  typeId: "esp32_wroom", name: "ESP32-WROOM DevKitC", type: "board", category: "Boards",
  description: "DevKitC V4 · 38 pin · GPIO 3.3 V, ADC 12-bit, PWM & Serial virtual.", defaultState: {}, pins: esp32Pins,
+ fidelity: 'quasi-static',
+ experimental: true,
 });
 
 ComponentRegistry.register({
@@ -315,6 +353,8 @@ ComponentRegistry.register({
   description: "PLC kompak 24 VDC · 12 input digital · 8 output relay · indikator I/O realtime.",
   defaultState: { isPowered: false, inputMask: 0, outputMask: 0, scanCount: 0, vDiff: 0 },
   pins: omronCp1ePins,
+  fidelity: 'quasi-static',
+  experimental: true,
 });
 
 ComponentRegistry.register({
@@ -324,6 +364,8 @@ ComponentRegistry.register({
   description: "BusBoard BB400 · 400 titik · empat rail kontinu.",
   category: "Boards",
   defaultState: {},
+  fidelity: 'datasheet',
+  experimental: false,
   pins: (() => {
     const pins: PinDefinition[] = [];
     const cols = 30;
@@ -410,6 +452,8 @@ ComponentRegistry.register({
       position: [0.254, -0.6, 0],
     },
   ],
+  fidelity: 'datasheet',
+  experimental: false,
 });
 
 ComponentRegistry.register({
@@ -427,6 +471,8 @@ ComponentRegistry.register({
     inverted: false,
   },
   pins: oledPins,
+  fidelity: 'ideal',
+  experimental: true,
 });
 
 ComponentRegistry.register({
@@ -447,6 +493,8 @@ ComponentRegistry.register({
     line1: "LCD 16x2 I2C OK ",
   },
   pins: lcd1602Pins,
+  fidelity: 'ideal',
+  experimental: true,
 });
 
 ComponentRegistry.register({
@@ -470,6 +518,8 @@ ComponentRegistry.register({
     jointDirection: 1,
   },
   pins: servoPins,
+  fidelity: 'quasi-static',
+  experimental: false,
 });
 
 ComponentRegistry.register({
@@ -492,6 +542,8 @@ ComponentRegistry.register({
     jointDirection: 1,
   },
   pins: nema17Pins,
+  fidelity: 'quasi-static',
+  experimental: true,
 });
 
 ComponentRegistry.register({
@@ -506,6 +558,8 @@ ComponentRegistry.register({
     isPowered: false,
   },
   pins: dht11Pins,
+  fidelity: 'quasi-static',
+  experimental: false,
 });
 
 ComponentRegistry.register({
@@ -520,6 +574,8 @@ ComponentRegistry.register({
     isTriggered: false,
   },
   pins: hcsr04Pins,
+  fidelity: 'quasi-static',
+  experimental: false,
 });
 
 ComponentRegistry.register({
@@ -555,6 +611,8 @@ ComponentRegistry.register({
       position: [0.508, -0.6, 0.762],
     },
   ],
+  fidelity: 'datasheet',
+  experimental: false,
 });
 
 ComponentRegistry.register({
@@ -579,6 +637,8 @@ ComponentRegistry.register({
       position: [0.508, -0.6, 0],
     },
   ],
+  fidelity: 'datasheet',
+  experimental: false,
 });
 
 ComponentRegistry.register({
@@ -592,6 +652,8 @@ ComponentRegistry.register({
     { id: "L", name: "Lead 1", type: "digital", position: [-1.016, -0.6, 0] },
     { id: "R", name: "Lead 2", type: "digital", position: [1.016, -0.6, 0] },
   ],
+  fidelity: 'datasheet',
+  experimental: false,
 });
 
 ComponentRegistry.register({
@@ -618,6 +680,8 @@ ComponentRegistry.register({
     { id: "A", name: "Anode (+)", type: "digital", position: [-0.254, -0.6, 0] },
     { id: "C", name: "Cathode (-)", type: "ground", position: [0.254, -0.6, 0] },
   ],
+  fidelity: 'quasi-static',
+  experimental: true,
 });
 
 // ═══════════════════════════════════════════════════
@@ -635,6 +699,8 @@ ComponentRegistry.register({
     { id: "L", name: "Left Tip", type: "digital", position: [-2, 0.23, 0] },
     { id: "R", name: "Right Tip", type: "digital", position: [2, 0.23, 0] },
   ],
+  fidelity: 'datasheet',
+  experimental: false,
 });
 
 ComponentRegistry.register({
@@ -648,6 +714,8 @@ ComponentRegistry.register({
     { id: "L", name: "Left Tip", type: "digital", position: [-2, 0.23, 0] },
     { id: "R", name: "Right Tip", type: "digital", position: [2, 0.23, 0] },
   ],
+  fidelity: 'datasheet',
+  experimental: false,
 });
 
 ComponentRegistry.register({
@@ -661,6 +729,8 @@ ComponentRegistry.register({
     { id: "L", name: "Left Tip", type: "digital", position: [-2, 0.23, 0] },
     { id: "R", name: "Right Tip", type: "digital", position: [2, 0.23, 0] },
   ],
+  fidelity: 'datasheet',
+  experimental: false,
 });
 
 ComponentRegistry.register({
@@ -674,6 +744,8 @@ ComponentRegistry.register({
     { id: "L", name: "Left Tip", type: "digital", position: [-2, 0.23, 0] },
     { id: "R", name: "Right Tip", type: "digital", position: [2, 0.23, 0] },
   ],
+  fidelity: 'datasheet',
+  experimental: false,
 });
 
 ComponentRegistry.register({
@@ -687,4 +759,6 @@ ComponentRegistry.register({
     { id: "L", name: "Left Tip", type: "digital", position: [-2, 0.23, 0] },
     { id: "R", name: "Right Tip", type: "digital", position: [2, 0.23, 0] },
   ],
+  fidelity: 'datasheet',
+  experimental: false,
 });

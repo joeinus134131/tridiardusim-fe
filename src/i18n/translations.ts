@@ -60,6 +60,9 @@ export const en = {
     datasheet: "Datasheet",
     properties: "Properties",
     guide: "Guide",
+    aiFeatures: "AI Features",
+    cloudGateway: "Cloud AI Gateway",
+    localOnnx: "Local ONNX Inference",
     togglePropsTitle: "Open/Close the Properties panel on the right",
   },
   library: {
@@ -681,6 +684,9 @@ export const id: Dict = {
     datasheet: "Datasheet",
     properties: "Properti",
     guide: "Panduan",
+    aiFeatures: "Fitur AI",
+    cloudGateway: "AI Gateway Cloud",
+    localOnnx: "Inferensi ONNX Lokal",
     togglePropsTitle: "Buka/Tutup Panel Properti di sebelah kanan",
   },
   library: {

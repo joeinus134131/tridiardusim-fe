@@ -440,6 +440,42 @@ body {
   background: var(--bg-surface);
   flex-wrap: wrap;
 }
+.ai-tools-navigation {
+  position: relative;
+  flex-shrink: 0;
+}
+.ai-tools-dropdown {
+  position: absolute;
+  z-index: var(--z-toolbar);
+  top: calc(100% + 8px);
+  right: 0;
+  display: flex;
+  min-width: 220px;
+  flex-direction: column;
+  gap: 4px;
+  padding: 6px;
+  border: 1px solid var(--border);
+  border-radius: 9px;
+  background: var(--bg-surface);
+  box-shadow: var(--shadow-lg);
+}
+.ai-tools-dropdown button {
+  display: flex;
+  align-items: center;
+  gap: 9px;
+  border: 0;
+  border-radius: 6px;
+  background: transparent;
+  padding: 9px 10px;
+  color: var(--text-primary);
+  text-align: left;
+  font-size: 12px;
+}
+.ai-tools-dropdown button:hover,
+.ai-tools-dropdown button.active {
+  background: var(--bg-hover);
+  color: var(--accent);
+}
 .brand {
   font-size: 20px;
   font-weight: 700;
@@ -649,7 +685,7 @@ body {
   min-height: 0;
   overflow: hidden;
 }
-.cloud-ai-gateway-panel {
+.ai-tool-dock {
   flex: 0 0 min(22rem, 45%);
   width: min(22rem, 45%);
   max-width: 45%;

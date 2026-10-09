@@ -9,9 +9,8 @@ import { topClassScores, type ImageNormalization } from "@/lib/ai/onnxImage";
 type Backend = "wasm" | "webgpu";
 type Prediction = { index: number; label: string; score: number };
 
-export function OnnxInferencePanel() {
+export function OnnxInferencePanel({ onClose }: { onClose: () => void }) {
   const { t } = useLanguage();
-  const [open, setOpen] = useState(false);
   const [cameraId, setCameraId] = useState("");
   const [backend, setBackend] = useState<Backend>("wasm");
   const [normalization, setNormalization] = useState<ImageNormalization>("unit");
@@ -55,7 +54,7 @@ export function OnnxInferencePanel() {
   useEffect(() => () => workerRef.current?.terminate(), []);
 
   useEffect(() => {
-    if (!open || !running || modelState !== "ready" || !frame || !workerRef.current) return;
+    if (!running || modelState !== "ready" || !frame || !workerRef.current) return;
     const key = `${activeCameraId}:${frame.sampleCount}`;
     if (key === lastFrameRef.current || performance.now() - lastSentAtRef.current < 500) return;
     const rgba = frame.rgba.slice();
@@ -65,7 +64,7 @@ export function OnnxInferencePanel() {
     }, [rgba.buffer]);
     lastFrameRef.current = key;
     lastSentAtRef.current = performance.now();
-  }, [activeCameraId, frame, modelState, open, running]);
+  }, [activeCameraId, frame, modelState, running]);
 
   const loadModel = async (file: File | undefined) => {
     if (!file) return;
@@ -117,17 +116,11 @@ export function OnnxInferencePanel() {
     }
   };
 
-  if (!open) return (
-    <button className="fixed bottom-16 left-4 z-[var(--z-panel)] flex items-center gap-2 rounded-full border border-[var(--border)] bg-[var(--bg-elevated)] px-3 py-2 text-xs shadow-lg hover:border-[var(--accent)]" onClick={() => setOpen(true)} title={t.aiGateway.openLocal}>
-      <Cpu size={15} className="text-[var(--accent)]" /> {t.aiGateway.openLocal}
-    </button>
-  );
-
   return (
-    <section className="fixed bottom-16 left-4 z-[var(--z-panel)] flex max-h-[65vh] w-[min(22rem,calc(100vw-2rem))] flex-col gap-3 overflow-y-auto rounded-xl border border-[var(--border)] bg-[var(--bg-surface)] p-4 shadow-2xl">
+    <section className="ai-tool-dock z-[var(--z-panel)] flex flex-col gap-3 p-4">
       <header className="flex items-center justify-between">
         <div className="flex items-center gap-2"><Cpu size={17} className="text-[var(--accent)]" /><strong className="text-sm">{t.aiGateway.localTitle}</strong></div>
-        <button className="btn-icon p-1.5" onClick={() => { stopAndDispose(); setOpen(false); }} aria-label={t.common.close}><X size={15} /></button>
+        <button className="btn-icon p-1.5" onClick={() => { stopAndDispose(); onClose(); }} aria-label={t.common.close}><X size={15} /></button>
       </header>
       <p className="text-xs leading-relaxed opacity-75">{t.aiGateway.localDescription}</p>
       <label className="flex flex-col gap-1 text-xs">
